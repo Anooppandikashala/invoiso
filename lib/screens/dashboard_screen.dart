@@ -2116,7 +2116,9 @@ class _DashboardHomeState extends ConsumerState<DashboardHome> {
                                               WrapCrossAlignment.center,
                                           children: [
                                             Text(
-                                              '${invoice.type} #${invoice.invoiceNumber ?? invoice.id}',
+                                              invoice.isDraft
+                                                  ? '${invoice.type} · ${AppLocalizations.of(context)!.invoiceDraftBadge}'
+                                                  : '${invoice.type} #${invoice.invoiceNumber ?? invoice.id}',
                                               style: const TextStyle(
                                                   fontSize: 18,
                                                   fontWeight: FontWeight.bold),
@@ -2327,6 +2329,9 @@ class _DashboardHomeState extends ConsumerState<DashboardHome> {
                                               AppLocalizations.of(context)!
                                                   .actionDuplicate,
                                               () => _showCloneDialog(invoice)),
+                                          // Drafts have no number yet — no
+                                          // PDF, like the invoice list.
+                                          if (!invoice.isDraft) ...[
                                           _buildActionButton(
                                               Icons.picture_as_pdf_outlined,
                                               Colors.orange,
@@ -2350,6 +2355,7 @@ class _DashboardHomeState extends ConsumerState<DashboardHome> {
                                               () => InvoicePdfServices
                                                   .generatePDF(
                                                       context, invoice)),
+                                          ],
                                           _buildActionButton(
                                               Icons.payments_outlined,
                                               Colors.purple,
@@ -4045,7 +4051,9 @@ class _DashboardHomeState extends ConsumerState<DashboardHome> {
           Expanded(
             flex: 3,
             child: Text(
-                '#${inv.invoiceNumber ?? inv.id}',
+                inv.isDraft
+                    ? AppLocalizations.of(context)!.invoiceDraftBadge
+                    : '#${inv.invoiceNumber ?? inv.id}',
                 style:
                     const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
                 maxLines: 1,
@@ -4106,6 +4114,8 @@ class _DashboardHomeState extends ConsumerState<DashboardHome> {
             ),
             const SizedBox(width: 2),
           ],
+          // Drafts have no number yet — no PDF, like the invoice list.
+          if (!inv.isDraft)
           Tooltip(
             message: 'Download PDF',
             child: InkWell(

@@ -121,6 +121,34 @@ void main() {
     });
   });
 
+  testWidgets('a double submit saves one product', (tester) async {
+    final key = await pumpForm(tester, admin);
+    await tester.enterText(field('Name'), 'Red Pen');
+    await tester.enterText(field('Sale Price'), '12');
+    await tester.enterText(field('Purchase Price'), '8');
+
+    Product? first;
+    var done = false;
+    key.currentState!.submit().then((p) {
+      first = p;
+      done = true;
+    });
+    Product? second = Product(
+        id: 'x', name: '', description: '', price: 0, stock: 0,
+        hsncode: '', tax_rate: 0);
+    key.currentState!.submit().then((p) => second = p);
+    for (var i = 0; i < 100 && !done; i++) {
+      await settle(tester);
+    }
+    expect(first, isNotNull);
+    expect(second, isNull);
+    await tester.runAsync(() async {
+      final db = await DatabaseHelper().database;
+      expect(await db.query('products', where: "name = 'Red Pen'"),
+          hasLength(1));
+    });
+  });
+
   testWidgets('duplicate name warns; Create anyway saves', (tester) async {
     await tester.runAsync(() => ProductService.insertProduct(Product(
           id: 'p1',

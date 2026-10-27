@@ -3187,6 +3187,32 @@
       }
     }
   },
+  "invoiceMgmtHasDraftNotesMessage": "Invoice #{number} has a draft credit or debit note. Finalize or trash it from the Credit Notes / Debit Notes tab first.",
+  "@invoiceMgmtHasDraftNotesMessage": {
+    "placeholders": {
+      "number": {
+        "type": "String"
+      }
+    }
+  },
+  "createInvoiceFinalizeDateTitle": "Use today's date?",
+  "createInvoiceFinalizeDateMessage": "This draft is dated {date}. Invoice numbers should follow date order, so finalizing usually takes today's date.",
+  "@createInvoiceFinalizeDateMessage": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "createInvoiceFinalizeKeepDateButton": "Keep {date}",
+  "@createInvoiceFinalizeKeepDateButton": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "createInvoiceFinalizeUseTodayButton": "Use today",
   "returnGstAgainstInvoiceWarning": "GST: a note for a registered customer should reference the original invoice",
   "returnAgainstInvoiceFull": "Against Invoice #{number}",
   "@returnAgainstInvoiceFull": {

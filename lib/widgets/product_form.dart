@@ -27,6 +27,10 @@ class ProductForm extends ConsumerStatefulWidget {
   /// Extra hint on the stock field (e.g. a purchase bill adds its qty on top).
   final String? stockHelperText;
 
+  /// Always a stock-tracked product, no Product / Service toggle (purchase
+  /// bills only list products).
+  final bool productOnly;
+
   /// Enter pressed in the name / sale price field.
   final VoidCallback? onSubmitted;
 
@@ -38,6 +42,7 @@ class ProductForm extends ConsumerStatefulWidget {
     this.user,
     this.initialName,
     this.stockHelperText,
+    this.productOnly = false,
     this.onSubmitted,
     this.onChanged,
   });
@@ -81,10 +86,13 @@ class ProductFormState extends ConsumerState<ProductForm> {
   // Stock editing admin-only: non-admins can't set stock.
   bool _stockLocked = false;
   bool _saving = false;
+  bool _submitting = false;
 
   String get itemType => _newItemType;
   bool get showTypeToggle =>
-      _businessType == BusinessType.both && _columnsConfig.type;
+      !widget.productOnly &&
+      _businessType == BusinessType.both &&
+      _columnsConfig.type;
   bool get saving => _saving;
 
   void setItemType(String type) {
@@ -118,7 +126,9 @@ class ProductFormState extends ConsumerState<ProductForm> {
       _columnsConfig = hide ? config.copyWith(purchasePrice: false) : config;
       if (!config.stock) _unlimitedStock = true;
       _businessType = bt;
-      _newItemType = bt == BusinessType.service ? 'service' : 'product';
+      _newItemType = bt == BusinessType.service && !widget.productOnly
+          ? 'service'
+          : 'product';
       _currencySymbol = currency.symbol;
       _datePattern = fmt.key;
     });
@@ -154,7 +164,19 @@ class ProductFormState extends ConsumerState<ProductForm> {
 
   /// Validates, confirms (duplicate name, selling at a loss), saves the
   /// product + its custom fields and returns it. Null = not saved.
+  /// One run at a time: a second Enter / click during the duplicate lookup
+  /// or a confirm dialog would otherwise save twice.
   Future<Product?> submit() async {
+    if (_submitting) return null;
+    _submitting = true;
+    try {
+      return await _submit();
+    } finally {
+      _submitting = false;
+    }
+  }
+
+  Future<Product?> _submit() async {
     if (_saving || !_formKey.currentState!.validate()) return null;
     final l10n = AppLocalizations.of(context)!;
     final name = _nameController.text.trim();
@@ -591,10 +613,13 @@ Future<Product?> showNewProductDialog(
   User? user,
   String? initialName,
   String? stockHelperText,
+  bool productOnly = false,
 }) {
   final formKey = GlobalKey<ProductFormState>();
   return showDialog<Product>(
     context: context,
+    // A stray outside tap would drop everything typed.
+    barrierDismissible: false,
     builder: (ctx) => StatefulBuilder(builder: (ctx, setLocal) {
       final l10n = AppLocalizations.of(ctx)!;
       final form = formKey.currentState;
@@ -641,6 +666,7 @@ Future<Product?> showNewProductDialog(
                 user: user,
                 initialName: initialName,
                 stockHelperText: stockHelperText,
+                productOnly: productOnly,
                 onSubmitted: save,
                 onChanged: () {
                   if (ctx.mounted) setLocal(() {});

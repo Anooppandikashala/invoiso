@@ -802,6 +802,11 @@ class InvoiceService {
         whereArgs.addAll([AppDate.dateKeyStart(today), AppDate.dateKeyStart(end)]);
       }
     }
+    // Drafts owe nothing yet — keep them out of due-date / payment filters.
+    if (filter.dueDate != 'all' ||
+        (filter.paymentStatus != 'all' && filter.paymentStatus != 'declined')) {
+      whereParts.add('is_draft = 0');
+    }
     // Declined is a stored status, so both declined filters run in SQL.
     if (filter.paymentStatus == 'declined') {
       whereParts.add("status = 'declined'");

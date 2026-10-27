@@ -9698,6 +9698,36 @@ abstract class AppLocalizations {
   /// **'Invoice #{number} has credit or debit notes. Void its credit notes and trash its debit notes before declining.'**
   String invoiceMgmtDeclineHasCreditNotesMessage(String number);
 
+  /// No description provided for @invoiceMgmtHasDraftNotesMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Invoice #{number} has a draft credit or debit note. Finalize or trash it from the Credit Notes / Debit Notes tab first.'**
+  String invoiceMgmtHasDraftNotesMessage(String number);
+
+  /// No description provided for @createInvoiceFinalizeDateTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Use today\'s date?'**
+  String get createInvoiceFinalizeDateTitle;
+
+  /// No description provided for @createInvoiceFinalizeDateMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'This draft is dated {date}. Invoice numbers should follow date order, so finalizing usually takes today\'s date.'**
+  String createInvoiceFinalizeDateMessage(String date);
+
+  /// No description provided for @createInvoiceFinalizeKeepDateButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Keep {date}'**
+  String createInvoiceFinalizeKeepDateButton(String date);
+
+  /// No description provided for @createInvoiceFinalizeUseTodayButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Use today'**
+  String get createInvoiceFinalizeUseTodayButton;
+
   /// No description provided for @returnGstAgainstInvoiceWarning.
   ///
   /// In en, this message translates to:

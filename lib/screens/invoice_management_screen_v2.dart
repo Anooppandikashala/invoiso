@@ -354,8 +354,12 @@ class _InvoiceManagementScreenV2State
           .getNotesForInvoice(invoice.id);
       if (!mounted) return;
       if (notes.isNotEmpty) {
-        AppError.show(context,
-            l10n.invoiceMgmtHasCreditNotesMessage(invoice.invoiceNumber ?? invoice.id));
+        final number = invoice.invoiceNumber ?? invoice.id;
+        AppError.show(
+            context,
+            notes.every((n) => n.isDraft)
+                ? l10n.invoiceMgmtHasDraftNotesMessage(number)
+                : l10n.invoiceMgmtHasCreditNotesMessage(number));
         return;
       }
     }
@@ -386,8 +390,12 @@ class _InvoiceManagementScreenV2State
         await ref.read(returnRepositoryProvider).getNotesForInvoice(invoice.id);
     if (!mounted) return;
     if (notes.isNotEmpty) {
-      AppError.show(context,
-          l10n.invoiceMgmtDeclineHasCreditNotesMessage(invoice.invoiceNumber ?? invoice.id));
+      final number = invoice.invoiceNumber ?? invoice.id;
+      AppError.show(
+          context,
+          notes.every((n) => n.isDraft)
+              ? l10n.invoiceMgmtHasDraftNotesMessage(number)
+              : l10n.invoiceMgmtDeclineHasCreditNotesMessage(number));
       return;
     }
     final confirmed = await AppError.confirm(
@@ -583,17 +591,22 @@ class _InvoiceManagementScreenV2State
     // Per-invoice lookup: draft notes block trashing too, and
     // getNotesForInvoices skips them.
     Invoice? first;
+    var notes = const <Invoice>[];
     for (final i in _pageInvoices.where((i) => _selectedIds.contains(i.id))) {
-      if ((await ref.read(returnRepositoryProvider).getNotesForInvoice(i.id))
-          .isNotEmpty) {
+      notes = await ref.read(returnRepositoryProvider).getNotesForInvoice(i.id);
+      if (notes.isNotEmpty) {
         first = i;
         break;
       }
     }
     if (!mounted) return;
     if (first != null) {
-      AppError.show(context,
-          l10n.invoiceMgmtHasCreditNotesMessage(first.invoiceNumber ?? first.id));
+      final number = first.invoiceNumber ?? first.id;
+      AppError.show(
+          context,
+          notes.every((n) => n.isDraft)
+              ? l10n.invoiceMgmtHasDraftNotesMessage(number)
+              : l10n.invoiceMgmtHasCreditNotesMessage(number));
       return;
     }
     final count = _selectedIds.length;
@@ -3082,8 +3095,12 @@ class _TrashDialogState extends ConsumerState<_TrashDialog> {
           .getNotesForInvoice(invoice.id);
       if (!mounted) return;
       if (notes.isNotEmpty) {
-        AppError.show(context,
-            l10n.invoiceMgmtHasCreditNotesMessage(invoice.invoiceNumber ?? invoice.id));
+        final number = invoice.invoiceNumber ?? invoice.id;
+        AppError.show(
+            context,
+            notes.every((n) => n.isDraft)
+                ? l10n.invoiceMgmtHasDraftNotesMessage(number)
+                : l10n.invoiceMgmtHasCreditNotesMessage(number));
         return;
       }
     }

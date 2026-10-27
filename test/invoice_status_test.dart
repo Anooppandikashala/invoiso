@@ -381,6 +381,23 @@ void main() {
     expect((await ids(const InvoiceListFilter())).toSet(), {'i1', 'i2'});
   });
 
+  test('unpaid / overdue list filters skip drafts; "all" keeps them',
+      () async {
+    final p = await addProduct();
+    await InvoiceService.insertInvoice(doc('i1', 'Invoice', p));
+    await InvoiceService.insertInvoice(doc('d1', 'Invoice', p)..isDraft = true);
+    Future<List<String>> ids(InvoiceListFilter f) async =>
+        (await InvoiceService.getInvoicesPaginated(
+                filterType: 'Invoice', filter: f))
+            .map((i) => i.id)
+            .toList();
+
+    expect(await ids(const InvoiceListFilter(paymentStatus: 'unpaid')),
+        ['i1']);
+    expect(await ids(const InvoiceListFilter(dueDate: 'overdue')), ['i1']);
+    expect((await ids(const InvoiceListFilter())).toSet(), {'i1', 'd1'});
+  });
+
   test('"Declined" chip shows only declined; "Hide declined" drops them',
       () async {
     await seedActiveAndDeclined();

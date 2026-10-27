@@ -83,8 +83,9 @@ class InvoicePdfServices {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text(
-            '${invoice.invoiceTitle ?? invoice.type} #${invoice.invoiceNumber ?? invoice.id}'),
+        title: Text(invoice.isDraft
+            ? '${invoice.invoiceTitle ?? invoice.type} · ${AppLocalizations.of(context)!.invoiceDraftBadge}'
+            : '${invoice.invoiceTitle ?? invoice.type} #${invoice.invoiceNumber ?? invoice.id}'),
         content: SizedBox(
           width: 600,
           child: Column(

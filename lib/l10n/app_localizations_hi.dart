@@ -5697,6 +5697,27 @@ class AppLocalizationsHi extends AppLocalizations {
   }
 
   @override
+  String invoiceMgmtHasDraftNotesMessage(String number) {
+    return 'Invoice #$number has a draft credit or debit note. Finalize or trash it from the Credit Notes / Debit Notes tab first.';
+  }
+
+  @override
+  String get createInvoiceFinalizeDateTitle => 'Use today\'s date?';
+
+  @override
+  String createInvoiceFinalizeDateMessage(String date) {
+    return 'This draft is dated $date. Invoice numbers should follow date order, so finalizing usually takes today\'s date.';
+  }
+
+  @override
+  String createInvoiceFinalizeKeepDateButton(String date) {
+    return 'Keep $date';
+  }
+
+  @override
+  String get createInvoiceFinalizeUseTodayButton => 'Use today';
+
+  @override
   String get returnGstAgainstInvoiceWarning =>
       'GST: a note for a registered customer should reference the original invoice';
 

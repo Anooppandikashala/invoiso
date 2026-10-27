@@ -1933,7 +1933,8 @@ class _PurchaseBillFormScreenState extends ConsumerState<_PurchaseBillFormScreen
         user: widget.user,
         initialName: _productSearchController.text,
         stockHelperText:
-            AppLocalizations.of(context)!.productFormPurchaseStockHelper);
+            AppLocalizations.of(context)!.productFormPurchaseStockHelper,
+        productOnly: true);
     if (product == null || !mounted) return;
     _productSearchController.clear();
     setState(() => _productQuery = '');

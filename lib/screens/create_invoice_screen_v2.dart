@@ -181,6 +181,7 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
   bool _isInterState = false; // India: interstate supply → IGST instead of CGST/SGST
   bool isEditing = false;
   bool isLoading = false;
+  bool _finalizing = false;
   // V2: inline product search dropdown (replaces click-to-open popup;
   // the popup dialog is now reserved for the Ctrl+F shortcut only).
   bool _showProductDropdownV2 = false;
@@ -643,7 +644,8 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
             offset: 0, limit: _customerFetchLimit), // 0
         ref.read(productRepositoryProvider).getProductsPaginated(
             offset: 0, limit: _productFetchLimit, type: _businessType.key), // 1
-        isEditing
+        // A draft has no number yet — preview the next one, like a new invoice.
+        isEditing && !(widget.invoiceToEdit?.isDraft ?? false)
             ? Future.value(widget.invoiceToEdit?.invoiceNumber ?? widget.invoiceToEdit?.id)
             : ref.read(invoiceRepositoryProvider).peekNextInvoiceNumber(invoiceType), // 2
         settingsRepo.getCurrency(), // 3 — discarded below when editing/cloning
@@ -836,7 +838,9 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
     }
   }
 
-  void addInvoiceProductPrompt(Product product)
+  // [newProduct]: just created in the New product dialog, where its stock
+  // was in view — skip the add-time stock prompts (the save check still runs).
+  void addInvoiceProductPrompt(Product product, {bool newProduct = false})
   {
     final quantityController = TextEditingController();
     final discountController = TextEditingController(
@@ -877,7 +881,8 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
       final extraCost = double.tryParse(extraCostController.text);
 
       // Check stock
-      if (!product.unlimitedStock &&
+      if (!newProduct &&
+          !product.unlimitedStock &&
           product.stock > 0 &&
           qty > product.stock) {
         // Insufficient stock — ask user if they want to add anyway
@@ -919,7 +924,7 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
                   discountIsPercent: discountIsPercent),
               insertAt: insertAt);
         }
-      } else if (!product.unlimitedStock && product.stock <= 0) {
+      } else if (!newProduct && !product.unlimitedStock && product.stock <= 0) {
         Navigator.pop(context);
         final addAnyway = await showDialog<bool>(
           context: context,
@@ -1712,6 +1717,68 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
     return (payError: payError, creditToApply: creditToApply);
   }
 
+  /// Draft → final. Notes finalize through the create path (settle +
+  /// restock), invoices through _updateInvoice. One run at a time (a
+  /// double-click would start two), and a back-dated draft first asks
+  /// whether to take today's date.
+  Future<void> _finalizeDraft() async {
+    if (_finalizing) return;
+    _finalizing = true;
+    try {
+      if (!await _confirmFinalizeDate()) return;
+      _isReturnDoc ? await _createInvoice() : await _updateInvoice(finalize: true);
+    } finally {
+      _finalizing = false;
+    }
+  }
+
+  // Numbers follow date order, so a draft dated before today offers today's
+  // date (due date moves with it). False when the dialog is dismissed.
+  Future<bool> _confirmFinalizeDate() async {
+    final now = DateTime.now();
+    final old = _selectedOrderDate;
+    final days = DateTime.utc(now.year, now.month, now.day)
+        .difference(DateTime.utc(old.year, old.month, old.day))
+        .inDays;
+    if (days <= 0) return true;
+    final l10n = AppLocalizations.of(context)!;
+    final shown = DateFormat(_datePattern).format(old);
+    final useToday = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(l10n.createInvoiceFinalizeDateTitle),
+        content: Text(l10n.createInvoiceFinalizeDateMessage(shown)),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: Text(l10n.actionCancel)),
+          OutlinedButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: Text(l10n.createInvoiceFinalizeKeepDateButton(shown))),
+          FilledButton(
+              onPressed: () => Navigator.pop(ctx, true),
+              child: Text(l10n.createInvoiceFinalizeUseTodayButton)),
+        ],
+      ),
+    );
+    if (useToday == null || !mounted) return false;
+    if (useToday) {
+      setState(() {
+        _selectedOrderDate = DateTime(now.year, now.month, now.day, old.hour,
+            old.minute, old.second);
+        dateController.text = DateFormat(_datePattern).format(_selectedOrderDate);
+        final due = _selectedDueDate;
+        if (due != null) {
+          _selectedDueDate = DateTime(due.year, due.month, due.day + days,
+              due.hour, due.minute, due.second);
+          dueDateController.text =
+              DateFormat(_datePattern).format(_selectedDueDate!);
+        }
+      });
+    }
+    return true;
+  }
+
   /// Draft is a scratchpad: customer name still required, items are not, and
   /// it never touches the numbered sequence (invoiceNumber stays null until
   /// _updateInvoice(finalize: true) assigns one). Handles both the first
@@ -1794,6 +1861,9 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
         await ref.read(invoiceRepositoryProvider).updateInvoice(invoice);
       }
 
+      final nextNumber = await ref
+          .read(invoiceRepositoryProvider)
+          .peekNextInvoiceNumber(invoiceType);
       if (!mounted) return true;
       setState(() {
         _invoice = invoice;
@@ -1802,7 +1872,7 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
         // in build()) — a draft isn't done yet, the user likely wants to
         // keep adding to it.
         isEditing = true;
-        currentInvoiceNumber = 'DRAFT';
+        currentInvoiceNumber = nextNumber;
         isLoading = false;
       });
       _markFormClean();
@@ -4037,13 +4107,18 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
 
       final refreshedInvoice =
           await ref.read(invoiceRepositoryProvider).getInvoiceById(updatedInvoice.id);
+      final stillDraft = (refreshedInvoice ?? updatedInvoice).isDraft;
+      final nextNumber = stillDraft
+          ? await ref
+              .read(invoiceRepositoryProvider)
+              .peekNextInvoiceNumber(invoiceType)
+          : null;
 
       if (!mounted) return true;
       setState(() {
         _invoice = refreshedInvoice ?? updatedInvoice;
-        currentInvoiceNumber = _invoice!.isDraft
-            ? 'DRAFT'
-            : (_invoice!.invoiceNumber ?? _invoice!.id);
+        currentInvoiceNumber = nextNumber ??
+            (_invoice!.invoiceNumber ?? _invoice!.id);
         isLoading = false;
         if (creditToApply > 0) {
           _customerCreditAvailable -= creditToApply;
@@ -4429,8 +4504,7 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
             if (_invoice == null) {
               _createInvoice();
             } else if (_invoice!.isDraft) {
-              // Notes finalize through the create path (settle + restock).
-              _isReturnDoc ? _createInvoice() : _updateInvoice(finalize: true);
+              _finalizeDraft();
             } else {
               _updateInvoice();
             }
@@ -5880,6 +5954,8 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
                 borderRadius: BorderRadius.circular(AppBorderRadius.xsmall)),
           ),
         ),
+        // Notes return / charge what was sold — no new catalogue products.
+        if (!_isReturnDoc) ...[
         const SizedBox(width: 8),
         OutlinedButton.icon(
           onPressed: _addNewProductV2,
@@ -5891,6 +5967,7 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
                 borderRadius: BorderRadius.circular(AppBorderRadius.xsmall)),
           ),
         ),
+        ],
       ],
     );
   }
@@ -5913,7 +5990,7 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
       _productMetadata = {..._productMetadata, ...metadata};
       _showProductDropdownV2 = false;
     });
-    addInvoiceProductPrompt(product);
+    addInvoiceProductPrompt(product, newProduct: true);
   }
 
   void _ensureHighlightedProductVisibleV2() {
@@ -7226,9 +7303,7 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
                         ? (!hasSavedRow
                             ? _createInvoice
                             : isDraftRow
-                                ? (_isReturnDoc
-                                    ? _createInvoice
-                                    : () => _updateInvoice(finalize: true))
+                                ? _finalizeDraft
                                 : _updateInvoice)
                         : null,
                     style: ElevatedButton.styleFrom(

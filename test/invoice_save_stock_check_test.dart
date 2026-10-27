@@ -24,6 +24,7 @@ import 'package:invoiso/repositories/sqlite/sqlite_invoice_repository.dart';
 import 'package:invoiso/repositories/sqlite/sqlite_payment_repository.dart';
 import 'package:invoiso/repositories/sqlite/sqlite_settings_repository.dart';
 import 'package:invoiso/services/backend_services.dart';
+import 'package:invoiso/services/invoice_pdf_services.dart';
 import 'package:invoiso/screens/create_invoice_screen_v2.dart';
 
 void main() {
@@ -81,6 +82,21 @@ void main() {
     }
   }
 
+  // Busy full-suite runs make fixed waits flaky — settle until [finder] shows.
+  Future<void> waitFor(WidgetTester tester, Finder finder) async {
+    for (var i = 0; i < 100 && finder.evaluate().isEmpty; i++) {
+      await settle(tester);
+    }
+  }
+
+  Future<void> waitUntil(
+      WidgetTester tester, Future<bool> Function() done) async {
+    for (var i = 0; i < 100; i++) {
+      await settle(tester);
+      if ((await tester.runAsync(done))!) return;
+    }
+  }
+
   testWidgets('finalizing a draft after another sale warns before negative stock',
       (tester) async {
     final draft = (await tester.runAsync(() async {
@@ -119,10 +135,14 @@ void main() {
     ));
     await settle(tester);
 
-    // Finalize → warning lists the short product; Cancel keeps the draft.
+    // Finalize → back-dated draft asks about the date (keep it), then the
+    // warning lists the short product; Cancel keeps the draft.
     await tester.tap(find.byIcon(Icons.task_alt));
     await tester.pump();
-    await settle(tester);
+    await waitFor(tester, find.textContaining('Keep '));
+    await tester.tap(find.textContaining('Keep '));
+    await tester.pump();
+    await waitFor(tester, find.text('Go back'));
     expect(find.textContaining('Product A: in stock 2, on invoice 5 (short by 3)'),
         findsOneWidget);
     await tester.tap(find.text('Go back'));
@@ -136,23 +156,39 @@ void main() {
     // Finalize again → Save anyway → finalized, stock goes negative.
     await tester.tap(find.byIcon(Icons.task_alt));
     await tester.pump();
-    await settle(tester);
+    await waitFor(tester, find.textContaining('Keep '));
+    await tester.tap(find.textContaining('Keep '));
+    await tester.pump();
+    await waitFor(tester, find.text('Save anyway'));
     await tester.tap(find.text('Save anyway'));
     await tester.pump();
-    await settle(tester);
+    await waitUntil(tester, () async =>
+        !(await InvoiceService.getInvoiceById('00000001'))!.isDraft);
     await tester.runAsync(() async {
       expect((await InvoiceService.getInvoiceById('00000001'))!.isDraft, isFalse);
       expect((await ProductService.getProductById('pA'))!.stock, -3);
     });
   });
 
-  testWidgets('finalizing a draft records the Payment section choice',
+  testWidgets('finalizing a back-dated draft: Use today + Payment choice',
       (tester) async {
+    // Unlimited stock: no stock warning, independent of the test above.
+    final service = Product(
+      id: 'pB',
+      name: 'Product B',
+      description: '',
+      price: 100,
+      stock: 0,
+      hsncode: '',
+      tax_rate: 0,
+      unlimitedStock: true,
+    );
     final draft = (await tester.runAsync(() async {
+      await ProductService.insertProduct(service);
       await InvoiceService.insertInvoice(Invoice(
         id: '00000003',
         customer: customer,
-        items: [InvoiceItem(product: product, quantity: 1)],
+        items: [InvoiceItem(product: service, quantity: 1)],
         date: DateTime(2026, 1, 3),
         type: 'Invoice',
         isDraft: true,
@@ -173,25 +209,29 @@ void main() {
     ));
     await settle(tester);
 
+    // A draft has no number yet — the header previews the next one.
+    final next = await tester.runAsync(
+        () => InvoicePdfServices.peekNextInvoiceNumber('Invoice'));
+    expect(find.textContaining('#[$next]'), findsOneWidget);
+
     await tester.ensureVisible(find.text('Paid'));
     await tester.tap(find.text('Paid'));
     await tester.pump();
     await tester.tap(find.byIcon(Icons.task_alt));
     await tester.pump();
-    // Stock is negative from the first test — accept the warning.
-    for (var i = 0; i < 100 && find.text('Save anyway').evaluate().isEmpty; i++) {
-      await settle(tester);
-    }
-    await tester.tap(find.text('Save anyway'));
+    await waitFor(tester, find.text('Use today'));
+    await tester.tap(find.text('Use today'));
     await tester.pump();
-    Invoice? saved;
-    for (var i = 0; i < 100; i++) {
-      await settle(tester);
-      saved = await tester.runAsync<Invoice?>(
-          () => InvoiceService.getInvoiceById('00000003'));
-      if (saved!.outstandingBalance == 0) break;
-    }
-    expect(saved!.isDraft, isFalse);
+    await waitUntil(tester, () async =>
+        (await InvoiceService.getInvoiceById('00000003'))!
+            .outstandingBalance ==
+        0);
+    final saved = (await tester.runAsync(
+        () => InvoiceService.getInvoiceById('00000003')))!;
+    expect(saved.isDraft, isFalse);
     expect(saved.outstandingBalance, 0);
+    final now = DateTime.now();
+    expect(DateTime(saved.date.year, saved.date.month, saved.date.day),
+        DateTime(now.year, now.month, now.day));
   });
 }
