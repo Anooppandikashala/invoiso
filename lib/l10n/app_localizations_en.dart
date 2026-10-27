@@ -1521,11 +1521,11 @@ class AppLocalizationsEn extends AppLocalizations {
   String get quotationStatusConverted => 'Converted';
 
   @override
-  String get invoiceMgmtDeclineInvoiceTitle => 'Decline invoice?';
+  String get invoiceMgmtDeclineInvoiceTitle => 'Cancel / void this sale?';
 
   @override
   String invoiceMgmtDeclineInvoiceBody(String number) {
-    return 'This will mark invoice #$number as declined and return its items to stock. This can\'t be undone.';
+    return '#$number will be marked as declined. It stays in the list but no longer counts in reports or balances. This can\'t be undone.';
   }
 
   @override
@@ -1535,7 +1535,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get invoiceMgmtDeclinedSuccessMessage =>
-      'Invoice declined, stock restored.';
+      'Sale cancelled (void), stock returned.';
 
   @override
   String get invoiceStatusDeclinedBadge => 'Declined';
@@ -5860,4 +5860,22 @@ class AppLocalizationsEn extends AppLocalizations {
   String creditNoteCancelError(String error) {
     return 'Could not cancel: $error';
   }
+
+  @override
+  String get invoiceMgmtCancelVoidAction => 'Cancel / Void';
+
+  @override
+  String get invoiceMgmtDeclineReturnStockLabel => 'Return all items to stock';
+
+  @override
+  String get invoiceMgmtDeclineReturnStockHint =>
+      'Untick if the goods didn\'t come back (damaged, used or kept).';
+
+  @override
+  String get invoiceMgmtDeclinedNoStockMessage =>
+      'Sale cancelled (void). Stock unchanged.';
+
+  @override
+  String get invoiceMgmtTrashNoStockHint =>
+      'Trash doesn\'t return stock. To cancel a sale, use Cancel / Void.';
 }

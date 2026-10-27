@@ -1522,7 +1522,7 @@ class AppLocalizationsBo extends AppLocalizations {
 
   @override
   String invoiceMgmtDeclineInvoiceBody(String number) {
-    return 'འདིས་ཁྲལ་ཤོག་ #$number ཁས་མི་ལེན་པར་རྟགས་རྒྱོབ་ནས་དེའི་ནང་དོན་ཚང་མ་ཅ་དངོས་ལ་སློག་ཡོང་། འདི་ལོག་སྟེ་བཟོ་མི་ཐུབ།';
+    return 'འདིས་ #$number ཁས་མི་ལེན་པར་རྟགས་རྒྱོབ་ཡོང་། འདི་ལོག་སྟེ་བཟོ་མི་ཐུབ།';
   }
 
   @override
@@ -5864,4 +5864,22 @@ class AppLocalizationsBo extends AppLocalizations {
   String creditNoteCancelError(String error) {
     return 'Could not cancel: $error';
   }
+
+  @override
+  String get invoiceMgmtCancelVoidAction => 'Cancel / Void';
+
+  @override
+  String get invoiceMgmtDeclineReturnStockLabel => 'Return all items to stock';
+
+  @override
+  String get invoiceMgmtDeclineReturnStockHint =>
+      'Untick if the goods didn\'t come back (damaged, used or kept).';
+
+  @override
+  String get invoiceMgmtDeclinedNoStockMessage =>
+      'Sale cancelled (void). Stock unchanged.';
+
+  @override
+  String get invoiceMgmtTrashNoStockHint =>
+      'Trash doesn\'t return stock. To cancel a sale, use Cancel / Void.';
 }

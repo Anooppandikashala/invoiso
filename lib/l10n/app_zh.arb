@@ -410,8 +410,8 @@
   "quotationStatusAccepted": "已接受",
   "quotationStatusDeclined": "已拒绝",
   "quotationStatusConverted": "已转换",
-  "invoiceMgmtDeclineInvoiceTitle": "拒绝此发票？",
-  "invoiceMgmtDeclineInvoiceBody": "这将把发票 #{number} 标记为已拒绝，并将其商品归还库存。此操作无法撤销。",
+  "invoiceMgmtDeclineInvoiceTitle": "取消 / 作废此笔销售？",
+  "invoiceMgmtDeclineInvoiceBody": "#{number} 将被标记为已拒绝。它仍保留在列表中，但不再计入报表或余额。此操作无法撤销。",
   "@invoiceMgmtDeclineInvoiceBody": {
     "placeholders": {
       "number": {
@@ -420,7 +420,7 @@
     }
   },
   "invoiceMgmtDeclineHasPaymentsMessage": "发票 #{number} 已有付款记录。拒绝前请先在“应用付款”中删除这些付款。",
-  "invoiceMgmtDeclinedSuccessMessage": "发票已拒绝，库存已归还。",
+  "invoiceMgmtDeclinedSuccessMessage": "销售已作废，库存已归还。",
   "invoiceStatusDeclinedBadge": "已拒绝",
   "createInvoiceConvertTitle": "转换为发票",
   "createInvoiceConvertedSuccessMessage": "已转换为发票 #{invoiceNumber}",
@@ -1473,5 +1473,10 @@
   "purchaseBillMgmtColItem": "项目",
   "purchaseBillMgmtColCost": "成本",
   "purchaseBillMgmtColTaxPercent": "税率 %",
-  "purchaseBillMgmtPaymentRecordedMessage": "付款已记录。"
+  "purchaseBillMgmtPaymentRecordedMessage": "付款已记录。",
+  "invoiceMgmtCancelVoidAction": "取消 / 作废",
+  "invoiceMgmtDeclineReturnStockLabel": "将所有商品归还库存",
+  "invoiceMgmtDeclineReturnStockHint": "如果货物未退回（损坏、已使用或客户保留），请取消勾选。",
+  "invoiceMgmtDeclinedNoStockMessage": "销售已作废，库存未变。",
+  "invoiceMgmtTrashNoStockHint": "移至回收站不会归还库存。要取消销售，请使用“取消 / 作废”。"
 }

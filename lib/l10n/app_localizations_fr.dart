@@ -1545,11 +1545,12 @@ class AppLocalizationsFr extends AppLocalizations {
   String get quotationStatusConverted => 'Convertie';
 
   @override
-  String get invoiceMgmtDeclineInvoiceTitle => 'Refuser la facture ?';
+  String get invoiceMgmtDeclineInvoiceTitle =>
+      'Annuler / invalider cette vente ?';
 
   @override
   String invoiceMgmtDeclineInvoiceBody(String number) {
-    return 'Cela marquera la facture #$number comme refusée et remettra ses articles en stock. Cette action est irréversible.';
+    return '#$number sera marquée comme refusée. Elle reste dans la liste mais n\'est plus comptée dans les rapports ni les soldes. Cette action est irréversible.';
   }
 
   @override
@@ -1559,7 +1560,7 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get invoiceMgmtDeclinedSuccessMessage =>
-      'Facture refusée, stock restauré.';
+      'Vente annulée, stock restauré.';
 
   @override
   String get invoiceStatusDeclinedBadge => 'Refusée';
@@ -5985,4 +5986,23 @@ class AppLocalizationsFr extends AppLocalizations {
   String creditNoteCancelError(String error) {
     return 'Could not cancel: $error';
   }
+
+  @override
+  String get invoiceMgmtCancelVoidAction => 'Annuler / Invalider';
+
+  @override
+  String get invoiceMgmtDeclineReturnStockLabel =>
+      'Remettre tous les articles en stock';
+
+  @override
+  String get invoiceMgmtDeclineReturnStockHint =>
+      'Décochez si la marchandise n\'est pas revenue (abîmée, utilisée ou conservée).';
+
+  @override
+  String get invoiceMgmtDeclinedNoStockMessage =>
+      'Vente annulée. Stock inchangé.';
+
+  @override
+  String get invoiceMgmtTrashNoStockHint =>
+      'La corbeille ne remet pas le stock. Pour annuler une vente, utilisez Annuler / Invalider.';
 }

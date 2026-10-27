@@ -1533,11 +1533,11 @@ class AppLocalizationsNe extends AppLocalizations {
   String get quotationStatusConverted => 'रूपान्तरित';
 
   @override
-  String get invoiceMgmtDeclineInvoiceTitle => 'बीजक अस्वीकार गर्ने?';
+  String get invoiceMgmtDeclineInvoiceTitle => 'यो बिक्री रद्द / शून्य गर्ने?';
 
   @override
   String invoiceMgmtDeclineInvoiceBody(String number) {
-    return 'यसले बीजक #$number लाई अस्वीकृत चिन्ह लगाउनेछ र यसका वस्तुहरू स्टकमा फिर्ता गर्नेछ। यो पूर्ववत गर्न सकिँदैन।';
+    return '#$number लाई अस्वीकृत चिन्ह लगाइनेछ। यो सूचीमा रहन्छ, तर रिपोर्ट वा ब्यालेन्समा गनिँदैन। यो पूर्ववत गर्न सकिँदैन।';
   }
 
   @override
@@ -1547,7 +1547,7 @@ class AppLocalizationsNe extends AppLocalizations {
 
   @override
   String get invoiceMgmtDeclinedSuccessMessage =>
-      'बीजक अस्वीकृत भयो, स्टक फिर्ता गरियो।';
+      'बिक्री रद्द भयो, स्टक फिर्ता गरियो।';
 
   @override
   String get invoiceStatusDeclinedBadge => 'अस्वीकृत';
@@ -5912,4 +5912,23 @@ class AppLocalizationsNe extends AppLocalizations {
   String creditNoteCancelError(String error) {
     return 'Could not cancel: $error';
   }
+
+  @override
+  String get invoiceMgmtCancelVoidAction => 'रद्द / शून्य गर्नुहोस्';
+
+  @override
+  String get invoiceMgmtDeclineReturnStockLabel =>
+      'सबै वस्तुहरू स्टकमा फिर्ता गर्नुहोस्';
+
+  @override
+  String get invoiceMgmtDeclineReturnStockHint =>
+      'सामान फिर्ता नआएमा (बिग्रिएको, प्रयोग भएको वा राखिएको) यसलाई अनचेक गर्नुहोस्।';
+
+  @override
+  String get invoiceMgmtDeclinedNoStockMessage =>
+      'बिक्री रद्द भयो। स्टकमा कुनै परिवर्तन छैन।';
+
+  @override
+  String get invoiceMgmtTrashNoStockHint =>
+      'ट्र्यासले स्टक फिर्ता गर्दैन। बिक्री रद्द गर्न रद्द / शून्य गर्नुहोस् प्रयोग गर्नुहोस्।';
 }

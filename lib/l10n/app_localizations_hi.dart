@@ -1526,11 +1526,11 @@ class AppLocalizationsHi extends AppLocalizations {
   String get quotationStatusConverted => 'परिवर्तित';
 
   @override
-  String get invoiceMgmtDeclineInvoiceTitle => 'इनवॉइस अस्वीकार करें?';
+  String get invoiceMgmtDeclineInvoiceTitle => 'यह बिक्री रद्द / शून्य करें?';
 
   @override
   String invoiceMgmtDeclineInvoiceBody(String number) {
-    return 'इससे इनवॉइस #$number को अस्वीकृत के रूप में चिह्नित किया जाएगा और इसके आइटम स्टॉक में वापस कर दिए जाएंगे। इसे पूर्ववत नहीं किया जा सकता।';
+    return '#$number को अस्वीकृत चिह्नित किया जाएगा। यह सूची में रहेगा, पर रिपोर्ट या बैलेंस में नहीं गिना जाएगा। इसे पूर्ववत नहीं किया जा सकता।';
   }
 
   @override
@@ -1540,7 +1540,7 @@ class AppLocalizationsHi extends AppLocalizations {
 
   @override
   String get invoiceMgmtDeclinedSuccessMessage =>
-      'इनवॉइस अस्वीकृत, स्टॉक वापस कर दिया गया।';
+      'बिक्री रद्द हुई, स्टॉक वापस कर दिया गया।';
 
   @override
   String get invoiceStatusDeclinedBadge => 'अस्वीकृत';
@@ -5882,4 +5882,23 @@ class AppLocalizationsHi extends AppLocalizations {
   String creditNoteCancelError(String error) {
     return 'Could not cancel: $error';
   }
+
+  @override
+  String get invoiceMgmtCancelVoidAction => 'रद्द / शून्य करें';
+
+  @override
+  String get invoiceMgmtDeclineReturnStockLabel =>
+      'सभी आइटम स्टॉक में वापस करें';
+
+  @override
+  String get invoiceMgmtDeclineReturnStockHint =>
+      'अगर सामान वापस नहीं आया (खराब, इस्तेमाल हुआ या रखा गया), तो इसे अनचेक करें।';
+
+  @override
+  String get invoiceMgmtDeclinedNoStockMessage =>
+      'बिक्री रद्द हुई। स्टॉक में कोई बदलाव नहीं।';
+
+  @override
+  String get invoiceMgmtTrashNoStockHint =>
+      'ट्रैश स्टॉक वापस नहीं करता। बिक्री रद्द करने के लिए रद्द / शून्य करें का उपयोग करें।';
 }

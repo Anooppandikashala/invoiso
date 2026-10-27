@@ -1475,11 +1475,11 @@ class AppLocalizationsZh extends AppLocalizations {
   String get quotationStatusConverted => '已转换';
 
   @override
-  String get invoiceMgmtDeclineInvoiceTitle => '拒绝此发票？';
+  String get invoiceMgmtDeclineInvoiceTitle => '取消 / 作废此笔销售？';
 
   @override
   String invoiceMgmtDeclineInvoiceBody(String number) {
-    return '这将把发票 #$number 标记为已拒绝，并将其商品归还库存。此操作无法撤销。';
+    return '#$number 将被标记为已拒绝。它仍保留在列表中，但不再计入报表或余额。此操作无法撤销。';
   }
 
   @override
@@ -1488,7 +1488,7 @@ class AppLocalizationsZh extends AppLocalizations {
   }
 
   @override
-  String get invoiceMgmtDeclinedSuccessMessage => '发票已拒绝，库存已归还。';
+  String get invoiceMgmtDeclinedSuccessMessage => '销售已作废，库存已归还。';
 
   @override
   String get invoiceStatusDeclinedBadge => '已拒绝';
@@ -5654,4 +5654,19 @@ class AppLocalizationsZh extends AppLocalizations {
   String creditNoteCancelError(String error) {
     return 'Could not cancel: $error';
   }
+
+  @override
+  String get invoiceMgmtCancelVoidAction => '取消 / 作废';
+
+  @override
+  String get invoiceMgmtDeclineReturnStockLabel => '将所有商品归还库存';
+
+  @override
+  String get invoiceMgmtDeclineReturnStockHint => '如果货物未退回（损坏、已使用或客户保留），请取消勾选。';
+
+  @override
+  String get invoiceMgmtDeclinedNoStockMessage => '销售已作废，库存未变。';
+
+  @override
+  String get invoiceMgmtTrashNoStockHint => '移至回收站不会归还库存。要取消销售，请使用“取消 / 作废”。';
 }

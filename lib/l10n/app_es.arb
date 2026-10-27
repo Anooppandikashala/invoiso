@@ -410,8 +410,8 @@
   "quotationStatusAccepted": "Aceptada",
   "quotationStatusDeclined": "Rechazada",
   "quotationStatusConverted": "Convertida",
-  "invoiceMgmtDeclineInvoiceTitle": "¿Rechazar factura?",
-  "invoiceMgmtDeclineInvoiceBody": "Esto marcará la factura #{number} como rechazada y devolverá sus artículos al stock. Esta acción no se puede deshacer.",
+  "invoiceMgmtDeclineInvoiceTitle": "¿Cancelar / anular esta venta?",
+  "invoiceMgmtDeclineInvoiceBody": "#{number} se marcará como rechazada. Seguirá en la lista, pero ya no contará en informes ni saldos. Esta acción no se puede deshacer.",
   "@invoiceMgmtDeclineInvoiceBody": {
     "placeholders": {
       "number": {
@@ -420,7 +420,7 @@
     }
   },
   "invoiceMgmtDeclineHasPaymentsMessage": "La factura #{number} tiene pagos registrados. Elimínelos en Aplicar pago antes de rechazarla.",
-  "invoiceMgmtDeclinedSuccessMessage": "Factura rechazada, stock restaurado.",
+  "invoiceMgmtDeclinedSuccessMessage": "Venta anulada, stock devuelto.",
   "invoiceStatusDeclinedBadge": "Rechazada",
   "createInvoiceConvertTitle": "Convertir en factura",
   "createInvoiceConvertedSuccessMessage": "Convertida en factura n.º {invoiceNumber}",
@@ -1473,5 +1473,10 @@
   "purchaseBillMgmtColItem": "Artículo",
   "purchaseBillMgmtColCost": "Costo",
   "purchaseBillMgmtColTaxPercent": "Impuesto %",
-  "purchaseBillMgmtPaymentRecordedMessage": "Pago registrado."
+  "purchaseBillMgmtPaymentRecordedMessage": "Pago registrado.",
+  "invoiceMgmtCancelVoidAction": "Cancelar / Anular",
+  "invoiceMgmtDeclineReturnStockLabel": "Devolver todos los artículos al stock",
+  "invoiceMgmtDeclineReturnStockHint": "Desmárquelo si la mercancía no se devolvió (dañada, usada o conservada).",
+  "invoiceMgmtDeclinedNoStockMessage": "Venta anulada. Stock sin cambios.",
+  "invoiceMgmtTrashNoStockHint": "La papelera no devuelve el stock. Para cancelar una venta, use Cancelar / Anular."
 }

@@ -142,16 +142,18 @@ class InvoiceService {
   static Future<void> updateInvoice(Invoice invoice) async {
     final db = await dbHelper.database;
 
-    // A final credit / debit note settled its stock and credit when created;
-    // re-saving would run sale stock maths on it. Drafts stay editable.
-    final finalNote = (await db.query('invoices',
+    // A final credit / debit note settled its stock and credit when created,
+    // and a declined (void) sale already had its stock decided — re-saving
+    // either would run sale stock maths on it. Drafts stay editable.
+    final locked = (await db.query('invoices',
             columns: ['id'],
-            where: "id = ? AND type IN ('Credit Note', 'Debit Note') "
-                'AND is_draft = 0',
+            where: "id = ? AND ((type IN ('Credit Note', 'Debit Note') "
+                'AND is_draft = 0) '
+                "OR (type IN ('Invoice', 'Receipt') AND status = 'declined'))",
             whereArgs: [invoice.id]))
         .isNotEmpty;
-    if (finalNote) {
-      throw StateError('Note ${invoice.id} is final and can\'t be edited');
+    if (locked) {
+      throw StateError('${invoice.id} is final or void and can\'t be edited');
     }
 
     // Never let an edit drop the total below what's already been paid.
@@ -1007,10 +1009,11 @@ class InvoiceService {
   }
 
   // ─────────────────────────────────────────────
-  // Invoice decline — voids an invoice and returns its stock. One-way: a
-  // 'declined' invoice can't be un-declined (would need to re-deduct stock
+  // Invoice / receipt decline (Cancel / Void) — voids the sale and, unless
+  // [restock] is false (goods never came back), returns its stock. One-way:
+  // a 'declined' sale can't be un-declined (would need to re-deduct stock
   // that may no longer be available).
-  static Future<void> declineInvoice(String id) async {
+  static Future<void> declineInvoice(String id, {bool restock = true}) async {
     final db = await dbHelper.database;
     await db.transaction((txn) async {
       // Status flip + stock return in one transaction. The status guard makes
@@ -1019,7 +1022,7 @@ class InvoiceService {
         'invoices',
         {'status': 'declined'},
         // Drafts never took stock out, so declining one would add stock back.
-        where: "id = ? AND type = 'Invoice' AND is_draft = 0 "
+        where: "id = ? AND type IN ('Invoice', 'Receipt') AND is_draft = 0 "
             "AND (status IS NULL OR status != 'declined') "
             // Paid money must be removed first — see _declineInvoice in the list.
             'AND NOT EXISTS (SELECT 1 FROM invoice_payments '
@@ -1033,10 +1036,12 @@ class InvoiceService {
       );
       if (changed == 0) return;
 
-      final items = await txn.query('invoice_items',
-          columns: ['product_id', 'quantity'],
-          where: 'invoice_id = ?',
-          whereArgs: [id]);
+      final items = restock
+          ? await txn.query('invoice_items',
+              columns: ['product_id', 'quantity'],
+              where: 'invoice_id = ?',
+              whereArgs: [id])
+          : const <Map<String, Object?>>[];
       for (final item in items) {
         await txn.rawUpdate(
           'UPDATE products SET stock = stock + ? '

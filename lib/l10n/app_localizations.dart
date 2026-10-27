@@ -2637,13 +2637,13 @@ abstract class AppLocalizations {
   /// No description provided for @invoiceMgmtDeclineInvoiceTitle.
   ///
   /// In en, this message translates to:
-  /// **'Decline invoice?'**
+  /// **'Cancel / void this sale?'**
   String get invoiceMgmtDeclineInvoiceTitle;
 
   /// No description provided for @invoiceMgmtDeclineInvoiceBody.
   ///
   /// In en, this message translates to:
-  /// **'This will mark invoice #{number} as declined and return its items to stock. This can\'t be undone.'**
+  /// **'#{number} will be marked as declined. It stays in the list but no longer counts in reports or balances. This can\'t be undone.'**
   String invoiceMgmtDeclineInvoiceBody(String number);
 
   /// No description provided for @invoiceMgmtDeclineHasPaymentsMessage.
@@ -2655,7 +2655,7 @@ abstract class AppLocalizations {
   /// No description provided for @invoiceMgmtDeclinedSuccessMessage.
   ///
   /// In en, this message translates to:
-  /// **'Invoice declined, stock restored.'**
+  /// **'Sale cancelled (void), stock returned.'**
   String get invoiceMgmtDeclinedSuccessMessage;
 
   /// No description provided for @invoiceStatusDeclinedBadge.
@@ -9991,6 +9991,36 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Could not cancel: {error}'**
   String creditNoteCancelError(String error);
+
+  /// No description provided for @invoiceMgmtCancelVoidAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel / Void'**
+  String get invoiceMgmtCancelVoidAction;
+
+  /// No description provided for @invoiceMgmtDeclineReturnStockLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Return all items to stock'**
+  String get invoiceMgmtDeclineReturnStockLabel;
+
+  /// No description provided for @invoiceMgmtDeclineReturnStockHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Untick if the goods didn\'t come back (damaged, used or kept).'**
+  String get invoiceMgmtDeclineReturnStockHint;
+
+  /// No description provided for @invoiceMgmtDeclinedNoStockMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Sale cancelled (void). Stock unchanged.'**
+  String get invoiceMgmtDeclinedNoStockMessage;
+
+  /// No description provided for @invoiceMgmtTrashNoStockHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Trash doesn\'t return stock. To cancel a sale, use Cancel / Void.'**
+  String get invoiceMgmtTrashNoStockHint;
 }
 
 class _AppLocalizationsDelegate

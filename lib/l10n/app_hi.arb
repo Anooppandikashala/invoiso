@@ -410,8 +410,8 @@
   "quotationStatusAccepted": "स्वीकृत",
   "quotationStatusDeclined": "अस्वीकृत",
   "quotationStatusConverted": "परिवर्तित",
-  "invoiceMgmtDeclineInvoiceTitle": "इनवॉइस अस्वीकार करें?",
-  "invoiceMgmtDeclineInvoiceBody": "इससे इनवॉइस #{number} को अस्वीकृत के रूप में चिह्नित किया जाएगा और इसके आइटम स्टॉक में वापस कर दिए जाएंगे। इसे पूर्ववत नहीं किया जा सकता।",
+  "invoiceMgmtDeclineInvoiceTitle": "यह बिक्री रद्द / शून्य करें?",
+  "invoiceMgmtDeclineInvoiceBody": "#{number} को अस्वीकृत चिह्नित किया जाएगा। यह सूची में रहेगा, पर रिपोर्ट या बैलेंस में नहीं गिना जाएगा। इसे पूर्ववत नहीं किया जा सकता।",
   "@invoiceMgmtDeclineInvoiceBody": {
     "placeholders": {
       "number": {
@@ -420,7 +420,7 @@
     }
   },
   "invoiceMgmtDeclineHasPaymentsMessage": "चालान #{number} पर भुगतान दर्ज हैं। अस्वीकृत करने से पहले उन्हें भुगतान लागू करें में हटाएँ।",
-  "invoiceMgmtDeclinedSuccessMessage": "इनवॉइस अस्वीकृत, स्टॉक वापस कर दिया गया।",
+  "invoiceMgmtDeclinedSuccessMessage": "बिक्री रद्द हुई, स्टॉक वापस कर दिया गया।",
   "invoiceStatusDeclinedBadge": "अस्वीकृत",
   "createInvoiceConvertTitle": "इनवॉइस में बदलें",
   "createInvoiceConvertedSuccessMessage": "इनवॉइस #{invoiceNumber} में बदला गया",
@@ -1473,5 +1473,10 @@
   "purchaseBillMgmtColItem": "आइटम",
   "purchaseBillMgmtColCost": "लागत",
   "purchaseBillMgmtColTaxPercent": "टैक्स %",
-  "purchaseBillMgmtPaymentRecordedMessage": "भुगतान दर्ज किया गया।"
+  "purchaseBillMgmtPaymentRecordedMessage": "भुगतान दर्ज किया गया।",
+  "invoiceMgmtCancelVoidAction": "रद्द / शून्य करें",
+  "invoiceMgmtDeclineReturnStockLabel": "सभी आइटम स्टॉक में वापस करें",
+  "invoiceMgmtDeclineReturnStockHint": "अगर सामान वापस नहीं आया (खराब, इस्तेमाल हुआ या रखा गया), तो इसे अनचेक करें।",
+  "invoiceMgmtDeclinedNoStockMessage": "बिक्री रद्द हुई। स्टॉक में कोई बदलाव नहीं।",
+  "invoiceMgmtTrashNoStockHint": "ट्रैश स्टॉक वापस नहीं करता। बिक्री रद्द करने के लिए रद्द / शून्य करें का उपयोग करें।"
 }

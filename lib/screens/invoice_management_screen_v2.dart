@@ -366,7 +366,13 @@ class _InvoiceManagementScreenV2State
     final confirmed = await AppError.confirm(
       context,
       title: l10n.invoiceMgmtMoveToTrashTitle,
-      message: l10n.invoiceMgmtMoveToTrashBody(invoice.invoiceNumber ?? invoice.id),
+      // A final sale's stock stays out on trash — point to Cancel / Void.
+      message: (invoice.type == 'Invoice' || invoice.type == 'Receipt') &&
+              !invoice.isDraft &&
+              invoice.status != 'declined'
+          ? '${l10n.invoiceMgmtMoveToTrashBody(invoice.invoiceNumber ?? invoice.id)}'
+              '\n\n${l10n.invoiceMgmtTrashNoStockHint}'
+          : l10n.invoiceMgmtMoveToTrashBody(invoice.invoiceNumber ?? invoice.id),
       confirmLabel: l10n.invoiceMgmtMoveToTrashTitle,
       confirmColor: Colors.orange,
     );
@@ -398,19 +404,64 @@ class _InvoiceManagementScreenV2State
               : l10n.invoiceMgmtDeclineHasCreditNotesMessage(number));
       return;
     }
-    final confirmed = await AppError.confirm(
-      context,
-      title: l10n.invoiceMgmtDeclineInvoiceTitle,
-      message: l10n.invoiceMgmtDeclineInvoiceBody(invoice.invoiceNumber ?? invoice.id),
-      confirmLabel: l10n.invoiceMgmtMarkAsDeclined,
-      confirmColor: Colors.red,
+    // Only stock-tracked lines move stock — no choice to offer otherwise.
+    final hasStock = invoice.items.any((i) => !i.product.unlimitedStock);
+    var restock = true;
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setLocal) => AlertDialog(
+          title: Text(l10n.invoiceMgmtDeclineInvoiceTitle),
+          content: SizedBox(
+            width: 420,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(l10n.invoiceMgmtDeclineInvoiceBody(
+                    invoice.invoiceNumber ?? invoice.id)),
+                if (hasStock) ...[
+                  const SizedBox(height: 12),
+                  CheckboxListTile(
+                    contentPadding: EdgeInsets.zero,
+                    controlAffinity: ListTileControlAffinity.leading,
+                    value: restock,
+                    onChanged: (v) => setLocal(() => restock = v ?? true),
+                    title: Text(l10n.invoiceMgmtDeclineReturnStockLabel),
+                    subtitle: Text(l10n.invoiceMgmtDeclineReturnStockHint),
+                  ),
+                ],
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: Text(l10n.createInvoiceGoBackButton),
+            ),
+            ElevatedButton(
+              onPressed: () => Navigator.pop(ctx, true),
+              style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.red, foregroundColor: Colors.white),
+              child: Text(l10n.invoiceMgmtCancelVoidAction),
+            ),
+          ],
+        ),
+      ),
     );
-    if (!confirmed) return;
+    if (confirmed != true) return;
 
-    await ref.read(invoiceRepositoryProvider).declineInvoice(invoice.id);
+    final restocked = hasStock && restock;
+    await ref
+        .read(invoiceRepositoryProvider)
+        .declineInvoice(invoice.id, restock: restocked);
     await _loadPage();
     if (mounted) {
-      AppError.showSuccess(context, l10n.invoiceMgmtDeclinedSuccessMessage);
+      AppError.showSuccess(
+          context,
+          restocked
+              ? l10n.invoiceMgmtDeclinedSuccessMessage
+              : l10n.invoiceMgmtDeclinedNoStockMessage);
     }
   }
 
@@ -613,7 +664,14 @@ class _InvoiceManagementScreenV2State
     final confirmed = await AppError.confirm(
       context,
       title: l10n.invoiceMgmtMoveToTrashTitle,
-      message: l10n.invoiceMgmtBulkMoveToTrashBody(count),
+      message: _pageInvoices.any((i) =>
+              _selectedIds.contains(i.id) &&
+              (i.type == 'Invoice' || i.type == 'Receipt') &&
+              !i.isDraft &&
+              i.status != 'declined')
+          ? '${l10n.invoiceMgmtBulkMoveToTrashBody(count)}'
+              '\n\n${l10n.invoiceMgmtTrashNoStockHint}'
+          : l10n.invoiceMgmtBulkMoveToTrashBody(count),
       confirmLabel: l10n.invoiceMgmtMoveToTrashTitle,
       confirmColor: Colors.orange,
     );
@@ -1828,7 +1886,8 @@ class _InvoiceManagementScreenV2State
   // those are visible, so the menu carries all of them.
   List<PopupMenuEntry<String>> _rowActionMenuItemsV2(Invoice invoice, bool isWide) {
     final l10n = AppLocalizations.of(context)!;
-    final isDeclined = widget.filterType == 'Invoice' && invoice.status == 'declined';
+    final isDeclined = (widget.filterType == 'Invoice' || widget.filterType == 'Receipt') &&
+        invoice.status == 'declined';
     // A draft isn't committed yet: only view / edit / duplicate / trash.
     final isDraft = invoice.isDraft;
     return [
@@ -1849,10 +1908,12 @@ class _InvoiceManagementScreenV2State
             child: _MenuRow(Icons.history, l10n.paymentDialogHistoryTitle, Colors.blueGrey),
           ),
       ],
-      if (widget.filterType == 'Invoice' && !isDeclined && !isDraft) ...[
+      if ((widget.filterType == 'Invoice' || widget.filterType == 'Receipt') &&
+          !isDeclined &&
+          !isDraft) ...[
         PopupMenuItem(
             value: 'decline_invoice',
-            child: _MenuRow(Icons.cancel_outlined, l10n.invoiceMgmtMarkAsDeclined, Colors.red)),
+            child: _MenuRow(Icons.cancel_outlined, l10n.invoiceMgmtCancelVoidAction, Colors.red)),
         const PopupMenuDivider(),
       ],
       if (widget.filterType == 'Quotation' && !isDraft) ...[
@@ -1981,7 +2042,8 @@ class _InvoiceManagementScreenV2State
 
   Widget _rowActionsV2(Invoice invoice, bool isWide) {
     final l10n = AppLocalizations.of(context)!;
-    final isDeclined = widget.filterType == 'Invoice' && invoice.status == 'declined';
+    final isDeclined = (widget.filterType == 'Invoice' || widget.filterType == 'Receipt') &&
+        invoice.status == 'declined';
     final isDraft = invoice.isDraft;
     final menu = PopupMenuButton<String>(
       icon: const Icon(Icons.more_vert, size: 20),
@@ -2157,6 +2219,11 @@ class _InvoiceManagementScreenV2State
                       CustomerInfoButton(customer: invoice.customer),
                     ],
                   ),
+                  // Receipts have no status column — flag a voided one here.
+                  if (widget.filterType == 'Receipt' && invoice.status == 'declined') ...[
+                    const SizedBox(height: 4),
+                    _statusPill(AppLocalizations.of(context)!.invoiceStatusDeclinedBadge, Colors.red),
+                  ],
                   if (_isReturnType && invoice.originalInvoiceNumber != null) ...[
                     const SizedBox(height: 2),
                     Text(
