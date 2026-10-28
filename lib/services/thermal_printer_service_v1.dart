@@ -12,7 +12,9 @@ import 'package:invoiso/services/pdf/pdf_widgets.dart'
         customerExtraLines,
         shipToLines,
         showShipTo,
-        returnInfoLines;
+        returnInfoLines,
+        roundNetTotal;
+import 'package:invoiso/utils/amount_in_words.dart';
 import 'package:thermal_printer/thermal_printer.dart';
 
 /// Prints receipts as raw ESC/POS commands sent directly to the printer,
@@ -122,13 +124,31 @@ class ThermalPrinterService {
     final currency = invoice.currencySymbol;
     final company = settings.company;
 
-    final showItemTax = invoice.taxMode == TaxMode.perItem;
+    final showItemTax =
+        invoice.taxMode == TaxMode.perItem && settings.showTaxColumn;
+    final qtyLabel = invoice.quantityLabel?.isNotEmpty == true
+        ? invoice.quantityLabel!
+        : 'Qty';
     List<int> bytes = [];
+
+    // ESC/POS only has fixed glyph sizes, so map the company-name size
+    // setting onto them; 'medium' keeps the previous double-height default.
+    final nameSize = thermalCompanyNameSizeFromKey(settings.thermalCompanyNameSize);
+    final headHeight = nameSize == ThermalCompanyNameSize.medium ||
+            nameSize == ThermalCompanyNameSize.large
+        ? PosTextSize.size2
+        : PosTextSize.size1;
+    final headWidth = nameSize == ThermalCompanyNameSize.large
+        ? PosTextSize.size2
+        : PosTextSize.size1;
+    final headFont = nameSize == ThermalCompanyNameSize.xsmall
+        ? PosFontType.fontB
+        : PosFontType.fontA;
 
     void line(String text, {PosAlign align = PosAlign.left, bool bold = false,bool isHead = false})
     {
       if(isHead) {
-        bytes += generator.text(text, styles: PosStyles(align: align, bold: bold,height: PosTextSize.size2,width: PosTextSize.size1,));
+        bytes += generator.text(text, styles: PosStyles(align: align, bold: bold,height: headHeight,width: headWidth,fontType: headFont,));
       } else {
         bytes += generator.text(text, styles: PosStyles(align: align, bold: bold,));
       }
@@ -174,21 +194,29 @@ class ThermalPrinterService {
     }
 
     // ── Business header ──
-    if ((company?.name ?? '').isNotEmpty) {
+    if (settings.showCompanyName && (company?.name ?? '').isNotEmpty) {
       line(company!.name, align: PosAlign.center, bold: true,isHead: true);
     }
-    if ((company?.address ?? '').isNotEmpty) {
+    if (settings.showAddress && (company?.address ?? '').isNotEmpty) {
       line(company!.address, align: PosAlign.center);
     }
-    if ((company?.phone ?? '').isNotEmpty) {
+    if (settings.showPhone && (company?.phone ?? '').isNotEmpty) {
       line('Ph: ${company!.phone}', align: PosAlign.center);
     }
     if (settings.showGst && (company?.gstin ?? '').isNotEmpty) {
       line('${taxLabel(company?.country)}: ${company!.gstin}',
           align: PosAlign.center);
     }
+    if (settings.showPan && (company?.panNumber ?? '').isNotEmpty) {
+      line('PAN: ${company!.panNumber}', align: PosAlign.center);
+    }
+    if (settings.showFssai &&
+        (company?.fssaiCode ?? '').isNotEmpty &&
+        isIndiaCountry(company?.country)) {
+      line('FSSAI: ${company!.fssaiCode}', align: PosAlign.center);
+    }
     hr();
-    line(invoice.type.toUpperCase(), align: PosAlign.center, bold: true);
+    line((invoice.invoiceTitle ?? invoice.type).toUpperCase(), align: PosAlign.center, bold: true);
     if (invoice.status == 'declined') {
       line('*** DECLINED ***', align: PosAlign.center, bold: true);
     }
@@ -213,8 +241,14 @@ class ThermalPrinterService {
         invoice.customer.businessName.isNotEmpty) {
       line(invoice.customer.businessName);
     }
+    if (settings.showCustomerAddress && invoice.customer.address.isNotEmpty) {
+      line(invoice.customer.address);
+    }
     if (settings.showCustomerPhone && invoice.customer.phone.isNotEmpty) {
       line('Ph: ${invoice.customer.phone}');
+    }
+    if (settings.showCustomerEmail && invoice.customer.email.isNotEmpty) {
+      line(invoice.customer.email);
     }
     if (settings.showGst &&
         settings.showCustomerGstin &&
@@ -238,8 +272,14 @@ class ThermalPrinterService {
     // ── Items ──
     // Table layout: compact column widths, tight enough to still fit on
     // 58mm (31 chars) while leaving extra room for the name on 80mm.
-    const slW = 2, qtyW = 4, rateW = 6, gstW = 4, totalW = 7;
-    final gaps = showItemTax ? 5 : 4;
+    final slW = settings.showSlNo ? 2 : 0;
+    final qtyW = settings.showQuantity ? 4 : 0;
+    const rateW = 6, gstW = 4, totalW = 7;
+    // One space between each printed column (name, rate, total always print).
+    final gaps = 2 +
+        (settings.showSlNo ? 1 : 0) +
+        (settings.showQuantity ? 1 : 0) +
+        (showItemTax ? 1 : 0);
     final nameW = (width - slW - qtyW - rateW - (showItemTax ? gstW : 0) - totalW - gaps)
         .clamp(1, 999);
     final useTable = itemLayout != 'detailed';
@@ -247,9 +287,9 @@ class ThermalPrinterService {
     String singleLineRow(String sl, String name, String qty, String rate,
         String? gst, String total) {
       final parts = <String>[
-        padRight(sl, slW),
+        if (settings.showSlNo) padRight(sl, slW),
         padRight(name, nameW),
-        padCenter(qty, qtyW),
+        if (settings.showQuantity) padCenter(qty, qtyW),
         padLeft(rate, rateW),
       ];
       if (gst != null) parts.add(padLeft(gst, gstW));
@@ -259,18 +299,25 @@ class ThermalPrinterService {
 
     if (useTable) {
       line(
-          singleLineRow('Sl', 'Description', 'Qty', 'Rate',
+          singleLineRow('Sl', 'Description', qtyLabel, 'Rate',
               showItemTax ? 'GST%' : null, 'Total'),
           bold: true);
     } else {
-      twoCol('# Item', 'Total', bold: true);
+      twoCol(settings.showSlNo ? '# Item' : 'Item', 'Total', bold: true);
     }
     hr();
+    var totalQuantity = 0.0;
     for (var i = 0; i < invoice.items.length; i++) {
       final item = invoice.items[i];
-      final qty = item.quantity == item.quantity.roundToDouble()
+      totalQuantity += item.quantity;
+      final qtyNum = item.quantity == item.quantity.roundToDouble()
           ? item.quantity.toInt().toString()
           : item.quantity.toStringAsFixed(2);
+      final qtyUnit = item.effectiveUnit.trim().isEmpty
+          ? qtyNum
+          : '$qtyNum ${item.effectiveUnit}';
+      // Table qty column is only qtyW chars — drop the unit rather than truncate it.
+      final qty = !useTable || qtyUnit.length <= qtyW ? qtyUnit : qtyNum;
       final rate = item.effectivePrice.toStringAsFixed(2);
       final total = item.total.toStringAsFixed(2);
 
@@ -278,20 +325,47 @@ class ThermalPrinterService {
         line(singleLineRow('${i + 1}', item.product.name, qty, rate,
             showItemTax ? '${item.product.tax_rate}%' : null, total));
       } else {
-        line('${i + 1} ${item.product.name}', bold: true);
-        final detailParts = ['Qty:$qty', 'Rate:$rate'];
+        line(settings.showSlNo
+            ? '${i + 1} ${item.product.name}'
+            : item.product.name, bold: true);
+        final detailParts = [
+          if (settings.showQuantity) '$qtyLabel:$qty',
+          'Rate:$rate',
+        ];
         if (showItemTax) detailParts.add('${item.product.tax_rate}%');
         detailParts.add(total);
         line('  ${detailParts.join('  ')}');
+      }
+      if (settings.showGst && item.product.hsncode.trim().isNotEmpty) {
+        line('  HSN: ${item.product.hsncode}');
       }
       if (settings.showDescription && item.printedDescription.isNotEmpty) {
         line('  ${item.printedDescription}');
       }
       if (settings.showDiscount && item.totalDiscount > 0) {
-        line('  Disc: -${item.totalDiscount.toStringAsFixed(2)}');
+        line('  Disc: -${item.totalDiscount.toStringAsFixed(2)}'
+            '${item.discountIsPercent ? ' (${item.discount == item.discount.roundToDouble() ? item.discount.toInt() : item.discount}%)' : ''}');
       }
     }
     hr();
+    // Total qty sits under the Qty column (table) / the "Qty:" text (detailed).
+    if (settings.showTotalQuantity && settings.showQuantity) {
+      final totalQtyStr = totalQuantity == totalQuantity.roundToDouble()
+          ? totalQuantity.toInt().toString()
+          : totalQuantity.toStringAsFixed(2);
+      if (useTable) {
+        // Label spans the Sl + Description columns; columns right of Qty are
+        // empty, so a total wider than qtyW can overflow instead of truncating.
+        final labelW = slW + (settings.showSlNo ? 1 : 0) + nameW;
+        final totalLabel = 'Total $qtyLabel';
+        line('${padRight(labelW >= totalLabel.length ? totalLabel : 'Total', labelW)} '
+            '${totalQtyStr.length >= qtyW ? totalQtyStr : padCenter(totalQtyStr, qtyW)}',
+            bold: true);
+      } else {
+        line('  Total $qtyLabel:$totalQtyStr', bold: true);
+      }
+      hr();
+    }
 
     // ── Totals ──
     if (invoice.totalDiscount > 0) {
@@ -308,15 +382,33 @@ class ThermalPrinterService {
               ? '-$currency ${(-c.amount).toStringAsFixed(2)}'
               : '$currency ${c.amount.toStringAsFixed(2)}');
     }
-    if (effectivePreviousBalance > 0) {
-      twoCol('Prev Balance:',
-          '$currency ${effectivePreviousBalance.toStringAsFixed(2)}');
+    if (invoice.invoiceDiscountAmount > 0) {
+      twoCol(
+          invoice.invoiceDiscountType == InvoiceDiscountType.percent
+              ? 'Extra Discount (${invoice.invoiceDiscountValue.toStringAsFixed(1)}%)'
+              : 'Extra Discount',
+          '-$currency ${invoice.invoiceDiscountAmount.toStringAsFixed(2)}');
     }
     twoCol(
       'TOTAL',
-      '$currency ${(invoice.total + effectivePreviousBalance).toStringAsFixed(2)}',
+      '$currency ${invoice.total.toStringAsFixed(2)}',
       bold: true,
     );
+    if (effectivePreviousBalance > 0) {
+      twoCol('Prev Balance Due:',
+          '$currency ${effectivePreviousBalance.toStringAsFixed(2)}');
+      twoCol('Total Due',
+          '$currency ${(invoice.total + effectivePreviousBalance).toStringAsFixed(2)}',
+          bold: true);
+    }
+    if (settings.showRoundOff) {
+      final netTotal = roundNetTotal(invoice.total + effectivePreviousBalance);
+      twoCol('Round off:', '$currency ${netTotal.roundOff.toStringAsFixed(2)}');
+      twoCol('NET AMOUNT', '$currency ${netTotal.rounded.toStringAsFixed(2)}',
+          bold: true);
+      line(AmountInWords.amount(netTotal.rounded,
+          indian: invoice.currencyCode == 'INR'));
+    }
 
     if (invoice.taxMode != TaxMode.none && invoice.tax > 0) {
       final isIndia = (company?.country ?? '').isEmpty ||
@@ -324,9 +416,9 @@ class ThermalPrinterService {
       hr();
       line('=== TAX SUMMARY ===', align: PosAlign.center, bold: true);
       twoCol('Taxable Amt:', '$currency ${invoice.subtotal.toStringAsFixed(2)}');
-      if (isIndia && invoice.isInterState) {
+      if (settings.showCgstSgst && isIndia && invoice.isInterState) {
         twoCol('IGST:', '$currency ${invoice.tax.toStringAsFixed(2)}');
-      } else if (isIndia) {
+      } else if (settings.showCgstSgst && isIndia) {
         twoCol('SGST:', '$currency ${(invoice.tax / 2).toStringAsFixed(2)}');
         twoCol('CGST:', '$currency ${(invoice.tax / 2).toStringAsFixed(2)}');
       }
@@ -356,6 +448,7 @@ class ThermalPrinterService {
     // ── Notes ──
     if ((invoice.notes ?? '').isNotEmpty) {
       hr();
+      line('NOTES', bold: true);
       line(invoice.notes!);
     }
 

@@ -290,7 +290,7 @@ pw.MultiPage buildGridClassicTemplate(
                       pw.Text(company!.address,
                           textAlign: pw.TextAlign.center,
                           style: pw.TextStyle(fontSize: subFont)),
-                    if ((company?.phone ?? '').isNotEmpty)
+                    if (showPhone && (company?.phone ?? '').isNotEmpty)
                       pw.Text('Ph: ${company!.phone}',
                           textAlign: pw.TextAlign.center,
                           style: pw.TextStyle(fontSize: subFont)),
