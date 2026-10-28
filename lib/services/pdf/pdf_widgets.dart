@@ -317,7 +317,7 @@ pw.Widget buildBankDetailsSection({
           row('Bank', bankAccount.bankName),
         row('Account No.', bankAccount.accountNumber),
         if (bankAccount.ifscCode.isNotEmpty)
-          row('IFSC Code', bankAccount.ifscCode),
+          row(bankAccount.codeLabel, bankAccount.ifscCode),
         if (bankAccount.iban.isNotEmpty)
           row('IBAN', bankAccount.iban),
       ],

@@ -307,15 +307,25 @@ class BankAccount {
   final String label; // friendly name, e.g. "Business Account"
   final String bankName; // e.g. "HDFC Bank"
   final String accountNumber; // e.g. "123456789012"
-  final String ifscCode; // e.g. "HDFC0001234" (India)
+  final String ifscCode; // bank/branch code, e.g. "HDFC0001234" (IFSC) or "12-34-56" (Sort Code)
+  final String codeLabel; // label for [ifscCode], one of [codeLabels]
   final String iban; // e.g. "DE89370400440532013000" (outside India)
   final bool isDefault;
+
+  static const codeLabels = [
+    'IFSC Code',
+    'Sort Code',
+    'Routing Number',
+    'BSB',
+    'SWIFT/BIC',
+  ];
 
   const BankAccount({
     required this.label,
     required this.bankName,
     required this.accountNumber,
     required this.ifscCode,
+    this.codeLabel = 'IFSC Code',
     this.iban = '',
     this.isDefault = false,
   });
@@ -325,6 +335,7 @@ class BankAccount {
         'bankName': bankName,
         'accountNumber': accountNumber,
         'ifscCode': ifscCode,
+        'codeLabel': codeLabel,
         'iban': iban,
         'isDefault': isDefault,
       };
@@ -334,6 +345,7 @@ class BankAccount {
         bankName: json['bankName'] as String? ?? '',
         accountNumber: json['accountNumber'] as String? ?? '',
         ifscCode: json['ifscCode'] as String? ?? '',
+        codeLabel: json['codeLabel'] as String? ?? 'IFSC Code',
         iban: json['iban'] as String? ?? '',
         isDefault: json['isDefault'] as bool? ?? false,
       );
