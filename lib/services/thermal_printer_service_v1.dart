@@ -15,6 +15,7 @@ import 'package:invoiso/services/pdf/pdf_widgets.dart'
         returnInfoLines,
         roundNetTotal;
 import 'package:invoiso/utils/amount_in_words.dart';
+import 'package:invoiso/utils/formatters.dart';
 import 'package:thermal_printer/thermal_printer.dart';
 
 /// Prints receipts as raw ESC/POS commands sent directly to the printer,
@@ -98,6 +99,7 @@ class ThermalPrinterService {
   /// space padding render correctly everywhere.
   static Future<List<int>> _buildReceiptBytes(Invoice invoice) async {
     final dateFmt = await BackendServices.settings.getDateFormat();
+    await AmountFormat.load(); // Number format setting
     final settings = await PDFService.fetchPdfSettings(datePattern: dateFmt.key);
     await PDFService.attachReturnInfo(invoice);
     final previousBalanceDue = settings.showPreviousBalance
@@ -200,21 +202,38 @@ class ThermalPrinterService {
     if (settings.showAddress && (company?.address ?? '').isNotEmpty) {
       line(company!.address, align: PosAlign.center);
     }
-    if (settings.showPhone && (company?.phone ?? '').isNotEmpty) {
-      line('Ph: ${company!.phone}', align: PosAlign.center);
+    // Items share a centred line joined by ' | '; whole items wrap onto the
+    // next line when they don't fit the paper width.
+    void packedLine(List<String> items) {
+      var cur = '';
+      for (final item in items) {
+        if (cur.isNotEmpty && cur.length + 3 + item.length > width) {
+          line(cur, align: PosAlign.center);
+          cur = '';
+        }
+        cur = cur.isEmpty ? item : '$cur | $item';
+      }
+      if (cur.isNotEmpty) line(cur, align: PosAlign.center);
     }
-    if (settings.showGst && (company?.gstin ?? '').isNotEmpty) {
-      line('${taxLabel(company?.country)}: ${company!.gstin}',
-          align: PosAlign.center);
-    }
-    if (settings.showPan && (company?.panNumber ?? '').isNotEmpty) {
-      line('PAN: ${company!.panNumber}', align: PosAlign.center);
-    }
-    if (settings.showFssai &&
-        (company?.fssaiCode ?? '').isNotEmpty &&
-        isIndiaCountry(company?.country)) {
-      line('FSSAI: ${company!.fssaiCode}', align: PosAlign.center);
-    }
+
+    packedLine([
+      if (settings.showPhone && (company?.phone ?? '').isNotEmpty)
+        'Ph: ${company!.phone}',
+      if (settings.showEmail && (company?.email ?? '').isNotEmpty)
+        company!.email,
+      if (settings.showWebsite && (company?.website ?? '').isNotEmpty)
+        company!.website,
+    ]);
+    packedLine([
+      if (settings.showGst && (company?.gstin ?? '').isNotEmpty)
+        '${taxLabel(company?.country)}: ${company!.gstin}',
+      if (settings.showPan && (company?.panNumber ?? '').isNotEmpty)
+        'PAN: ${company!.panNumber}',
+      if (settings.showFssai &&
+          (company?.fssaiCode ?? '').isNotEmpty &&
+          isIndiaCountry(company?.country))
+        'FSSAI: ${company!.fssaiCode}',
+    ]);
     hr();
     line((invoice.invoiceTitle ?? invoice.type).toUpperCase(), align: PosAlign.center, bold: true);
     if (invoice.status == 'declined') {
@@ -274,7 +293,14 @@ class ThermalPrinterService {
     // 58mm (31 chars) while leaving extra room for the name on 80mm.
     final slW = settings.showSlNo ? 2 : 0;
     final qtyW = settings.showQuantity ? 4 : 0;
-    const rateW = 6, gstW = 4, totalW = 7;
+    final rates = [for (final i in invoice.items) AmountFormat.money(i.effectivePrice)];
+    final totals = [for (final i in invoice.items) AmountFormat.money(i.total)];
+    // Widen rate/total to the longest amount: padLeft cuts from the left, so a
+    // narrow column would silently drop leading digits (1,250.00 → ,250.00).
+    int widest(List<String> l, int min) =>
+        l.fold(min, (m, s) => s.length > m ? s.length : m);
+    final rateW = widest(rates, 6), totalW = widest(totals, 7);
+    const gstW = 4;
     // One space between each printed column (name, rate, total always print).
     final gaps = 2 +
         (settings.showSlNo ? 1 : 0) +
@@ -318,8 +344,8 @@ class ThermalPrinterService {
           : '$qtyNum ${item.effectiveUnit}';
       // Table qty column is only qtyW chars — drop the unit rather than truncate it.
       final qty = !useTable || qtyUnit.length <= qtyW ? qtyUnit : qtyNum;
-      final rate = item.effectivePrice.toStringAsFixed(2);
-      final total = item.total.toStringAsFixed(2);
+      final rate = rates[i];
+      final total = totals[i];
 
       if (useTable) {
         line(singleLineRow('${i + 1}', item.product.name, qty, rate,
@@ -343,7 +369,7 @@ class ThermalPrinterService {
         line('  ${item.printedDescription}');
       }
       if (settings.showDiscount && item.totalDiscount > 0) {
-        line('  Disc: -${item.totalDiscount.toStringAsFixed(2)}'
+        line('  Disc: -${AmountFormat.money(item.totalDiscount)}'
             '${item.discountIsPercent ? ' (${item.discount == item.discount.roundToDouble() ? item.discount.toInt() : item.discount}%)' : ''}');
       }
     }
@@ -369,42 +395,42 @@ class ThermalPrinterService {
 
     // ── Totals ──
     if (invoice.totalDiscount > 0) {
-      twoCol('Subtotal:', '$currency ${invoice.grossSubtotal.toStringAsFixed(2)}');
-      twoCol('Discount:', '-$currency ${invoice.totalDiscount.toStringAsFixed(2)}');
+      twoCol('Subtotal:', '$currency ${AmountFormat.money(invoice.grossSubtotal)}');
+      twoCol('Discount:', '-$currency ${AmountFormat.money(invoice.totalDiscount)}');
     }
     if (invoice.taxMode != TaxMode.none) {
-      twoCol(invoiceTaxLabel(invoice), '$currency ${invoice.tax.toStringAsFixed(2)}');
+      twoCol(invoiceTaxLabel(invoice), '$currency ${AmountFormat.money(invoice.tax)}');
     }
     for (final c in invoice.additionalCosts) {
       twoCol(
           c.label.isEmpty ? 'Extra Cost' : c.label,
           c.amount < 0
-              ? '-$currency ${(-c.amount).toStringAsFixed(2)}'
-              : '$currency ${c.amount.toStringAsFixed(2)}');
+              ? '-$currency ${AmountFormat.money(-c.amount)}'
+              : '$currency ${AmountFormat.money(c.amount)}');
     }
     if (invoice.invoiceDiscountAmount > 0) {
       twoCol(
           invoice.invoiceDiscountType == InvoiceDiscountType.percent
               ? 'Extra Discount (${invoice.invoiceDiscountValue.toStringAsFixed(1)}%)'
               : 'Extra Discount',
-          '-$currency ${invoice.invoiceDiscountAmount.toStringAsFixed(2)}');
+          '-$currency ${AmountFormat.money(invoice.invoiceDiscountAmount)}');
     }
     twoCol(
       'TOTAL',
-      '$currency ${invoice.total.toStringAsFixed(2)}',
+      '$currency ${AmountFormat.money(invoice.total)}',
       bold: true,
     );
     if (effectivePreviousBalance > 0) {
       twoCol('Prev Balance Due:',
-          '$currency ${effectivePreviousBalance.toStringAsFixed(2)}');
+          '$currency ${AmountFormat.money(effectivePreviousBalance)}');
       twoCol('Total Due',
-          '$currency ${(invoice.total + effectivePreviousBalance).toStringAsFixed(2)}',
+          '$currency ${AmountFormat.money(invoice.total + effectivePreviousBalance)}',
           bold: true);
     }
     if (settings.showRoundOff) {
       final netTotal = roundNetTotal(invoice.total + effectivePreviousBalance);
-      twoCol('Round off:', '$currency ${netTotal.roundOff.toStringAsFixed(2)}');
-      twoCol('NET AMOUNT', '$currency ${netTotal.rounded.toStringAsFixed(2)}',
+      twoCol('Round off:', '$currency ${AmountFormat.money(netTotal.roundOff)}');
+      twoCol('NET AMOUNT', '$currency ${AmountFormat.money(netTotal.rounded)}',
           bold: true);
       line(AmountInWords.amount(netTotal.rounded,
           indian: invoice.currencyCode == 'INR'));
@@ -415,23 +441,23 @@ class ThermalPrinterService {
           company!.country.toLowerCase() == 'india';
       hr();
       line('=== TAX SUMMARY ===', align: PosAlign.center, bold: true);
-      twoCol('Taxable Amt:', '$currency ${invoice.subtotal.toStringAsFixed(2)}');
+      twoCol('Taxable Amt:', '$currency ${AmountFormat.money(invoice.subtotal)}');
       if (settings.showCgstSgst && isIndia && invoice.isInterState) {
-        twoCol('IGST:', '$currency ${invoice.tax.toStringAsFixed(2)}');
+        twoCol('IGST:', '$currency ${AmountFormat.money(invoice.tax)}');
       } else if (settings.showCgstSgst && isIndia) {
-        twoCol('SGST:', '$currency ${(invoice.tax / 2).toStringAsFixed(2)}');
-        twoCol('CGST:', '$currency ${(invoice.tax / 2).toStringAsFixed(2)}');
+        twoCol('SGST:', '$currency ${AmountFormat.money(invoice.tax / 2)}');
+        twoCol('CGST:', '$currency ${AmountFormat.money(invoice.tax / 2)}');
       }
-      twoCol('Total Tax:', '$currency ${invoice.tax.toStringAsFixed(2)}');
+      twoCol('Total Tax:', '$currency ${AmountFormat.money(invoice.tax)}');
     }
 
     if (invoice.amountPaid > 0) {
       hr();
-      twoCol('Paid:', '$currency ${invoice.amountPaid.toStringAsFixed(2)}');
+      twoCol('Paid:', '$currency ${AmountFormat.money(invoice.amountPaid)}');
       if (invoice.outstandingBalance <= 0) {
         twoCol('PAID IN FULL', '', bold: true);
       } else {
-        twoCol('Balance Due', '$currency ${invoice.outstandingBalance.toStringAsFixed(2)}',
+        twoCol('Balance Due', '$currency ${AmountFormat.money(invoice.outstandingBalance)}',
             bold: true);
       }
     }

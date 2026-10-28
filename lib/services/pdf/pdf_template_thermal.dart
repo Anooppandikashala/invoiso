@@ -33,6 +33,8 @@ pw.Page buildThermalTemplate(
   bool showRoundOff = false,
   bool showLeadingZeros = true,
   bool showPhone = true,
+  bool showEmail = true,
+  bool showWebsite = true,
   bool showCompanyName = true,
   bool showAddress = true,
   bool showCustomerBusinessName = true,
@@ -87,6 +89,32 @@ pw.Page buildThermalTemplate(
         textAlign: pw.TextAlign.center,
       ),
     );
+  }
+
+  // Items share a centred line joined by ' | '; whole items wrap onto the
+  // next line (measured with the real font) when they don't fit the width.
+  pw.Widget packedLine(List<String> items) {
+    if (items.isEmpty) return pw.SizedBox();
+    return pw.LayoutBuilder(builder: (context, constraints) {
+      final font = pw.Theme.of(context).defaultTextStyle.font!.getFont(context);
+      final maxW = constraints?.maxWidth ?? double.infinity;
+      double w(String s) => font.stringMetrics(s).advanceWidth * smallFs;
+      final lines = <String>[];
+      var cur = '';
+      for (final item in items) {
+        final next = cur.isEmpty ? item : '$cur | $item';
+        if (cur.isNotEmpty && w(next) > maxW) {
+          lines.add(cur);
+          cur = item;
+        } else {
+          cur = next;
+        }
+      }
+      lines.add(cur);
+      return pw.Column(children: [
+        for (final l in lines) centerText(l, fontSize: smallFs),
+      ]);
+    });
   }
 
   pw.Widget labelValue(String label, String value, {double fontSize = bodyFs,bool valueIsBold = false}) {
@@ -323,17 +351,23 @@ pw.Page buildThermalTemplate(
       pw.SizedBox(height: 2),
       if (showAddress && (company?.address ?? '').isNotEmpty)
         centerText(company!.address, fontSize: smallFs),
-      if (showPhone && (company?.phone ?? '').isNotEmpty)
-        centerText('Ph: ${company!.phone}', fontSize: smallFs),
-      if (showGst && (company?.gstin ?? '').isNotEmpty)
-        centerText('${taxLabel(company?.country)}: ${company!.gstin}',
-            fontSize: smallFs),
-      if (showPan && (company?.panNumber ?? '').isNotEmpty)
-        centerText('PAN: ${company!.panNumber}', fontSize: smallFs),
-      if (showFssai &&
-          (company?.fssaiCode ?? '').isNotEmpty &&
-          isIndiaCountry(company?.country))
-        centerText('FSSAI: ${company!.fssaiCode}', fontSize: smallFs),
+      packedLine([
+        if (showPhone && (company?.phone ?? '').isNotEmpty)
+          'Ph: ${company!.phone}',
+        if (showEmail && (company?.email ?? '').isNotEmpty) company!.email,
+        if (showWebsite && (company?.website ?? '').isNotEmpty)
+          company!.website,
+      ]),
+      packedLine([
+        if (showGst && (company?.gstin ?? '').isNotEmpty)
+          '${taxLabel(company?.country)}: ${company!.gstin}',
+        if (showPan && (company?.panNumber ?? '').isNotEmpty)
+          'PAN: ${company!.panNumber}',
+        if (showFssai &&
+            (company?.fssaiCode ?? '').isNotEmpty &&
+            isIndiaCountry(company?.country))
+          'FSSAI: ${company!.fssaiCode}',
+      ]),
       pw.SizedBox(height: 3),
       sp(),
       centerText((invoice.invoiceTitle ?? invoice.type).toUpperCase(), fontSize: boldFs, bold: true),

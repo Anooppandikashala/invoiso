@@ -636,6 +636,8 @@ class PDFService {
           showRoundOff: s.showRoundOff,
           showLeadingZeros: s.showLeadingZeros,
           showPhone: s.showPhone,
+          showEmail: s.showEmail,
+          showWebsite: s.showWebsite,
           showCompanyName: s.showCompanyName,
           showAddress: s.showAddress,
         ));
