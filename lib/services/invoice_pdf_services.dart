@@ -123,13 +123,27 @@ class InvoicePdfServices {
                   style: TextStyle(fontWeight: FontWeight.bold)),
               ...invoice.items.map((item) => Padding(
                     padding: EdgeInsets.symmetric(vertical: 4),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
-                            '${item.product.name} x${item.quantity == item.quantity.roundToDouble() ? item.quantity.toInt() : item.quantity}'),
-                        Text(
-                            '${invoice.currencySymbol} ${item.total.toStringAsFixed(2)}'),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                                '${item.product.name} x${item.quantity == item.quantity.roundToDouble() ? item.quantity.toInt() : item.quantity}'),
+                            Text(
+                                '${invoice.currencySymbol} ${item.total.toStringAsFixed(2)}'),
+                          ],
+                        ),
+                        if (item.totalDiscount > 0)
+                          Text(
+                              'Discount: -${invoice.currencySymbol} ${item.totalDiscount.toStringAsFixed(2)}'
+                              '${item.discountIsPercent ? ' (${item.discount == item.discount.roundToDouble() ? item.discount.toInt() : item.discount}%)' : ''}',
+                              style: TextStyle(
+                                  fontSize: 12,
+                                  color: Theme.of(context)
+                                      .colorScheme
+                                      .onSurfaceVariant)),
                       ],
                     ),
                   )),
@@ -140,9 +154,19 @@ class InvoicePdfServices {
                   const Text('Subtotal:',
                       style: TextStyle(fontWeight: FontWeight.bold)),
                   Text(
-                      '${invoice.currencySymbol} ${invoice.subtotal.toStringAsFixed(2)}'),
+                      '${invoice.currencySymbol} ${(invoice.totalDiscount > 0 ? invoice.grossSubtotal : invoice.subtotal).toStringAsFixed(2)}'),
                 ],
               ),
+              if (invoice.totalDiscount > 0)
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Text('Discount:',
+                        style: TextStyle(fontWeight: FontWeight.bold)),
+                    Text(
+                        '-${invoice.currencySymbol} ${invoice.totalDiscount.toStringAsFixed(2)}'),
+                  ],
+                ),
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
@@ -152,6 +176,29 @@ class InvoicePdfServices {
                       '${invoice.currencySymbol} ${invoice.tax.toStringAsFixed(2)}'),
                 ],
               ),
+              ...invoice.additionalCosts.map((c) => Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text('${c.label.isEmpty ? 'Extra Cost' : c.label}:',
+                          style: const TextStyle(fontWeight: FontWeight.bold)),
+                      Text(c.amount < 0
+                          ? '-${invoice.currencySymbol} ${(-c.amount).toStringAsFixed(2)}'
+                          : '${invoice.currencySymbol} ${c.amount.toStringAsFixed(2)}'),
+                    ],
+                  )),
+              if (invoice.invoiceDiscountAmount > 0)
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                        invoice.invoiceDiscountType == InvoiceDiscountType.percent
+                            ? 'Extra Discount (${invoice.invoiceDiscountValue.toStringAsFixed(1)}%):'
+                            : 'Extra Discount:',
+                        style: const TextStyle(fontWeight: FontWeight.bold)),
+                    Text(
+                        '-${invoice.currencySymbol} ${invoice.invoiceDiscountAmount.toStringAsFixed(2)}'),
+                  ],
+                ),
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [

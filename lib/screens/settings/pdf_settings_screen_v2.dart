@@ -575,13 +575,15 @@ class _PdfSettingsScreenV2State extends ConsumerState<PdfSettingsScreenV2> {
             _sectionLabel(l10n.pdfSettingsDisplayOptionsLabel),
             const SizedBox(height: 8),
             if (_previewedTemplate == InvoiceTemplate.compact ||
-                _previewedTemplate == InvoiceTemplate.gridClassic)
+                _previewedTemplate == InvoiceTemplate.gridClassic ||
+                _previewedTemplate == InvoiceTemplate.thermal)
               _buildTotalQuantityToggle(),
             if (_previewedTemplate == InvoiceTemplate.gridClassic) ...[
               const SizedBox(height: 8),
               _buildOrientationField(),
             ],
             if (_previewedTemplate == InvoiceTemplate.thermal) ...[
+              const SizedBox(height: 8),
               _buildThermalItemLayoutField(),
               const SizedBox(height: 8),
               _buildThermalCompanyNameSizeField(),
