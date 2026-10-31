@@ -1,6 +1,6 @@
 {
-  "version": 8,
-  "updated_at": "2026-10-28",
+  "version": 9,
+  "updated_at": "2026-10-31",
   "categories": [
     { "id": "general", "label": "General" },
     { "id": "data-privacy", "label": "Data & Privacy" },
@@ -265,7 +265,7 @@
       "id": "faq_save_draft",
       "category": "features",
       "question": "Can I save an invoice as a draft and finish it later?",
-      "answer": "Yes. Click **Save Draft** at the bottom of the create screen. A draft:\n\n- has **no invoice number** yet — the header only previews the number it's likely to get,\n- **doesn't reduce stock**,\n- doesn't count in reports, balances or payments,\n- shows a **DRAFT** badge in the list and has no PDF until it's finalized.\n\nTo finish it, click **Edit** on the draft, make your changes and click **Finalize** (for example **Finalize Invoice**). That gives it the next number, reduces stock and records any payment chosen in the **Payment** section. If the draft is dated before today, Invoiso asks whether to keep that date or use today's, so numbers stay in date order.\n\nDrafts work the same way for receipts, quotations and credit/debit notes. A purchase bill draft doesn't add stock until you open it and click **Save Purchase Bill**.",
+      "answer": "Yes. Click **Save Draft** at the bottom of the create screen. A draft:\n\n- has **no invoice number** yet — the header only previews the number it's likely to get,\n- **doesn't reduce stock**,\n- doesn't count in reports, balances or payments,\n- shows a **DRAFT** badge in the list,\n- can be checked with **PDF Preview** (the number shows as **DRAFT**), but can't be downloaded or printed until it's finalized.\n\nTo finish it, click **Edit** on the draft, make your changes and click **Finalize** (for example **Finalize Invoice**). That gives it the next number, reduces stock and records any payment chosen in the **Payment** section. If the draft is dated before today, Invoiso asks whether to keep that date or use today's, so numbers stay in date order.\n\nDrafts work the same way for receipts, quotations and credit/debit notes. A purchase bill draft doesn't add stock until you open it and click **Save Purchase Bill**.",
       "keywords": ["draft", "save draft", "finish later", "unfinished invoice", "finalize", "pending invoice"]
     },
     {

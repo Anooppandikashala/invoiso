@@ -112,7 +112,7 @@ class Invoice {
 
   /// Text to render for the invoice number in PDF/receipt output, or null to omit the line entirely.
   String? pdfNumberText(String invoicePrefix, {bool showLeadingZeros = true}) {
-    if (isDraft) return null; // no real number assigned yet
+    if (isDraft) return 'DRAFT'; // no real number assigned yet
     if (hideInvoiceNumber) {
       final c = customInvoiceNumber?.trim();
       return (c != null && c.isNotEmpty) ? c : null;

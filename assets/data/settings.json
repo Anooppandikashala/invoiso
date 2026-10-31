@@ -1,6 +1,6 @@
 {
-  "version": 8,
-  "updated_at": "2026-10-28",
+  "version": 9,
+  "updated_at": "2026-10-31",
   "screens": [
     { "key": "companies", "label": "Companies" },
     { "key": "company_info", "label": "Company Info" },
@@ -233,7 +233,7 @@
     { "id": "inv_return_items", "screen": "invoice_management", "section": "Row Actions", "question": "How do I return items from an invoice or receipt?", "keywords": ["return items", "sales return", "goods returned", "credit note"], "description": "Click **⋮ → Return Items** (called **Create Credit Note (Sales Return)** when Credit / Debit Notes is on). A credit note form opens with what can still be returned. Choose the lines, tick **To stock** where needed, pick a settlement and save." },
     { "id": "inv_create_debit_note", "screen": "invoice_management", "section": "Row Actions", "question": "How do I charge a customer extra after an invoice?", "keywords": ["debit note", "extra charge", "price revision", "create debit note"], "description": "Click **⋮ → Create Debit Note** on the invoice (needs **Credit / Debit Notes (advanced)** on in Accessibility). Add the extra items or charges and save. A debit note adds to what the customer owes and doesn't change stock." },
     { "id": "inv_apply_customer_credit", "screen": "invoice_management", "section": "Row Actions", "question": "How do I use a customer's credit on an existing invoice?", "keywords": ["apply customer credit", "use credit", "store credit"], "description": "On an unpaid invoice, click **⋮ → Apply customer credit** and confirm the amount. It's applied like a payment and lowers the balance due." },
-    { "id": "inv_draft_badge", "screen": "invoice_management", "section": "Row Actions", "question": "What does the DRAFT badge mean?", "keywords": ["draft badge", "draft", "no invoice number"], "description": "The invoice was saved with **Save Draft** and isn't final yet: it has no number, hasn't taken stock and can't take payments or print a PDF. Click **Edit** and then **Finalize** to complete it." },
+    { "id": "inv_draft_badge", "screen": "invoice_management", "section": "Row Actions", "question": "What does the DRAFT badge mean?", "keywords": ["draft badge", "draft", "no invoice number"], "description": "The invoice was saved with **Save Draft** and isn't final yet: it has no number, hasn't taken stock and can't take payments. **PDF Preview** works (the number shows as **DRAFT**); download and print come after Finalize. Click **Edit** and then **Finalize** to complete it." },
     { "id": "inv_declined_badge", "screen": "invoice_management", "section": "Row Actions", "question": "What does \"Declined\" mean on an invoice or receipt?", "keywords": ["declined", "cancelled invoice", "void invoice"], "description": "It was cancelled with **Cancel / Void**. It stays in the list for your records but doesn't count in reports or balances, and it can't be edited. On the **Invoices** screen, the **Declined** filter shows only these." },
     { "id": "inv_note_chips", "screen": "invoice_management", "section": "Row Actions", "question": "What are the CN and DN chips under an invoice?", "keywords": ["cn chip", "dn chip", "linked notes", "returns on invoice"], "description": "Each credit note (**CN −amount**) or debit note (**DN +amount**) linked to the invoice shows as a chip, so you can see returns and extra charges at a glance. Drafts aren't shown." },
 

@@ -845,6 +845,8 @@ class PDFService {
                     ? '${invoice.invoiceTitle ?? invoice.type} #${invoice.pdfNumberText('')}'
                     : invoice.invoiceTitle ?? invoice.type),
                 actions: [
+                  // Drafts: preview only — Print / Download after Finalize.
+                  if (!invoice.isDraft) ...[
                   IconButton(
                     icon: const Icon(Icons.print_outlined),
                     tooltip: 'Print',
@@ -869,6 +871,7 @@ class PDFService {
                     onPressed: () =>
                         _downloadWithPicker(context, pdfBytes, invoice),
                   ),
+                  ],
                   IconButton(
                     icon: const Icon(Icons.close),
                     tooltip: 'Close',

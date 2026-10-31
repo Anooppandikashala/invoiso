@@ -9656,12 +9656,6 @@ abstract class AppLocalizations {
   /// **'Finalized — {type} #{number}'**
   String createInvoiceFinalizedMessage(String type, String number);
 
-  /// No description provided for @createInvoiceDraftPreviewTooltip.
-  ///
-  /// In en, this message translates to:
-  /// **'Finalize the draft to get an invoice number before previewing the PDF'**
-  String get createInvoiceDraftPreviewTooltip;
-
   /// No description provided for @createInvoiceDraftPrintTooltip.
   ///
   /// In en, this message translates to:

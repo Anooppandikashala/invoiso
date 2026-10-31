@@ -3152,7 +3152,6 @@
       }
     }
   },
-  "createInvoiceDraftPreviewTooltip": "Finalize the draft to get an invoice number before previewing the PDF",
   "createInvoiceDraftPrintTooltip": "Finalize the draft to get an invoice number before printing",
   "createInvoiceLockedByCreditNotes": "This invoice has credit notes, so customer, items, extra costs, discount and tax are locked. Void the credit notes to change them.",
   "returnNothingLeft": "Everything on invoice #{number} has already been returned.",

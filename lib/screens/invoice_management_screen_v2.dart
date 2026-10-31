@@ -1967,9 +1967,10 @@ class _InvoiceManagementScreenV2State
             value: 'apply_credit',
             child: _MenuRow(Icons.account_balance_wallet_outlined,
                 l10n.returnApplyCustomerCreditAction, Colors.teal)),
-      if (!isWide && !isDraft) ...[
+      if (!isWide)
         PopupMenuItem(
             value: 'preview', child: _MenuRow(Icons.picture_as_pdf_outlined, l10n.actionPdfPreview, Colors.orange)),
+      if (!isWide && !isDraft) ...[
         PopupMenuItem(
             value: 'download', child: _MenuRow(Icons.download_outlined, l10n.actionDownloadPdf, Colors.deepPurple)),
         PopupMenuItem(value: 'print', child: _MenuRow(Icons.print_outlined, l10n.actionPrint, Colors.blueGrey)),
@@ -2073,10 +2074,11 @@ class _InvoiceManagementScreenV2State
         if (isDeclined && invoice.payments.isNotEmpty)
           _buildActionButton(Icons.history, Colors.blueGrey, l10n.paymentDialogHistoryTitle,
               () => _showApplyPaymentDialog(invoice)),
-        // No number yet — finalize the draft before PDF / print.
+        // Drafts: preview only (number shows DRAFT) — finalize before
+        // download / print.
+        _buildActionButton(Icons.picture_as_pdf_outlined, Colors.orange, l10n.actionPdfPreview,
+            () => InvoicePdfServices.previewPDF(context, invoice)),
         if (!isDraft) ...[
-          _buildActionButton(Icons.picture_as_pdf_outlined, Colors.orange, l10n.actionPdfPreview,
-              () => InvoicePdfServices.previewPDF(context, invoice)),
           _buildActionButton(Icons.download_outlined, Colors.deepPurple, l10n.actionDownloadPdf,
               () => PDFService.downloadPDF(context, invoice)),
           _buildActionButton(Icons.print_outlined, Colors.blueGrey, l10n.actionPrint,
