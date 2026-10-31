@@ -28,6 +28,13 @@ void main() {
     expect(AmountFormat.money(-100000), '-1,00,000.00');
   });
 
+  test('moneyGrouped keeps thousands grouping when the setting is none', () {
+    AmountFormat.style = AmountSeparator.none;
+    expect(AmountFormat.moneyGrouped(1234567.89), '1,234,567.89');
+    AmountFormat.style = AmountSeparator.indian;
+    expect(AmountFormat.moneyGrouped(1234567.89), '12,34,567.89');
+  });
+
   test('setting keys round-trip; unknown falls back to none', () {
     for (final s in AmountSeparator.values) {
       expect(AmountSeparatorExtension.fromKey(s.key), s);

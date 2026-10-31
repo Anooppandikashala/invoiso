@@ -203,7 +203,7 @@ class _CashExchangeScreenState extends ConsumerState<CashExchangeScreen> {
   }
 
   String _money(double v) =>
-      '$_sym${AmountFormat.money(v.abs())}';
+      '$_sym${AmountFormat.moneyGrouped(v.abs())}';
   String _signed(double v) => '${v < 0 ? '−' : '+'}${_money(v)}';
 
   String _accountLabel(AppLocalizations l10n, String? account) =>

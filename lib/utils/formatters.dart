@@ -65,6 +65,12 @@ class AmountFormat {
 
   /// 2 decimals, grouped per [style]: 1234567.89 / 1,234,567.89 / 12,34,567.89.
   static String money(double v) => _formats[style]!.format(v);
+
+  /// Like [money], but None falls back to International — for Reports and
+  /// Cash Exchange, which always grouped thousands before this setting.
+  static String moneyGrouped(double v) => _formats[
+          style == AmountSeparator.none ? AmountSeparator.international : style]!
+      .format(v);
 }
 
 extension StringLimit on String {

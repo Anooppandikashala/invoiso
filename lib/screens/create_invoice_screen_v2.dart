@@ -1381,9 +1381,9 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
     ), _customerFieldSettings);
   }
 
-  Future<bool> _createInvoice() async {
-    // Reopened draft note finalized before its linked invoice finished
-    // loading — load it now so the link and Left cap aren't lost.
+  // Reopened draft note saved / finalized before its linked invoice finished
+  // loading — load it now so the link and Left cap aren't lost.
+  Future<void> _ensureDraftLinkLoaded() async {
     final draftLinkId = _invoice?.isDraft == true && _isReturnDoc
         ? _invoice!.originalInvoiceId
         : null;
@@ -1393,10 +1393,15 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
       final returned = await ref
           .read(returnRepositoryProvider)
           .getReturnedQtyByLine(draftLinkId);
-      if (!mounted) return false;
+      if (!mounted) return;
       _againstInvoice = original;
       _returnedByProduct = returned;
     }
+  }
+
+  Future<bool> _createInvoice() async {
+    await _ensureDraftLinkLoaded();
+    if (!mounted) return false;
     if (nameController.text.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -1784,6 +1789,8 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
   /// _updateInvoice(finalize: true) assigns one). Handles both the first
   /// save (insert) and re-saving an already-existing draft (update).
   Future<bool> _saveDraft() async {
+    await _ensureDraftLinkLoaded();
+    if (!mounted) return false;
     if (nameController.text.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -4542,12 +4549,13 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
           if (showingSuccessScreen) return;
           _addAdHocItemDialog();
         },
+        // Drafts can't be previewed / printed — same rule as the buttons.
         const SingleActivator(LogicalKeyboardKey.keyO, control: true): () {
-          if (_invoice == null) return;
+          if (_invoice == null || _invoice!.isDraft) return;
           InvoicePdfServices.previewPDF(context, _invoice!);
         },
         const SingleActivator(LogicalKeyboardKey.keyP, control: true): () {
-          if (_invoice == null) return;
+          if (_invoice == null || _invoice!.isDraft) return;
           InvoicePdfServices.generatePDF(context, _invoice!);
         },
       },

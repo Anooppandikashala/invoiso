@@ -306,9 +306,12 @@ class ThermalPrinterService {
         (settings.showSlNo ? 1 : 0) +
         (settings.showQuantity ? 1 : 0) +
         (showItemTax ? 1 : 0);
-    final nameW = (width - slW - qtyW - rateW - (showItemTax ? gstW : 0) - totalW - gaps)
-        .clamp(1, 999);
-    final useTable = itemLayout != 'detailed';
+    final nameRoom =
+        width - slW - qtyW - rateW - (showItemTax ? gstW : 0) - totalW - gaps;
+    final nameW = nameRoom.clamp(1, 999);
+    // Long amounts can leave no room for the name (or overflow the paper) —
+    // print this receipt in the detailed layout instead (name on its own line).
+    final useTable = itemLayout != 'detailed' && nameRoom >= 3;
 
     String singleLineRow(String sl, String name, String qty, String rate,
         String? gst, String total) {

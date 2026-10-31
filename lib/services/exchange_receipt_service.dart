@@ -329,5 +329,5 @@ class ExchangeReceiptService {
     );
   }
 
-  static String _fmt(double v) => AmountFormat.money(v);
+  static String _fmt(double v) => AmountFormat.moneyGrouped(v);
 }

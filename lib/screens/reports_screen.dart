@@ -136,12 +136,12 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
       };
 
   String _money(num value) {
-    final amount = AmountFormat.money(value.toDouble());
+    final amount = AmountFormat.moneyGrouped(value.toDouble());
     return _currencyScope == _CurrencyScope.selected ? '$_sym $amount' : amount;
   }
 
   String _statementMoney(CustomerStatement statement, num value) =>
-      '${statement.currencySymbol} ${AmountFormat.money(value.toDouble())}';
+      '${statement.currencySymbol} ${AmountFormat.moneyGrouped(value.toDouble())}';
 
   CustomerStatementCustomer? get _selectedStatementCustomer {
     final key = _statementCustomerKey;
