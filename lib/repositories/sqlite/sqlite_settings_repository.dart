@@ -1,6 +1,7 @@
 import 'package:invoiso/common/common.dart';
 import 'package:invoiso/database/settings_service.dart';
 import 'package:invoiso/models/custom_field_def.dart';
+import 'package:invoiso/models/custom_invoice_layout.dart';
 import 'package:invoiso/repositories/settings_repository.dart';
 
 class SqliteSettingsRepository implements SettingsRepository {
@@ -149,7 +150,51 @@ class SqliteSettingsRepository implements SettingsRepository {
   @override
   Future<bool> getShowGstFields() => SettingsService.getShowGstFields();
   @override
-  Future<bool> getShowInvoiceFooterBranding() => SettingsService.getShowInvoiceFooterBranding();
+  Future<bool> getShowInvoiceFooterBranding() =>
+      SettingsService.getShowInvoiceFooterBranding();
+  @override
+  Future<void> setShowInvoiceFooterBranding(bool show) =>
+      SettingsService.setShowInvoiceFooterBranding(show);
+  @override
+  Future<bool> getLetterheadEnabled() => SettingsService.getLetterheadEnabled();
+  @override
+  Future<void> setLetterheadEnabled(bool enabled) =>
+      SettingsService.setLetterheadEnabled(enabled);
+  @override
+  Future<double> getPrintMarginTopMm() => SettingsService.getPrintMarginTopMm();
+  @override
+  Future<void> setPrintMarginTopMm(double mm) =>
+      SettingsService.setPrintMarginTopMm(mm);
+  @override
+  Future<double> getPrintMarginBottomMm() =>
+      SettingsService.getPrintMarginBottomMm();
+  @override
+  Future<void> setPrintMarginBottomMm(double mm) =>
+      SettingsService.setPrintMarginBottomMm(mm);
+  @override
+  Future<double> getPrintMarginLeftMm() =>
+      SettingsService.getPrintMarginLeftMm();
+  @override
+  Future<void> setPrintMarginLeftMm(double mm) =>
+      SettingsService.setPrintMarginLeftMm(mm);
+  @override
+  Future<double> getPrintMarginRightMm() =>
+      SettingsService.getPrintMarginRightMm();
+  @override
+  Future<void> setPrintMarginRightMm(double mm) =>
+      SettingsService.setPrintMarginRightMm(mm);
+  @override
+  Future<double> getPrintContentScale() =>
+      SettingsService.getPrintContentScale();
+  @override
+  Future<void> setPrintContentScale(double percent) =>
+      SettingsService.setPrintContentScale(percent);
+  @override
+  Future<bool> getLetterheadHideCompanyHeader() =>
+      SettingsService.getLetterheadHideCompanyHeader();
+  @override
+  Future<void> setLetterheadHideCompanyHeader(bool hide) =>
+      SettingsService.setLetterheadHideCompanyHeader(hide);
   @override
   Future<bool> getFractionalQuantity() => SettingsService.getFractionalQuantity();
   @override
@@ -232,4 +277,8 @@ class SqliteSettingsRepository implements SettingsRepository {
   Future<bool> getAllowDuplicateInvoiceItems() => SettingsService.getAllowDuplicateInvoiceItems();
   @override
   Future<void> setAllowDuplicateInvoiceItems(bool allow) => SettingsService.setAllowDuplicateInvoiceItems(allow);
+  @override
+  Future<List<CustomInvoiceLayout>> getCustomInvoiceLayouts() => SettingsService.getCustomInvoiceLayouts();
+  @override
+  Future<void> saveCustomInvoiceLayouts(List<CustomInvoiceLayout> layouts) => SettingsService.saveCustomInvoiceLayouts(layouts);
 }

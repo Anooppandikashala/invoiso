@@ -104,7 +104,8 @@ pw.Widget buildCompanyLogo(pw.MemoryImage image, {double size = 90}) {
   final iw = image.width;
   final ih = image.height;
   final aspect = (iw != null && ih != null && ih > 0) ? iw / ih : 1.0;
-  final width = (size * aspect).clamp(size * 0.6, size * 3.5);
+  final maxLogoWidth = size <= 60 ? 120.0 : (size <= 90 ? 160.0 : 200.0);
+  final width = (size * aspect).clamp(size * 0.5, maxLogoWidth);
   return pw.Container(
     width: width,
     height: size,
