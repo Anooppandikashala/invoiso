@@ -5643,10 +5643,6 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get createInvoiceDraftPreviewTooltip =>
-      'Finalize the draft to get an invoice number before previewing the PDF';
-
-  @override
   String get createInvoiceDraftPrintTooltip =>
       'Finalize the draft to get an invoice number before printing';
 

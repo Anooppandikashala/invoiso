@@ -2333,9 +2333,8 @@ class _DashboardHomeState extends ConsumerState<DashboardHome> {
                                               AppLocalizations.of(context)!
                                                   .actionDuplicate,
                                               () => _showCloneDialog(invoice)),
-                                          // Drafts have no number yet — no
-                                          // PDF, like the invoice list.
-                                          if (!invoice.isDraft) ...[
+                                          // Drafts: preview only, like the
+                                          // invoice list.
                                           _buildActionButton(
                                               Icons.picture_as_pdf_outlined,
                                               Colors.orange,
@@ -2344,6 +2343,7 @@ class _DashboardHomeState extends ConsumerState<DashboardHome> {
                                               () =>
                                                   InvoicePdfServices.previewPDF(
                                                       context, invoice)),
+                                          if (!invoice.isDraft) ...[
                                           _buildActionButton(
                                               Icons.download_outlined,
                                               Colors.deepPurple,

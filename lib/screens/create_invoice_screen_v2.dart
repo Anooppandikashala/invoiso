@@ -4549,9 +4549,10 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
           if (showingSuccessScreen) return;
           _addAdHocItemDialog();
         },
-        // Drafts can't be previewed / printed — same rule as the buttons.
+        // Drafts can be previewed (number shows DRAFT) but not printed —
+        // same rule as the buttons.
         const SingleActivator(LogicalKeyboardKey.keyO, control: true): () {
-          if (_invoice == null || _invoice!.isDraft) return;
+          if (_invoice == null) return;
           InvoicePdfServices.previewPDF(context, _invoice!);
         },
         const SingleActivator(LogicalKeyboardKey.keyP, control: true): () {
@@ -7248,11 +7249,9 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
                     _buildActionButton(
                       icon: Icons.picture_as_pdf_outlined,
                       label: AppLocalizations.of(context)!.createInvoicePreviewLabel,
-                      tooltip: isDraftRow
-                          ? AppLocalizations.of(context)!.createInvoiceDraftPreviewTooltip
-                          : AppLocalizations.of(context)!.createInvoicePreviewTooltip,
+                      tooltip: AppLocalizations.of(context)!.createInvoicePreviewTooltip,
                       color: Colors.purple,
-                      onPressed: hasSavedRow && !isDraftRow
+                      onPressed: hasSavedRow
                           ? () => InvoicePdfServices.previewPDF(context, _invoice!)
                           : null,
                     ),
