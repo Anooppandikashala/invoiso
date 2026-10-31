@@ -948,8 +948,8 @@
   "quotationStatusAccepted": "Accepted",
   "quotationStatusDeclined": "Declined",
   "quotationStatusConverted": "Converted",
-  "invoiceMgmtDeclineInvoiceTitle": "Decline invoice?",
-  "invoiceMgmtDeclineInvoiceBody": "This will mark invoice #{number} as declined and return its items to stock. This can't be undone.",
+  "invoiceMgmtDeclineInvoiceTitle": "Cancel / void this sale?",
+  "invoiceMgmtDeclineInvoiceBody": "#{number} will be marked as declined. It stays in the list but no longer counts in reports or balances. This can't be undone.",
   "@invoiceMgmtDeclineInvoiceBody": {
     "placeholders": {
       "number": {
@@ -965,7 +965,7 @@
       }
     }
   },
-  "invoiceMgmtDeclinedSuccessMessage": "Invoice declined, stock restored.",
+  "invoiceMgmtDeclinedSuccessMessage": "Sale cancelled (void), stock returned.",
   "invoiceStatusDeclinedBadge": "Declined",
   "createInvoiceConvertTitle": "Convert to Invoice",
   "createInvoiceConvertedSuccessMessage": "Converted to Invoice #{invoiceNumber}",
@@ -2627,6 +2627,8 @@
   "accessibilityCashExchangeSubtitle": "Adds a Cash Exchange Services menu after New Invoice to record UPI ↔ Cash exchanges, service fees and cash movements, with Cash and UPI/Bank balances.",
   "accessibilityReportsAdminOnlyLabel": "Reports: Admins Only",
   "accessibilityReportsAdminOnlySubtitle": "Hides the Reports menu from non-admin users.",
+  "accessibilityPurchaseBillsAdminOnlyLabel": "Purchase Bills & Suppliers: Admins Only",
+  "accessibilityPurchaseBillsAdminOnlySubtitle": "Hides the Purchase Bills and Suppliers menus from non-admin users.",
   "cashExchangeCashLabel": "Cash",
   "cashExchangeUpiBankLabel": "UPI/Bank",
   "cashExchangeTotalLabel": "Total balance",
@@ -3094,6 +3096,64 @@
   "returnPickInvoiceSearchHint": "Search invoice number",
   "returnPickInvoiceEmpty": "No invoices for this customer",
   "returnSelectCustomerFirst": "Select a customer first",
+  "productFormDuplicateTitle": "Product already exists",
+  "productFormDuplicateMessage": "A product named \"{name}\" already exists. Create another one anyway?",
+  "@productFormDuplicateMessage": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "productFormCreateAnywayButton": "Create anyway",
+  "productFormNewProductButton": "New product",
+  "productFormPurchaseStockHelper": "Opening stock. Finalizing this purchase bill adds the purchased quantity on top.",
+  "invoiceDraftBadge": "DRAFT",
+  "createInvoiceStockShortTitle": "Not enough stock",
+  "createInvoiceStockShortMessage": "Some items have less stock than this invoice needs:",
+  "createInvoiceStockShortLine": "{product}: in stock {available}, on invoice {needed} (short by {short})",
+  "@createInvoiceStockShortLine": {
+    "placeholders": {
+      "product": {
+        "type": "String"
+      },
+      "available": {
+        "type": "String"
+      },
+      "needed": {
+        "type": "String"
+      },
+      "short": {
+        "type": "String"
+      }
+    }
+  },
+  "createInvoiceStockShortFooter": "If you save, stock will go below zero.",
+  "createInvoiceGoBackButton": "Go back",
+  "createInvoiceSaveAnywayButton": "Save anyway",
+  "createInvoiceSaveDraftButton": "Save Draft",
+  "createInvoiceDraftSavedMessage": "Draft saved",
+  "createInvoiceFinalizeButton": "Finalize {type}",
+  "@createInvoiceFinalizeButton": {
+    "placeholders": {
+      "type": {
+        "type": "String"
+      }
+    }
+  },
+  "createInvoiceFinalizedMessage": "Finalized — {type} #{number}",
+  "@createInvoiceFinalizedMessage": {
+    "placeholders": {
+      "type": {
+        "type": "String"
+      },
+      "number": {
+        "type": "String"
+      }
+    }
+  },
+  "createInvoiceDraftPreviewTooltip": "Finalize the draft to get an invoice number before previewing the PDF",
+  "createInvoiceDraftPrintTooltip": "Finalize the draft to get an invoice number before printing",
   "createInvoiceLockedByCreditNotes": "This invoice has credit notes, so customer, items, extra costs, discount and tax are locked. Void the credit notes to change them.",
   "returnNothingLeft": "Everything on invoice #{number} has already been returned.",
   "@returnNothingLeft": {
@@ -3103,7 +3163,7 @@
       }
     }
   },
-  "invoiceMgmtDebitNoteRestoreBlocked": "Invoice #{number} is declined or in trash, so its debit note can't be restored.",
+  "invoiceMgmtDebitNoteRestoreBlocked": "Invoice #{number} is declined or in trash, so this note can't be restored.",
   "@invoiceMgmtDebitNoteRestoreBlocked": {
     "placeholders": {
       "number": {
@@ -3127,6 +3187,32 @@
       }
     }
   },
+  "invoiceMgmtHasDraftNotesMessage": "Invoice #{number} has a draft credit or debit note. Finalize or trash it from the Credit Notes / Debit Notes tab first.",
+  "@invoiceMgmtHasDraftNotesMessage": {
+    "placeholders": {
+      "number": {
+        "type": "String"
+      }
+    }
+  },
+  "createInvoiceFinalizeDateTitle": "Use today's date?",
+  "createInvoiceFinalizeDateMessage": "This draft is dated {date}. Invoice numbers should follow date order, so finalizing usually takes today's date.",
+  "@createInvoiceFinalizeDateMessage": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "createInvoiceFinalizeKeepDateButton": "Keep {date}",
+  "@createInvoiceFinalizeKeepDateButton": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "createInvoiceFinalizeUseTodayButton": "Use today",
   "returnGstAgainstInvoiceWarning": "GST: a note for a registered customer should reference the original invoice",
   "returnAgainstInvoiceFull": "Against Invoice #{number}",
   "@returnAgainstInvoiceFull": {
@@ -3271,5 +3357,14 @@
         "type": "String"
       }
     }
-  }
+  },
+  "invoiceMgmtCancelVoidAction": "Cancel / Void",
+  "invoiceMgmtDeclineReturnStockLabel": "Return all items to stock",
+  "invoiceMgmtDeclineReturnStockHint": "Untick if the goods didn't come back (damaged, used or kept).",
+  "invoiceMgmtDeclinedNoStockMessage": "Sale cancelled (void). Stock unchanged.",
+  "invoiceMgmtTrashNoStockHint": "Trash doesn't return stock. To cancel a sale, use Cancel / Void.",
+  "amountSeparatorLabel": "Number format",
+  "amountSeparatorNoneLabel": "No separator  (1234567.89)",
+  "amountSeparatorInternationalLabel": "International  (1,234,567.89)",
+  "amountSeparatorIndianLabel": "Indian  (12,34,567.89)"
 }

@@ -379,4 +379,38 @@ void main() {
 
     await db.close();
   });
+
+  // Save Draft (v57): existing invoices stay final.
+  test('v57 adds invoices.is_draft; existing invoices stay final', () async {
+    final db = await _openV4WithSampleData();
+    final helper = DatabaseHelper();
+    await helper.upgradeDbForTest(db, 4, helper.dbVersion);
+
+    final cols = await db.rawQuery('PRAGMA table_info(invoices)');
+    expect(cols.map((c) => c['name']), contains('is_draft'));
+    final row = (await db.query('invoices', where: "id = 'i1'")).single;
+    expect(row['is_draft'], 0);
+
+    await db.close();
+  });
+
+  // Dev DBs of invoice-save-draft-option reached its v48 (is_draft) and so
+  // skipped main's v48 performance indexes — v57 adds them back.
+  test('DB from the draft branch (is_draft, no v48 indexes) gets the indexes',
+      () async {
+    final db = await _openV4WithSampleData();
+    final helper = DatabaseHelper();
+    await helper.upgradeDbForTest(db, 4, helper.dbVersion);
+    await db.execute('DROP INDEX idx_inv_type_del_id');
+    await db.execute('DROP INDEX idx_customers_phone');
+
+    await helper.upgradeDbForTest(db, 56, helper.dbVersion);
+
+    final indexes = (await db.rawQuery(
+            "SELECT name FROM sqlite_master WHERE type = 'index'"))
+        .map((r) => r['name']);
+    expect(indexes, containsAll(['idx_inv_type_del_id', 'idx_customers_phone']));
+
+    await db.close();
+  });
 }

@@ -12,6 +12,7 @@ import 'package:invoiso/models/user.dart';
 import 'package:invoiso/providers/repositories.dart';
 import 'package:invoiso/services/exchange_receipt_service.dart';
 import 'package:invoiso/widgets/apply_payment_dialog.dart';
+import 'package:invoiso/utils/formatters.dart';
 
 /// Cash / UPI-Bank exchange ledger: balances, entry actions and history.
 class CashExchangeScreen extends ConsumerStatefulWidget {
@@ -202,7 +203,7 @@ class _CashExchangeScreenState extends ConsumerState<CashExchangeScreen> {
   }
 
   String _money(double v) =>
-      '$_sym${NumberFormat('#,##0.00').format(v.abs())}';
+      '$_sym${AmountFormat.moneyGrouped(v.abs())}';
   String _signed(double v) => '${v < 0 ? '−' : '+'}${_money(v)}';
 
   String _accountLabel(AppLocalizations l10n, String? account) =>

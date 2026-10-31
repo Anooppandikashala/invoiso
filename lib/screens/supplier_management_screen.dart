@@ -10,6 +10,7 @@ import 'package:invoiso/providers/repositories.dart';
 import 'package:invoiso/providers/supplier_provider.dart';
 import 'package:invoiso/utils/error_handler.dart';
 import 'package:uuid/uuid.dart';
+import 'package:invoiso/utils/formatters.dart';
 
 class SupplierManagementScreen extends ConsumerStatefulWidget {
   final User user;
@@ -224,7 +225,7 @@ class _SupplierManagementScreenState
               const SizedBox(height: 8),
               _infoRowV2(
                 Icons.account_balance_wallet_outlined,
-                l10n.supplierMgmtOutstandingLabel(balance.toStringAsFixed(2)),
+                l10n.supplierMgmtOutstandingLabel(AmountFormat.money(balance)),
                 color: balance > 0 ? Colors.red[700] : Colors.green[700],
               ),
             ],
@@ -549,7 +550,7 @@ class _SupplierManagementScreenState
           Expanded(
             flex: 2,
             child: Text(
-              balance.toStringAsFixed(2),
+              AmountFormat.money(balance),
               style: TextStyle(
                   fontWeight: FontWeight.w600,
                   color: balance > 0 ? Colors.red[700] : Colors.green[700]),

@@ -19,7 +19,7 @@ class DatabaseHelper {
   static String? get path => _path;
   static Database? _database;
   static String _dbFileName = 'invoice_manager.db';
-  final dbVersion = 56;
+  final dbVersion = 57;
 
   /// Startup only, before anything has opened a connection yet — just points
   /// at the right file for the first `_initDB()` call. No close/reopen, so
@@ -171,7 +171,8 @@ class DatabaseHelper {
         original_invoice_number TEXT,
         original_invoice_date TEXT,
         return_reason TEXT,
-        credit_settlement TEXT
+        credit_settlement TEXT,
+        is_draft INTEGER DEFAULT 0
       )
     ''');
 
@@ -967,17 +968,7 @@ class DatabaseHelper {
       // previous balance, next invoice number, due/overdue, NOCASE name
       // sorts, import duplicate checks.
       await _runMigrationStep(db, 48, 'add_performance_indexes', () async {
-        const indexes = [
-          'CREATE INDEX IF NOT EXISTS idx_inv_type_del_id ON invoices(type, deleted_at, id)',
-          'CREATE INDEX IF NOT EXISTS idx_inv_customer_id ON invoices(customer_id, type, date)',
-          'CREATE INDEX IF NOT EXISTS idx_inv_type_num ON invoices(type, invoice_number)',
-          'CREATE INDEX IF NOT EXISTS idx_inv_type_due ON invoices(type, due_date)',
-          'CREATE INDEX IF NOT EXISTS idx_products_name_nc ON products(name COLLATE NOCASE)',
-          'CREATE INDEX IF NOT EXISTS idx_customers_name_nc ON customers(name COLLATE NOCASE)',
-          'CREATE INDEX IF NOT EXISTS idx_customers_email ON customers(email)',
-          'CREATE INDEX IF NOT EXISTS idx_customers_phone ON customers(phone)',
-        ];
-        for (final sql in indexes) {
+        for (final sql in _performanceIndexes) {
           await db.execute(sql);
         }
       });
@@ -1321,7 +1312,42 @@ class DatabaseHelper {
             conflictAlgorithm: ConflictAlgorithm.ignore);
       });
     }
+
+    if (oldVersion < 57) {
+      // Save Draft (branch invoice-save-draft-option, was v48 there): drafts
+      // have no invoice_number until finalized and stay out of revenue / tax /
+      // stock. NULL/0 on every existing row = final.
+      final hasIsDraft = (await db.rawQuery('PRAGMA table_info(invoices)'))
+          .any((c) => c['name'] == 'is_draft');
+      if (!hasIsDraft) {
+        await _runMigrationStep(db, 57, 'add_is_draft_to_invoices', () async {
+          await db.execute(
+            'ALTER TABLE invoices ADD COLUMN is_draft INTEGER DEFAULT 0',
+          );
+        });
+      } else {
+        // Already has it = a dev DB that ran the branch's v48, so it skipped
+        // main's v48 indexes — add them now (IF NOT EXISTS).
+        await _runMigrationStep(db, 57, 'rerun_performance_indexes', () async {
+          for (final sql in _performanceIndexes) {
+            await db.execute(sql);
+          }
+        });
+      }
+    }
   }
+
+  // v48 performance indexes (Issues.md #37); re-run idempotently by v57.
+  static const _performanceIndexes = [
+    'CREATE INDEX IF NOT EXISTS idx_inv_type_del_id ON invoices(type, deleted_at, id)',
+    'CREATE INDEX IF NOT EXISTS idx_inv_customer_id ON invoices(customer_id, type, date)',
+    'CREATE INDEX IF NOT EXISTS idx_inv_type_num ON invoices(type, invoice_number)',
+    'CREATE INDEX IF NOT EXISTS idx_inv_type_due ON invoices(type, due_date)',
+    'CREATE INDEX IF NOT EXISTS idx_products_name_nc ON products(name COLLATE NOCASE)',
+    'CREATE INDEX IF NOT EXISTS idx_customers_name_nc ON customers(name COLLATE NOCASE)',
+    'CREATE INDEX IF NOT EXISTS idx_customers_email ON customers(email)',
+    'CREATE INDEX IF NOT EXISTS idx_customers_phone ON customers(phone)',
+  ];
 
   // Signed per-account deltas are computed once at write time; balances are
   // SUMs, never stored. upi_delta is the combined UPI/Bank account.

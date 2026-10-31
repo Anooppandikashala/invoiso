@@ -97,6 +97,8 @@ abstract class SettingsRepository {
   Future<void> setBusinessType(BusinessType type);
   Future<DateFormatOption> getDateFormat();
   Future<void> setDateFormat(DateFormatOption option);
+  Future<AmountSeparator> getAmountSeparator();
+  Future<void> setAmountSeparator(AmountSeparator option);
   Future<PageSize> getPageSize();
   Future<void> setPageSize(PageSize size);
   Future<bool> getShowAliasNameInPdf();

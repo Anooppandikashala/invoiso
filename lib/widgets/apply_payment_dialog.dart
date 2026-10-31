@@ -7,6 +7,7 @@ import 'package:invoiso/models/invoice_payment.dart';
 import 'package:invoiso/providers/repositories.dart';
 import 'package:invoiso/services/payment_receipt_service.dart';
 import 'package:invoiso/utils/app_date.dart';
+import 'package:invoiso/utils/formatters.dart';
 
 const paymentMethods = ['Cash', 'UPI', 'Bank Transfer', 'Check', 'Online', 'Other'];
 
@@ -128,7 +129,7 @@ class _ApplyPaymentDialogState extends ConsumerState<ApplyPaymentDialog> {
                 ? l10n.paymentDialogFullyPaidExclaimMessage
                 : l10n.paymentDialogRecordedMessage(
                     widget.invoice.currencySymbol,
-                    _outstanding.toStringAsFixed(2))),
+                    AmountFormat.money(_outstanding))),
             backgroundColor: Colors.green,
           ),
         );
@@ -245,19 +246,19 @@ class _ApplyPaymentDialogState extends ConsumerState<ApplyPaymentDialog> {
                         PaymentSummaryCard(
                           label: l10n.paymentDialogInvoiceTotalLabel,
                           value:
-                              '$sym ${widget.invoice.total.toStringAsFixed(2)}',
+                              '$sym ${AmountFormat.money(widget.invoice.total)}',
                           color: Colors.blue,
                         ),
                         const SizedBox(width: 12),
                         PaymentSummaryCard(
                           label: l10n.paymentDialogAmountPaidLabel,
-                          value: '$sym ${_totalPaid.toStringAsFixed(2)}',
+                          value: '$sym ${AmountFormat.money(_totalPaid)}',
                           color: Colors.green,
                         ),
                         const SizedBox(width: 12),
                         PaymentSummaryCard(
                           label: l10n.dashboardOutstandingLabel,
-                          value: '$sym ${_outstanding.toStringAsFixed(2)}',
+                          value: '$sym ${AmountFormat.money(_outstanding)}',
                           color: _outstanding <= InvoiceCalculator.moneyEpsilon
                               ? Colors.green
                               : Colors.orange,
@@ -367,7 +368,7 @@ class _ApplyPaymentDialogState extends ConsumerState<ApplyPaymentDialog> {
                                               BorderRadius.circular(8)),
                                       helperText:
                                           l10n.paymentDialogMaxHelperText(sym,
-                                              _outstanding.toStringAsFixed(2)),
+                                              AmountFormat.money(_outstanding)),
                                     ),
                                     keyboardType:
                                         const TextInputType.numberWithOptions(
@@ -458,7 +459,7 @@ class _ApplyPaymentDialogState extends ConsumerState<ApplyPaymentDialog> {
                                           .paymentDialogAutoCalculatedHelper,
                                     ),
                                     child: Text(
-                                      '$sym ${_taxOnEnteredAmount.toStringAsFixed(2)}',
+                                      '$sym ${AmountFormat.money(_taxOnEnteredAmount)}',
                                       style: TextStyle(
                                           fontSize: 16,
                                           color: Theme.of(context)
@@ -616,7 +617,7 @@ class _ApplyPaymentDialogState extends ConsumerState<ApplyPaymentDialog> {
           ),
           Expanded(
             child: Text(
-              '$sym ${payment.amountPaid.toStringAsFixed(2)}',
+              '$sym ${AmountFormat.money(payment.amountPaid)}',
               style: const TextStyle(
                   fontSize: 13,
                   fontWeight: FontWeight.w500,
@@ -625,7 +626,7 @@ class _ApplyPaymentDialogState extends ConsumerState<ApplyPaymentDialog> {
           ),
           Expanded(
             child: Text(
-              '$sym ${payment.taxAmountPaid.toStringAsFixed(2)}',
+              '$sym ${AmountFormat.money(payment.taxAmountPaid)}',
               style: TextStyle(
                   fontSize: 13,
                   color: Theme.of(context).colorScheme.onSurfaceVariant),

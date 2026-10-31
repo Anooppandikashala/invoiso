@@ -1,6 +1,6 @@
 {
-  "version": 7,
-  "updated_at": "2026-09-30",
+  "version": 8,
+  "updated_at": "2026-10-28",
   "categories": [
     { "id": "general", "label": "General" },
     { "id": "data-privacy", "label": "Data & Privacy" },
@@ -215,9 +215,9 @@
     {
       "id": "faq_staff_restrictions",
       "category": "features",
-      "question": "Can I stop staff from changing stock or opening Reports?",
-      "answer": "Yes. Both are off by default:\n\n- **Settings → Product Columns → Stock Editing: Admins Only**: staff can't set or change stock quantities, and can't import products from CSV. Invoices still update stock automatically.\n- **Settings → Accessibility → Reports: Admins Only**: the **Reports** menu is hidden from staff.",
-      "keywords": ["staff", "admin only", "lock stock", "hide reports", "restrict user", "user permissions"]
+      "question": "Can I stop staff from changing stock or opening Reports and Purchase Bills?",
+      "answer": "Yes. All of these are off by default:\n\n- **Settings → Product Columns → Stock Editing: Admins Only**: staff can't set or change stock quantities, and can't import products from CSV. Invoices still update stock automatically.\n- **Settings → Accessibility → Reports: Admins Only**: the **Reports** menu is hidden from staff.\n- **Settings → Accessibility → Purchase Bills & Suppliers: Admins Only**: the **Purchase Bills** and **Suppliers** menus are hidden from staff (shown once Purchase Bills & Suppliers is turned on).",
+      "keywords": ["staff", "admin only", "lock stock", "hide reports", "hide purchase bills", "hide suppliers", "restrict user", "user permissions"]
     },
     {
       "id": "faq_low_stock_limit",
@@ -232,6 +232,83 @@
       "question": "Can I mark an invoice as paid while creating it?",
       "answer": "Yes. The create-invoice screen has a **Payment** section — choose **Paid**, **Partial** or **Unpaid**, the payment method (Cash, UPI, Bank Transfer…) and the amount. The payment is recorded when you save.",
       "keywords": ["paid on creation", "record payment", "partial payment", "upi payment"]
+    },
+    {
+      "id": "faq_purchase_bills",
+      "category": "features",
+      "question": "Can I record purchases from my suppliers and add the stock?",
+      "answer": "Yes. Turn on **Settings → Accessibility → Purchase Bills & Suppliers** — this adds **Purchase Bills** and **Suppliers** to the menu.\n\n1. Open **Purchase Bills** and click **New Purchase Bill**.\n2. Pick a saved supplier, or choose **Walk-in Supplier** and type a name.\n3. Add the products with quantity and cost, then click **Save Purchase Bill**.\n\nThe quantities are **added to stock** as soon as the bill is saved, and each product's purchase price is updated to the cost on its latest bill. Use **Apply Payment** on the bill to record what you paid — the supplier's **Outstanding** shows what you still owe.",
+      "keywords": ["purchase bill", "purchase entry", "supplier bill", "add stock", "stock inward", "vendor bill", "buy stock"]
+    },
+    {
+      "id": "faq_returns",
+      "category": "features",
+      "question": "How do I take back goods a customer returned?",
+      "answer": "On the **Invoices** (or **Receipts**) screen, click **⋮** on the invoice and choose **Return Items**. A form opens with each line set to the quantity that can still be returned (**Left**).\n\n1. Reduce or remove the lines that didn't come back.\n2. Tick **To stock** on lines going back on the shelf. Leave it unticked for damaged goods.\n3. Under **Settlement**, choose how to settle: **Reduce invoice balance** (only when the invoice is still unpaid), **Refund now** (pick Cash, UPI…) or **Keep as customer credit**.\n4. Save. Invoiso creates a numbered **credit note** and updates stock and balances.\n\nYou can't return more than was sold — each line is capped at what's left. When **Credit / Debit Notes (advanced)** is on, the menu item is called **Create Credit Note (Sales Return)**.",
+      "keywords": ["return", "sales return", "goods returned", "take back", "refund customer", "credit note", "return items"]
+    },
+    {
+      "id": "faq_credit_debit_notes",
+      "category": "features",
+      "question": "Does Invoiso support credit notes and debit notes?",
+      "answer": "Yes. A **credit note** is created every time you return items from an invoice (**⋮ → Return Items**) — that works out of the box.\n\nFor more, turn on **Settings → Accessibility → Credit / Debit Notes (advanced)**. It adds:\n\n- **Credit Notes** and **Debit Notes** screens that list every note.\n- **Create Debit Note** on an invoice — use it to charge the customer extra after the invoice, for example a price revision or a missed charge. A debit note adds to what the customer owes and doesn't change stock.\n- Notes that aren't linked to any invoice.\n- Your own number prefixes in **Settings → Invoice Settings** (**Credit note prefix**, **Debit note prefix**). Notes have their own number sequence.\n\nNotes print as PDFs just like invoices.",
+      "keywords": ["credit note", "debit note", "sales return", "price revision", "extra charge", "cn", "dn"]
+    },
+    {
+      "id": "faq_customer_credit",
+      "category": "features",
+      "question": "Can I keep a refund as customer credit and use it later?",
+      "answer": "Yes. When you return items, choose **Keep as customer credit** under **Settlement**. The amount is saved for that customer.\n\nTo use it later:\n\n- **On a new invoice:** in the **Payment** section, tick **Apply customer credit to this invoice**. It covers up to the amount still owed.\n- **On an existing invoice:** on the invoice row, click **⋮ → Apply customer credit**.\n- **Pay it back as money:** on the **Credit Notes** screen, click **⋮ → Refund** on the note. You can then print a **Refund voucher** for the customer. (The Credit Notes screen needs **Credit / Debit Notes (advanced)** turned on in Accessibility.)",
+      "keywords": ["customer credit", "store credit", "credit balance", "use credit", "refund later", "advance"]
+    },
+    {
+      "id": "faq_save_draft",
+      "category": "features",
+      "question": "Can I save an invoice as a draft and finish it later?",
+      "answer": "Yes. Click **Save Draft** at the bottom of the create screen. A draft:\n\n- has **no invoice number** yet — the header only previews the number it's likely to get,\n- **doesn't reduce stock**,\n- doesn't count in reports, balances or payments,\n- shows a **DRAFT** badge in the list and has no PDF until it's finalized.\n\nTo finish it, click **Edit** on the draft, make your changes and click **Finalize** (for example **Finalize Invoice**). That gives it the next number, reduces stock and records any payment chosen in the **Payment** section. If the draft is dated before today, Invoiso asks whether to keep that date or use today's, so numbers stay in date order.\n\nDrafts work the same way for receipts, quotations and credit/debit notes. A purchase bill draft doesn't add stock until you open it and click **Save Purchase Bill**.",
+      "keywords": ["draft", "save draft", "finish later", "unfinished invoice", "finalize", "pending invoice"]
+    },
+    {
+      "id": "faq_cancel_invoice",
+      "category": "features",
+      "question": "How do I cancel a wrong invoice or receipt?",
+      "answer": "Use **Cancel / Void**, not Trash. On the **Invoices** or **Receipts** screen, click **⋮ → Cancel / Void** on the row.\n\n- Keep **Return all items to stock** ticked if the goods came back. Untick it if they didn't (damaged, used or kept by the customer).\n- The invoice stays in the list marked **Declined**, keeps its number, and no longer counts in reports or balances.\n- It can't be edited or undone afterwards.\n\nCancel / Void isn't available while the invoice has payments recorded (delete them in **Apply Payment** first) or has credit or debit notes, including drafts (cancel or trash those first). To take back only part of a sale, use **⋮ → Return Items** instead.",
+      "keywords": ["cancel invoice", "void invoice", "wrong invoice", "decline invoice", "cancel receipt", "undo sale"]
+    },
+    {
+      "id": "faq_trash_stock",
+      "category": "features",
+      "question": "Why didn't the stock come back when I moved an invoice to trash?",
+      "answer": "Moving an invoice or receipt to **Trash** only hides it — it never changes stock, and restoring it doesn't either. To cancel a sale and put the goods back into stock, use **⋮ → Cancel / Void** (see *How do I cancel a wrong invoice or receipt?*).\n\nPurchase bills are different: moving a saved purchase bill to trash takes its quantities back out of stock, and restoring it adds them again.",
+      "keywords": ["trash stock", "deleted invoice stock", "stock not returned", "restore stock", "delete invoice stock"]
+    },
+    {
+      "id": "faq_number_format",
+      "category": "features",
+      "question": "Can I show amounts with commas, like 1,00,000.00?",
+      "answer": "Yes. Go to **Settings → Invoice Settings → Number format** (just below Date format), pick a style and click **Save**:\n\n- **No separator** — 1234567.89\n- **International** — 1,234,567.89\n- **Indian** — 12,34,567.89\n\nIt applies to invoice and receipt PDFs, payment receipts, refund vouchers, customer statements and amounts shown on screen. Fields where you type amounts, CSV exports and the UPI QR code always use plain numbers.\n\nNew setups start with **Indian** for INR and **International** for other currencies. Existing setups keep **No separator** until you change it.",
+      "keywords": ["comma", "thousands separator", "lakh", "crore", "number format", "amount format", "digit grouping"]
+    },
+    {
+      "id": "faq_customer_fields",
+      "category": "features",
+      "question": "Can I record a customer's age, date of birth, gender or a separate shipping address?",
+      "answer": "Yes. Go to **Settings → Invoice Settings → Customer Fields** and turn on what you need:\n\n- **Separate Shipping Address** — a Ship To name, phone and address. If it's the same as billing, only one address prints.\n- **Date of Birth** — the age is worked out from it.\n- **Age** — used only when no date of birth is entered.\n- **Gender** — Male, Female or Other.\n- **Customer Custom Fields** — up to 5 of your own fields, like Patient ID or Blood Group.\n\nEach field has its own **Print on PDF** switch. Once turned on, the fields appear on the customer form and on the create-invoice screen.",
+      "keywords": ["customer age", "date of birth", "dob", "gender", "shipping address", "ship to", "patient id", "customer custom fields"]
+    },
+    {
+      "id": "faq_new_product_from_invoice",
+      "category": "features",
+      "question": "Can I add a new product while creating an invoice or purchase bill?",
+      "answer": "Yes. Click **New product** next to the product search (on the create-invoice screen it's beside **Custom item**). It's the same form as adding a product in **Products**, with the same rules — for example, staff can't set stock if stock editing is admin-only. Whatever you typed in the search box becomes the name.\n\nWhen you save, the product is added to your catalogue **and** straight onto the invoice or bill. If a product with the same name already exists, Invoiso asks before creating another.\n\n**On a purchase bill**, the product's **Stock** field means stock you already had *before* this bill — saving the bill adds the bought quantity on top. For stock you're buying now, leave Stock at 0 and enter the quantity on the bill.",
+      "keywords": ["new product", "add product", "create product from invoice", "quick add product", "product not found"]
+    },
+    {
+      "id": "faq_stock_warning",
+      "category": "features",
+      "question": "Why do I get a \"Not enough stock\" message when I save?",
+      "answer": "When you save, update or finalize an invoice or receipt, Invoiso checks the current stock again. If any product would go below zero — for example because another sale used the stock after you started — it lists each one with **in stock**, **on invoice** and **short by**.\n\n- **Go back** — change the quantities.\n- **Save anyway** — save it; stock for those products goes below zero.\n\nQuotations, credit/debit notes and drafts aren't checked, because they don't take stock. Services and products with unlimited stock are never short.",
+      "keywords": ["not enough stock", "out of stock", "negative stock", "stock warning", "short by"]
     }
   ]
 }

@@ -21,7 +21,9 @@ import 'package:invoiso/providers/repositories.dart';
 import 'package:invoiso/providers/supplier_provider.dart';
 import 'package:invoiso/utils/app_date.dart';
 import 'package:invoiso/utils/error_handler.dart';
+import 'package:invoiso/widgets/product_form.dart';
 import 'package:uuid/uuid.dart';
+import 'package:invoiso/utils/formatters.dart';
 
 // ─────────────────────────────────────────────
 // Top-level screen — owns the list<->form toggle. No new dashboard index
@@ -68,6 +70,7 @@ class _PurchaseBillManagementScreenState
         key: ValueKey('purchase_bill_form_${_billToEdit?.id ?? 'new'}'),
         billToEdit: _billToEdit,
         onDone: _closeForm,
+        user: widget.user,
       );
     }
     return _PurchaseBillListView(
@@ -755,7 +758,7 @@ class _PurchaseBillListViewState extends ConsumerState<_PurchaseBillListView> {
             SizedBox(width: 100, child: Text(AppDate.format(bill.billDate), style: const TextStyle(fontSize: 13))),
           ],
           Expanded(
-            child: Text('$_currencySymbol ${bill.total.toStringAsFixed(2)}',
+            child: Text('$_currencySymbol ${AmountFormat.money(bill.total)}',
                 overflow: TextOverflow.ellipsis,
                 style: const TextStyle(fontSize: 14.5, fontWeight: FontWeight.bold, color: Colors.green)),
           ),
@@ -765,7 +768,7 @@ class _PurchaseBillListViewState extends ConsumerState<_PurchaseBillListView> {
               child: status == PaymentStatus.paid || bill.isDraft
                   ? Text('—', style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant))
                   : Text(
-                      '$_currencySymbol ${outstanding.toStringAsFixed(2)}',
+                      '$_currencySymbol ${AmountFormat.money(outstanding)}',
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(
                           fontSize: 13,
@@ -1215,9 +1218,9 @@ class _BillDetailDialogState extends ConsumerState<_BillDetailDialog> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.end,
                         children: [
-                          Text('${l10n.fieldSubtotalLabel}: $sym ${bill.subtotal.toStringAsFixed(2)}'),
-                          Text('${l10n.fieldTaxLabel}: $sym ${bill.tax.toStringAsFixed(2)}'),
-                          Text('${l10n.fieldTotalLabel}: $sym ${bill.total.toStringAsFixed(2)}',
+                          Text('${l10n.fieldSubtotalLabel}: $sym ${AmountFormat.money(bill.subtotal)}'),
+                          Text('${l10n.fieldTaxLabel}: $sym ${AmountFormat.money(bill.tax)}'),
+                          Text('${l10n.fieldTotalLabel}: $sym ${AmountFormat.money(bill.total)}',
                               style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
                         ],
                       ),
@@ -1225,13 +1228,13 @@ class _BillDetailDialogState extends ConsumerState<_BillDetailDialog> {
                     const SizedBox(height: 20),
                     Row(
                       children: [
-                        PaymentSummaryTile(label: l10n.fieldTotalLabel, value: '$sym ${bill.total.toStringAsFixed(2)}', color: Colors.blue),
+                        PaymentSummaryTile(label: l10n.fieldTotalLabel, value: '$sym ${AmountFormat.money(bill.total)}', color: Colors.blue),
                         const SizedBox(width: 12),
-                        PaymentSummaryTile(label: l10n.paymentDialogAmountPaidLabel, value: '$sym ${_totalPaid.toStringAsFixed(2)}', color: Colors.green),
+                        PaymentSummaryTile(label: l10n.paymentDialogAmountPaidLabel, value: '$sym ${AmountFormat.money(_totalPaid)}', color: Colors.green),
                         const SizedBox(width: 12),
                         PaymentSummaryTile(
                           label: l10n.invoiceMgmtColOutstanding,
-                          value: '$sym ${_outstanding.toStringAsFixed(2)}',
+                          value: '$sym ${AmountFormat.money(_outstanding)}',
                           color: _outstanding <= 0 ? Colors.green : Colors.orange,
                         ),
                       ],
@@ -1322,9 +1325,9 @@ class _BillDetailDialogState extends ConsumerState<_BillDetailDialog> {
                   children: [
                     Expanded(flex: 3, child: Text(item.productName, style: const TextStyle(fontSize: 13))),
                     Expanded(child: Text(item.quantity.toString(), style: const TextStyle(fontSize: 13))),
-                    Expanded(child: Text(item.costPerUnit.toStringAsFixed(2), style: const TextStyle(fontSize: 13))),
+                    Expanded(child: Text(AmountFormat.money(item.costPerUnit), style: const TextStyle(fontSize: 13))),
                     Expanded(child: Text(item.taxRate.toStringAsFixed(0), style: const TextStyle(fontSize: 13))),
-                    Expanded(child: Text('$sym ${item.total.toStringAsFixed(2)}', style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500))),
+                    Expanded(child: Text('$sym ${AmountFormat.money(item.total)}', style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500))),
                   ],
                 ),
               )),
@@ -1341,7 +1344,7 @@ class _BillDetailDialogState extends ConsumerState<_BillDetailDialog> {
         children: [
           SizedBox(width: 90, child: Text(AppDate.format(p.datePaid), style: const TextStyle(fontSize: 13))),
           Expanded(
-            child: Text('$sym ${p.amountPaid.toStringAsFixed(2)}',
+            child: Text('$sym ${AmountFormat.money(p.amountPaid)}',
                 style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500, color: Colors.green)),
           ),
           Expanded(
@@ -1511,7 +1514,7 @@ class _RecordPaymentDialogState extends ConsumerState<_RecordPaymentDialog> {
                 decoration: InputDecoration(
                   labelText: l10n.paymentDialogAmountFieldLabel(sym),
                   border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
-                  helperText: l10n.paymentDialogMaxHelperText(sym, widget.outstanding.toStringAsFixed(2)),
+                  helperText: l10n.paymentDialogMaxHelperText(sym, AmountFormat.money(widget.outstanding)),
                 ),
                 keyboardType: const TextInputType.numberWithOptions(decimal: true),
                 inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'[0-9.]'))],
@@ -1581,8 +1584,11 @@ class _RecordPaymentDialogState extends ConsumerState<_RecordPaymentDialog> {
 class _PurchaseBillFormScreen extends ConsumerStatefulWidget {
   final PurchaseBill? billToEdit;
   final VoidCallback onDone;
+  // Admin-only rules of the "New product" form.
+  final User user;
 
-  const _PurchaseBillFormScreen({super.key, required this.billToEdit, required this.onDone});
+  const _PurchaseBillFormScreen(
+      {super.key, required this.billToEdit, required this.onDone, required this.user});
 
   @override
   ConsumerState<_PurchaseBillFormScreen> createState() => _PurchaseBillFormScreenState();
@@ -1919,6 +1925,23 @@ class _PurchaseBillFormScreenState extends ConsumerState<_PurchaseBillFormScreen
         _supplierFieldGen++;
       });
     }
+  }
+
+  // Saves a real catalogue product (same form and rules as Product
+  // Management), then opens the usual line dialog for it.
+  Future<void> _addNewProduct() async {
+    final product = await showNewProductDialog(context,
+        user: widget.user,
+        initialName: _productSearchController.text,
+        stockHelperText:
+            AppLocalizations.of(context)!.productFormPurchaseStockHelper,
+        productOnly: true);
+    if (product == null || !mounted) return;
+    _productSearchController.clear();
+    setState(() => _productQuery = '');
+    await ref.read(productsProvider.notifier).refresh();
+    if (!mounted) return;
+    _addProductItemDialog(product);
   }
 
   void _addAdHocItemDialog() {
@@ -2497,7 +2520,7 @@ class _PurchaseBillFormScreenState extends ConsumerState<_PurchaseBillFormScreen
           Text(label,
               style: TextStyle(fontWeight: isGrand ? FontWeight.bold : FontWeight.normal, fontSize: isGrand ? 16 : 14)),
           Flexible(
-            child: Text('$_currencySymbol ${amount.toStringAsFixed(2)}',
+            child: Text('$_currencySymbol ${AmountFormat.money(amount)}',
                 textAlign: TextAlign.right,
                 overflow: TextOverflow.ellipsis,
                 style: TextStyle(
@@ -2547,6 +2570,12 @@ class _PurchaseBillFormScreenState extends ConsumerState<_PurchaseBillFormScreen
                         color: Theme.of(context).colorScheme.onSurfaceVariant)),
               ),
               const Spacer(),
+              TextButton.icon(
+                onPressed: _addNewProduct,
+                icon: const Icon(Icons.inventory_2_outlined, size: 16),
+                label: Text(l10n.productFormNewProductButton),
+                style: TextButton.styleFrom(foregroundColor: Theme.of(context).primaryColor),
+              ),
               TextButton.icon(
                 onPressed: _addAdHocItemDialog,
                 icon: const Icon(Icons.add, size: 16),
@@ -2613,7 +2642,7 @@ class _PurchaseBillFormScreenState extends ConsumerState<_PurchaseBillFormScreen
                             leading: const Icon(Icons.inventory_2_outlined),
                             title: Text(product.name),
                             subtitle: Text(l10n.purchaseBillMgmtLastCostLabel(
-                                '$_currencySymbol${product.purchasePrice.toStringAsFixed(2)}')),
+                                '$_currencySymbol${AmountFormat.money(product.purchasePrice)}')),
                             trailing: const Icon(Icons.add_circle, color: Colors.green),
                             onTap: () => _addProductItemDialog(product),
                           );
@@ -2718,7 +2747,7 @@ class _PurchaseBillFormScreenState extends ConsumerState<_PurchaseBillFormScreen
                               ? item.quantity.toInt().toString()
                               : item.quantity.toString()),
                       _buildItemDetail(l10n.purchaseBillMgmtUnitCostDetailLabel,
-                          '$_currencySymbol${item.costPerUnit.toStringAsFixed(2)}'),
+                          '$_currencySymbol${AmountFormat.money(item.costPerUnit)}'),
                       if (item.taxRate > 0) ...[
                         item.costIncludesTax
                             ? _buildItemDetail(
@@ -2730,7 +2759,7 @@ class _PurchaseBillFormScreenState extends ConsumerState<_PurchaseBillFormScreen
                                 '${item.taxRate.toStringAsFixed(item.taxRate == item.taxRate.roundToDouble() ? 0 : 1)}%'),
                         if (item.costIncludesTax)
                           _buildItemDetail(l10n.purchaseBillMgmtNetCostDetailLabel,
-                              '$_currencySymbol${item.netCostPerUnit.toStringAsFixed(2)}',
+                              '$_currencySymbol${AmountFormat.money(item.netCostPerUnit)}',
                               color: Colors.teal[700]),
                       ],
                     ],
@@ -2740,7 +2769,7 @@ class _PurchaseBillFormScreenState extends ConsumerState<_PurchaseBillFormScreen
             ),
           ),
           const SizedBox(width: 12),
-          Text('$_currencySymbol${item.total.toStringAsFixed(2)}',
+          Text('$_currencySymbol${AmountFormat.money(item.total)}',
               style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold)),
           IconButton(
             icon: const Icon(Icons.edit_outlined, size: 18),

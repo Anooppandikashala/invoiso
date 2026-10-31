@@ -354,15 +354,25 @@ class _InvoiceManagementScreenV2State
           .getNotesForInvoice(invoice.id);
       if (!mounted) return;
       if (notes.isNotEmpty) {
-        AppError.show(context,
-            l10n.invoiceMgmtHasCreditNotesMessage(invoice.invoiceNumber ?? invoice.id));
+        final number = invoice.invoiceNumber ?? invoice.id;
+        AppError.show(
+            context,
+            notes.every((n) => n.isDraft)
+                ? l10n.invoiceMgmtHasDraftNotesMessage(number)
+                : l10n.invoiceMgmtHasCreditNotesMessage(number));
         return;
       }
     }
     final confirmed = await AppError.confirm(
       context,
       title: l10n.invoiceMgmtMoveToTrashTitle,
-      message: l10n.invoiceMgmtMoveToTrashBody(invoice.invoiceNumber ?? invoice.id),
+      // A final sale's stock stays out on trash — point to Cancel / Void.
+      message: (invoice.type == 'Invoice' || invoice.type == 'Receipt') &&
+              !invoice.isDraft &&
+              invoice.status != 'declined'
+          ? '${l10n.invoiceMgmtMoveToTrashBody(invoice.invoiceNumber ?? invoice.id)}'
+              '\n\n${l10n.invoiceMgmtTrashNoStockHint}'
+          : l10n.invoiceMgmtMoveToTrashBody(invoice.invoiceNumber ?? invoice.id),
       confirmLabel: l10n.invoiceMgmtMoveToTrashTitle,
       confirmColor: Colors.orange,
     );
@@ -386,23 +396,72 @@ class _InvoiceManagementScreenV2State
         await ref.read(returnRepositoryProvider).getNotesForInvoice(invoice.id);
     if (!mounted) return;
     if (notes.isNotEmpty) {
-      AppError.show(context,
-          l10n.invoiceMgmtDeclineHasCreditNotesMessage(invoice.invoiceNumber ?? invoice.id));
+      final number = invoice.invoiceNumber ?? invoice.id;
+      AppError.show(
+          context,
+          notes.every((n) => n.isDraft)
+              ? l10n.invoiceMgmtHasDraftNotesMessage(number)
+              : l10n.invoiceMgmtDeclineHasCreditNotesMessage(number));
       return;
     }
-    final confirmed = await AppError.confirm(
-      context,
-      title: l10n.invoiceMgmtDeclineInvoiceTitle,
-      message: l10n.invoiceMgmtDeclineInvoiceBody(invoice.invoiceNumber ?? invoice.id),
-      confirmLabel: l10n.invoiceMgmtMarkAsDeclined,
-      confirmColor: Colors.red,
+    // Only stock-tracked lines move stock — no choice to offer otherwise.
+    final hasStock = invoice.items.any((i) => !i.product.unlimitedStock);
+    var restock = true;
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setLocal) => AlertDialog(
+          title: Text(l10n.invoiceMgmtDeclineInvoiceTitle),
+          content: SizedBox(
+            width: 420,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(l10n.invoiceMgmtDeclineInvoiceBody(
+                    invoice.invoiceNumber ?? invoice.id)),
+                if (hasStock) ...[
+                  const SizedBox(height: 12),
+                  CheckboxListTile(
+                    contentPadding: EdgeInsets.zero,
+                    controlAffinity: ListTileControlAffinity.leading,
+                    value: restock,
+                    onChanged: (v) => setLocal(() => restock = v ?? true),
+                    title: Text(l10n.invoiceMgmtDeclineReturnStockLabel),
+                    subtitle: Text(l10n.invoiceMgmtDeclineReturnStockHint),
+                  ),
+                ],
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: Text(l10n.createInvoiceGoBackButton),
+            ),
+            ElevatedButton(
+              onPressed: () => Navigator.pop(ctx, true),
+              style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.red, foregroundColor: Colors.white),
+              child: Text(l10n.invoiceMgmtCancelVoidAction),
+            ),
+          ],
+        ),
+      ),
     );
-    if (!confirmed) return;
+    if (confirmed != true) return;
 
-    await ref.read(invoiceRepositoryProvider).declineInvoice(invoice.id);
+    final restocked = hasStock && restock;
+    await ref
+        .read(invoiceRepositoryProvider)
+        .declineInvoice(invoice.id, restock: restocked);
     await _loadPage();
     if (mounted) {
-      AppError.showSuccess(context, l10n.invoiceMgmtDeclinedSuccessMessage);
+      AppError.showSuccess(
+          context,
+          restocked
+              ? l10n.invoiceMgmtDeclinedSuccessMessage
+              : l10n.invoiceMgmtDeclinedNoStockMessage);
     }
   }
 
@@ -580,23 +639,39 @@ class _InvoiceManagementScreenV2State
 
   Future<void> _bulkSoftDelete() async {
     final l10n = AppLocalizations.of(context)!;
-    final notes = await ref
-        .read(returnRepositoryProvider)
-        .getNotesForInvoices(_selectedIds.toList());
+    // Per-invoice lookup: draft notes block trashing too, and
+    // getNotesForInvoices skips them.
+    Invoice? first;
+    var notes = const <Invoice>[];
+    for (final i in _pageInvoices.where((i) => _selectedIds.contains(i.id))) {
+      notes = await ref.read(returnRepositoryProvider).getNotesForInvoice(i.id);
+      if (notes.isNotEmpty) {
+        first = i;
+        break;
+      }
+    }
     if (!mounted) return;
-    final withCreditNotes = _pageInvoices.where((i) =>
-        (notes[i.id] ?? const <Invoice>[]).isNotEmpty);
-    if (withCreditNotes.isNotEmpty) {
-      final first = withCreditNotes.first;
-      AppError.show(context,
-          l10n.invoiceMgmtHasCreditNotesMessage(first.invoiceNumber ?? first.id));
+    if (first != null) {
+      final number = first.invoiceNumber ?? first.id;
+      AppError.show(
+          context,
+          notes.every((n) => n.isDraft)
+              ? l10n.invoiceMgmtHasDraftNotesMessage(number)
+              : l10n.invoiceMgmtHasCreditNotesMessage(number));
       return;
     }
     final count = _selectedIds.length;
     final confirmed = await AppError.confirm(
       context,
       title: l10n.invoiceMgmtMoveToTrashTitle,
-      message: l10n.invoiceMgmtBulkMoveToTrashBody(count),
+      message: _pageInvoices.any((i) =>
+              _selectedIds.contains(i.id) &&
+              (i.type == 'Invoice' || i.type == 'Receipt') &&
+              !i.isDraft &&
+              i.status != 'declined')
+          ? '${l10n.invoiceMgmtBulkMoveToTrashBody(count)}'
+              '\n\n${l10n.invoiceMgmtTrashNoStockHint}'
+          : l10n.invoiceMgmtBulkMoveToTrashBody(count),
       confirmLabel: l10n.invoiceMgmtMoveToTrashTitle,
       confirmColor: Colors.orange,
     );
@@ -622,8 +697,10 @@ class _InvoiceManagementScreenV2State
   }
 
   Future<void> _bulkExportCsv() async {
-    final selected =
-        _pageInvoices.where((inv) => _selectedIds.contains(inv.id)).toList();
+    // Drafts have no number yet — skipped, like bulk mark-paid.
+    final selected = _pageInvoices
+        .where((inv) => _selectedIds.contains(inv.id) && !inv.isDraft)
+        .toList();
     if (selected.isEmpty) return;
 
     setState(() => _isBulkLoading = true);
@@ -645,8 +722,10 @@ class _InvoiceManagementScreenV2State
   }
 
   Future<void> _bulkExportPdfs() async {
-    final selected =
-        _pageInvoices.where((inv) => _selectedIds.contains(inv.id)).toList();
+    // Drafts have no number yet — skipped, like bulk mark-paid.
+    final selected = _pageInvoices
+        .where((inv) => _selectedIds.contains(inv.id) && !inv.isDraft)
+        .toList();
     if (selected.isEmpty) return;
 
     // Ask the user: save as folder or as a ZIP?
@@ -1102,6 +1181,7 @@ class _InvoiceManagementScreenV2State
         .where((inv) =>
             _selectedIds.contains(inv.id) &&
             inv.status != 'declined' &&
+            !inv.isDraft &&
             inv.outstandingBalance > InvoiceCalculator.moneyEpsilon)
         .toList();
     final alreadyPaid = _selectedIds.length - unpaid.length;
@@ -1806,13 +1886,16 @@ class _InvoiceManagementScreenV2State
   // those are visible, so the menu carries all of them.
   List<PopupMenuEntry<String>> _rowActionMenuItemsV2(Invoice invoice, bool isWide) {
     final l10n = AppLocalizations.of(context)!;
-    final isDeclined = widget.filterType == 'Invoice' && invoice.status == 'declined';
+    final isDeclined = (widget.filterType == 'Invoice' || widget.filterType == 'Receipt') &&
+        invoice.status == 'declined';
+    // A draft isn't committed yet: only view / edit / duplicate / trash.
+    final isDraft = invoice.isDraft;
     return [
       if (!isWide) ...[
         PopupMenuItem(value: 'view', child: _MenuRow(Icons.visibility_outlined, l10n.actionView, Colors.green)),
-        if (!_isReturnType && !isDeclined)
+        if ((!_isReturnType || isDraft) && !isDeclined)
           PopupMenuItem(value: 'edit', child: _MenuRow(Icons.edit_outlined, l10n.actionEdit, Colors.blue)),
-        if (widget.filterType == 'Invoice' && !isDeclined)
+        if (widget.filterType == 'Invoice' && !isDeclined && !isDraft)
           PopupMenuItem(
             value: 'pay',
             child: _MenuRow(Icons.payments_outlined, l10n.actionApplyPayment,
@@ -1825,13 +1908,15 @@ class _InvoiceManagementScreenV2State
             child: _MenuRow(Icons.history, l10n.paymentDialogHistoryTitle, Colors.blueGrey),
           ),
       ],
-      if (widget.filterType == 'Invoice' && !isDeclined) ...[
+      if ((widget.filterType == 'Invoice' || widget.filterType == 'Receipt') &&
+          !isDeclined &&
+          !isDraft) ...[
         PopupMenuItem(
             value: 'decline_invoice',
-            child: _MenuRow(Icons.cancel_outlined, l10n.invoiceMgmtMarkAsDeclined, Colors.red)),
+            child: _MenuRow(Icons.cancel_outlined, l10n.invoiceMgmtCancelVoidAction, Colors.red)),
         const PopupMenuDivider(),
       ],
-      if (widget.filterType == 'Quotation') ...[
+      if (widget.filterType == 'Quotation' && !isDraft) ...[
         if (widget.onConvertToInvoice != null)
           PopupMenuItem(
               value: 'convert',
@@ -1855,7 +1940,8 @@ class _InvoiceManagementScreenV2State
       if (!_isReturnType)
         PopupMenuItem(value: 'duplicate', child: _MenuRow(Icons.copy_all_outlined, l10n.actionDuplicate, Colors.teal)),
       if ((widget.filterType == 'Invoice' || widget.filterType == 'Receipt') &&
-          !isDeclined)
+          !isDeclined &&
+          !isDraft)
         PopupMenuItem(
             value: 'credit_note',
             child: _MenuRow(
@@ -1867,6 +1953,7 @@ class _InvoiceManagementScreenV2State
       // Debit notes are advanced — only with Credit / Debit Notes enabled.
       if (widget.filterType == 'Invoice' &&
           !isDeclined &&
+          !isDraft &&
           ref.read(returnsEnabledProvider))
         PopupMenuItem(
             value: 'debit_note',
@@ -1874,19 +1961,21 @@ class _InvoiceManagementScreenV2State
                 l10n.actionCreateDebitNote, Colors.indigo)),
       if (widget.filterType == 'Invoice' &&
           !isDeclined &&
+          !isDraft &&
           invoice.outstandingBalance > 0)
         PopupMenuItem(
             value: 'apply_credit',
             child: _MenuRow(Icons.account_balance_wallet_outlined,
                 l10n.returnApplyCustomerCreditAction, Colors.teal)),
-      if (!isWide) ...[
+      if (!isWide && !isDraft) ...[
         PopupMenuItem(
             value: 'preview', child: _MenuRow(Icons.picture_as_pdf_outlined, l10n.actionPdfPreview, Colors.orange)),
         PopupMenuItem(
             value: 'download', child: _MenuRow(Icons.download_outlined, l10n.actionDownloadPdf, Colors.deepPurple)),
         PopupMenuItem(value: 'print', child: _MenuRow(Icons.print_outlined, l10n.actionPrint, Colors.blueGrey)),
       ],
-      if (widget.filterType == 'Credit Note') ...[
+      // A draft note hasn't settled anything yet — nothing to refund or void.
+      if (widget.filterType == 'Credit Note' && !isDraft) ...[
         PopupMenuItem(
             value: 'refund',
             child: _MenuRow(
@@ -1901,7 +1990,8 @@ class _InvoiceManagementScreenV2State
               child: _MenuRow(
                   Icons.block_outlined, l10n.actionCancelVoid, Colors.red)),
       ],
-      if (widget.user.isAdmin() && widget.filterType != 'Credit Note')
+      if (widget.user.isAdmin() &&
+          (widget.filterType != 'Credit Note' || isDraft))
         PopupMenuItem(
             value: 'delete', child: _MenuRow(Icons.delete_outline, l10n.invoiceMgmtMoveToTrashTitle, Colors.red)),
     ];
@@ -1952,7 +2042,9 @@ class _InvoiceManagementScreenV2State
 
   Widget _rowActionsV2(Invoice invoice, bool isWide) {
     final l10n = AppLocalizations.of(context)!;
-    final isDeclined = widget.filterType == 'Invoice' && invoice.status == 'declined';
+    final isDeclined = (widget.filterType == 'Invoice' || widget.filterType == 'Receipt') &&
+        invoice.status == 'declined';
+    final isDraft = invoice.isDraft;
     final menu = PopupMenuButton<String>(
       icon: const Icon(Icons.more_vert, size: 20),
       tooltip: l10n.invoiceMgmtMoreActionsTooltip,
@@ -1968,10 +2060,10 @@ class _InvoiceManagementScreenV2State
       children: [
         _buildActionButton(Icons.visibility_outlined, Colors.green, l10n.actionView,
             () => _viewInvoice(invoice)),
-        if (!_isReturnType && !isDeclined)
+        if ((!_isReturnType || isDraft) && !isDeclined)
           _buildActionButton(
               Icons.edit_outlined, Colors.blue, l10n.actionEdit, () => widget.onEditInvoice(invoice)),
-        if (widget.filterType == 'Invoice' && !isDeclined)
+        if (widget.filterType == 'Invoice' && !isDeclined && !isDraft)
           _buildActionButton(
             Icons.payments_outlined,
             invoice.paymentStatus == PaymentStatus.paid ? Colors.green : Colors.purple,
@@ -1981,12 +2073,15 @@ class _InvoiceManagementScreenV2State
         if (isDeclined && invoice.payments.isNotEmpty)
           _buildActionButton(Icons.history, Colors.blueGrey, l10n.paymentDialogHistoryTitle,
               () => _showApplyPaymentDialog(invoice)),
-        _buildActionButton(Icons.picture_as_pdf_outlined, Colors.orange, l10n.actionPdfPreview,
-            () => InvoicePdfServices.previewPDF(context, invoice)),
-        _buildActionButton(Icons.download_outlined, Colors.deepPurple, l10n.actionDownloadPdf,
-            () => PDFService.downloadPDF(context, invoice)),
-        _buildActionButton(Icons.print_outlined, Colors.blueGrey, l10n.actionPrint,
-            () => InvoicePdfServices.generatePDF(context, invoice)),
+        // No number yet — finalize the draft before PDF / print.
+        if (!isDraft) ...[
+          _buildActionButton(Icons.picture_as_pdf_outlined, Colors.orange, l10n.actionPdfPreview,
+              () => InvoicePdfServices.previewPDF(context, invoice)),
+          _buildActionButton(Icons.download_outlined, Colors.deepPurple, l10n.actionDownloadPdf,
+              () => PDFService.downloadPDF(context, invoice)),
+          _buildActionButton(Icons.print_outlined, Colors.blueGrey, l10n.actionPrint,
+              () => InvoicePdfServices.generatePDF(context, invoice)),
+        ],
         menu,
       ],
     );
@@ -2091,9 +2186,22 @@ class _InvoiceManagementScreenV2State
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Text('#${invoice.invoiceNumber ?? invoice.id}',
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(fontSize: 14.5, fontWeight: FontWeight.w700)),
+                  invoice.isDraft
+                      ? Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: Colors.orange.withValues(alpha: 0.15),
+                            borderRadius: BorderRadius.circular(AppBorderRadius.xsmall),
+                          ),
+                          child: Text(AppLocalizations.of(context)!.invoiceDraftBadge,
+                              style: TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w700,
+                                  color: Colors.orange[800])),
+                        )
+                      : Text('#${invoice.invoiceNumber ?? invoice.id}',
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(fontSize: 14.5, fontWeight: FontWeight.w700)),
                   const SizedBox(height: 2),
                   Row(
                     mainAxisSize: MainAxisSize.min,
@@ -2111,6 +2219,11 @@ class _InvoiceManagementScreenV2State
                       CustomerInfoButton(customer: invoice.customer),
                     ],
                   ),
+                  // Receipts have no status column — flag a voided one here.
+                  if (widget.filterType == 'Receipt' && invoice.status == 'declined') ...[
+                    const SizedBox(height: 4),
+                    _statusPill(AppLocalizations.of(context)!.invoiceStatusDeclinedBadge, Colors.red),
+                  ],
                   if (_isReturnType && invoice.originalInvoiceNumber != null) ...[
                     const SizedBox(height: 2),
                     Text(
@@ -2162,7 +2275,7 @@ class _InvoiceManagementScreenV2State
           ],
           Expanded(
             child: Text(
-              '${invoice.currencySymbol} ${invoice.total.toStringAsFixed(2)}',
+              '${invoice.currencySymbol} ${AmountFormat.money(invoice.total)}',
               overflow: TextOverflow.ellipsis,
               style: const TextStyle(fontSize: 14.5, fontWeight: FontWeight.bold, color: Colors.green),
             ),
@@ -2181,7 +2294,7 @@ class _InvoiceManagementScreenV2State
               child: invoice.status == 'declined' || invoice.paymentStatus == PaymentStatus.paid
                   ? Text('—', style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant))
                   : Text(
-                      '${invoice.currencySymbol} ${invoice.outstandingBalance.toStringAsFixed(2)}',
+                      '${invoice.currencySymbol} ${AmountFormat.money(invoice.outstandingBalance)}',
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(
                         fontSize: 13,
@@ -2667,7 +2780,7 @@ class _InvoiceManagementScreenV2State
       return Tooltip(
         message: ofType.map((n) => '#${n.invoiceNumber ?? n.id}').join(', '),
         child: _statusPill(
-            label('${invoice.currencySymbol}${sum.toStringAsFixed(2)}'), color),
+            label('${invoice.currencySymbol}${AmountFormat.money(sum)}'), color),
       );
     }
 
@@ -2725,7 +2838,7 @@ class _InvoiceManagementScreenV2State
     }
     final outstanding = invoice.outstandingBalance;
     final amount = credit < outstanding ? credit : outstanding;
-    String money(double v) => '${invoice.currencySymbol}${v.toStringAsFixed(2)}';
+    String money(double v) => '${invoice.currencySymbol}${AmountFormat.money(v)}';
     final amountText = money(amount);
     final confirmed = await showDialog<bool>(
       context: context,
@@ -2912,7 +3025,7 @@ class _InvoiceManagementScreenV2State
 
   String _refundLabel(Invoice creditNote, Refund r) =>
       '${r.receiptNumber}  ·  ${AppFormatters.formatShortDate(r.dateRefunded)}'
-      '  ·  ${creditNote.currencySymbol}${r.amount.toStringAsFixed(2)}';
+      '  ·  ${creditNote.currencySymbol}${AmountFormat.money(r.amount)}';
 
   Future<void> _showRecordRefundDialog(Invoice creditNote) async {
     await showDialog(
@@ -3011,8 +3124,10 @@ class _TrashDialogState extends ConsumerState<_TrashDialog> {
   }
 
   Future<void> _restore(Invoice invoice) async {
-    // A debit note can't come back onto a declined / trashed invoice.
-    if (invoice.type == 'Debit Note' && invoice.originalInvoiceId != null) {
+    // A debit / draft credit note can't come back onto a declined / trashed
+    // invoice.
+    if ((invoice.type == 'Debit Note' || invoice.type == 'Credit Note') &&
+        invoice.originalInvoiceId != null) {
       final original = await ref
           .read(invoiceRepositoryProvider)
           .getInvoiceById(invoice.originalInvoiceId!);
@@ -3047,8 +3162,12 @@ class _TrashDialogState extends ConsumerState<_TrashDialog> {
           .getNotesForInvoice(invoice.id);
       if (!mounted) return;
       if (notes.isNotEmpty) {
-        AppError.show(context,
-            l10n.invoiceMgmtHasCreditNotesMessage(invoice.invoiceNumber ?? invoice.id));
+        final number = invoice.invoiceNumber ?? invoice.id;
+        AppError.show(
+            context,
+            notes.every((n) => n.isDraft)
+                ? l10n.invoiceMgmtHasDraftNotesMessage(number)
+                : l10n.invoiceMgmtHasCreditNotesMessage(number));
         return;
       }
     }
@@ -3166,9 +3285,9 @@ class _TrashDialogState extends ConsumerState<_TrashDialog> {
                       trailing: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          // Trashed credit note = voided; its stock and
-                          // credit are already reversed, so no restore.
-                          if (inv.type != 'Credit Note')
+                          // A trashed final credit note was voided (stock and
+                          // credit reversed), so no restore; drafts restore.
+                          if (inv.type != 'Credit Note' || inv.isDraft)
                             TextButton.icon(
                               onPressed: () => _restore(inv),
                               icon: const Icon(Icons.restore, size: 16),

@@ -21,12 +21,14 @@ class AccessibilityScreen extends ConsumerStatefulWidget {
 class _AccessibilityScreenState extends ConsumerState<AccessibilityScreen> {
   bool _cashExchangeEnabled = false;
   bool _reportsAdminOnly = false;
+  bool _purchaseBillsAdminOnly = false;
 
   @override
   void initState() {
     super.initState();
     _loadCashExchangeEnabled();
     _loadReportsAdminOnly();
+    _loadPurchaseBillsAdminOnly();
   }
 
   // Saved immediately and pushed to the provider so the dashboard sidebar
@@ -52,6 +54,22 @@ class _AccessibilityScreenState extends ConsumerState<AccessibilityScreen> {
         .setSetting(SettingKey.reportsAdminOnly, value.toString());
     if (!mounted) return;
     setState(() => _reportsAdminOnly = value);
+  }
+
+  Future<void> _loadPurchaseBillsAdminOnly() async {
+    final v = await ref
+        .read(settingsRepositoryProvider)
+        .getSetting(SettingKey.purchaseBillsAndSuppliersAdminOnly);
+    if (!mounted) return;
+    setState(() => _purchaseBillsAdminOnly = v == 'true');
+  }
+
+  Future<void> _setPurchaseBillsAdminOnly(bool value) async {
+    await ref
+        .read(settingsRepositoryProvider)
+        .setSetting(SettingKey.purchaseBillsAndSuppliersAdminOnly, value.toString());
+    if (!mounted) return;
+    setState(() => _purchaseBillsAdminOnly = value);
   }
 
   Future<void> _loadCashExchangeEnabled() async {
@@ -168,21 +186,54 @@ class _AccessibilityScreenState extends ConsumerState<AccessibilityScreen> {
                     side: BorderSide(
                         color: Theme.of(context).colorScheme.outlineVariant),
                   ),
-                  child: SwitchListTile(
-                    contentPadding:
-                        const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-                    secondary: const Icon(Icons.local_shipping_outlined),
-                    title: Text(l10n.settingsEnablePurchaseBillsSuppliersLabel,
-                        style: const TextStyle(fontWeight: FontWeight.w600)),
-                    subtitle: Text(
-                        l10n.settingsEnablePurchaseBillsSuppliersSubtitle,
-                        style: TextStyle(
-                            fontSize: AppFontSize.xsmall,
-                            color: Theme.of(context)
-                                .colorScheme
-                                .onSurfaceVariant)),
-                    value: ref.watch(enablePurchaseBillsAndSuppliersProvider),
-                    onChanged: _setEnablePurchaseBills,
+                  child: Column(
+                    children: [
+                      SwitchListTile(
+                        contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 20, vertical: 8),
+                        secondary: const Icon(Icons.local_shipping_outlined),
+                        title: Text(
+                            l10n.settingsEnablePurchaseBillsSuppliersLabel,
+                            style: const TextStyle(fontWeight: FontWeight.w600)),
+                        subtitle: Text(
+                            l10n.settingsEnablePurchaseBillsSuppliersSubtitle,
+                            style: TextStyle(
+                                fontSize: AppFontSize.xsmall,
+                                color: Theme.of(context)
+                                    .colorScheme
+                                    .onSurfaceVariant)),
+                        value:
+                            ref.watch(enablePurchaseBillsAndSuppliersProvider),
+                        onChanged: _setEnablePurchaseBills,
+                      ),
+                      // Purchase costs / supplier dues are business data,
+                      // like Reports.
+                      if (ref.watch(enablePurchaseBillsAndSuppliersProvider)) ...[
+                        Divider(
+                            height: 1,
+                            color:
+                                Theme.of(context).colorScheme.outlineVariant),
+                        SwitchListTile(
+                          contentPadding: const EdgeInsets.symmetric(
+                              horizontal: 20, vertical: 8),
+                          secondary:
+                              const Icon(Icons.admin_panel_settings_outlined),
+                          title: Text(
+                              l10n.accessibilityPurchaseBillsAdminOnlyLabel,
+                              style:
+                                  const TextStyle(fontWeight: FontWeight.w600)),
+                          subtitle: Text(
+                              l10n.accessibilityPurchaseBillsAdminOnlySubtitle,
+                              style: TextStyle(
+                                  fontSize: AppFontSize.xsmall,
+                                  color: Theme.of(context)
+                                      .colorScheme
+                                      .onSurfaceVariant)),
+                          value: _purchaseBillsAdminOnly,
+                          onChanged: _setPurchaseBillsAdminOnly,
+                        ),
+                      ],
+                    ],
                   ),
                 ),
                 const SizedBox(height: 12),

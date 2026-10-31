@@ -1475,11 +1475,11 @@ class AppLocalizationsZh extends AppLocalizations {
   String get quotationStatusConverted => '已转换';
 
   @override
-  String get invoiceMgmtDeclineInvoiceTitle => '拒绝此发票？';
+  String get invoiceMgmtDeclineInvoiceTitle => '取消 / 作废此笔销售？';
 
   @override
   String invoiceMgmtDeclineInvoiceBody(String number) {
-    return '这将把发票 #$number 标记为已拒绝，并将其商品归还库存。此操作无法撤销。';
+    return '#$number 将被标记为已拒绝。它仍保留在列表中，但不再计入报表或余额。此操作无法撤销。';
   }
 
   @override
@@ -1488,7 +1488,7 @@ class AppLocalizationsZh extends AppLocalizations {
   }
 
   @override
-  String get invoiceMgmtDeclinedSuccessMessage => '发票已拒绝，库存已归还。';
+  String get invoiceMgmtDeclinedSuccessMessage => '销售已作废，库存已归还。';
 
   @override
   String get invoiceStatusDeclinedBadge => '已拒绝';
@@ -4544,6 +4544,14 @@ class AppLocalizationsZh extends AppLocalizations {
   String get accessibilityReportsAdminOnlySubtitle => '对非管理员用户隐藏报表菜单。';
 
   @override
+  String get accessibilityPurchaseBillsAdminOnlyLabel =>
+      'Purchase Bills & Suppliers: Admins Only';
+
+  @override
+  String get accessibilityPurchaseBillsAdminOnlySubtitle =>
+      'Hides the Purchase Bills and Suppliers menus from non-admin users.';
+
+  @override
   String get cashExchangeCashLabel => '现金';
 
   @override
@@ -5369,6 +5377,74 @@ class AppLocalizationsZh extends AppLocalizations {
   String get returnSelectCustomerFirst => 'Select a customer first';
 
   @override
+  String get productFormDuplicateTitle => 'Product already exists';
+
+  @override
+  String productFormDuplicateMessage(String name) {
+    return 'A product named \"$name\" already exists. Create another one anyway?';
+  }
+
+  @override
+  String get productFormCreateAnywayButton => 'Create anyway';
+
+  @override
+  String get productFormNewProductButton => 'New product';
+
+  @override
+  String get productFormPurchaseStockHelper =>
+      'Opening stock. Finalizing this purchase bill adds the purchased quantity on top.';
+
+  @override
+  String get invoiceDraftBadge => 'DRAFT';
+
+  @override
+  String get createInvoiceStockShortTitle => 'Not enough stock';
+
+  @override
+  String get createInvoiceStockShortMessage =>
+      'Some items have less stock than this invoice needs:';
+
+  @override
+  String createInvoiceStockShortLine(
+      String product, String available, String needed, String short) {
+    return '$product: in stock $available, on invoice $needed (short by $short)';
+  }
+
+  @override
+  String get createInvoiceStockShortFooter =>
+      'If you save, stock will go below zero.';
+
+  @override
+  String get createInvoiceGoBackButton => 'Go back';
+
+  @override
+  String get createInvoiceSaveAnywayButton => 'Save anyway';
+
+  @override
+  String get createInvoiceSaveDraftButton => 'Save Draft';
+
+  @override
+  String get createInvoiceDraftSavedMessage => 'Draft saved';
+
+  @override
+  String createInvoiceFinalizeButton(String type) {
+    return 'Finalize $type';
+  }
+
+  @override
+  String createInvoiceFinalizedMessage(String type, String number) {
+    return 'Finalized — $type #$number';
+  }
+
+  @override
+  String get createInvoiceDraftPreviewTooltip =>
+      'Finalize the draft to get an invoice number before previewing the PDF';
+
+  @override
+  String get createInvoiceDraftPrintTooltip =>
+      'Finalize the draft to get an invoice number before printing';
+
+  @override
   String get createInvoiceLockedByCreditNotes =>
       'This invoice has credit notes, so customer, items, extra costs, discount and tax are locked. Void the credit notes to change them.';
 
@@ -5379,7 +5455,7 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String invoiceMgmtDebitNoteRestoreBlocked(String number) {
-    return 'Invoice #$number is declined or in trash, so its debit note can\'t be restored.';
+    return 'Invoice #$number is declined or in trash, so this note can\'t be restored.';
   }
 
   @override
@@ -5391,6 +5467,27 @@ class AppLocalizationsZh extends AppLocalizations {
   String invoiceMgmtDeclineHasCreditNotesMessage(String number) {
     return 'Invoice #$number has credit or debit notes. Void its credit notes and trash its debit notes before declining.';
   }
+
+  @override
+  String invoiceMgmtHasDraftNotesMessage(String number) {
+    return 'Invoice #$number has a draft credit or debit note. Finalize or trash it from the Credit Notes / Debit Notes tab first.';
+  }
+
+  @override
+  String get createInvoiceFinalizeDateTitle => 'Use today\'s date?';
+
+  @override
+  String createInvoiceFinalizeDateMessage(String date) {
+    return 'This draft is dated $date. Invoice numbers should follow date order, so finalizing usually takes today\'s date.';
+  }
+
+  @override
+  String createInvoiceFinalizeKeepDateButton(String date) {
+    return 'Keep $date';
+  }
+
+  @override
+  String get createInvoiceFinalizeUseTodayButton => 'Use today';
 
   @override
   String get returnGstAgainstInvoiceWarning =>
@@ -5557,4 +5654,31 @@ class AppLocalizationsZh extends AppLocalizations {
   String creditNoteCancelError(String error) {
     return 'Could not cancel: $error';
   }
+
+  @override
+  String get invoiceMgmtCancelVoidAction => '取消 / 作废';
+
+  @override
+  String get invoiceMgmtDeclineReturnStockLabel => '将所有商品归还库存';
+
+  @override
+  String get invoiceMgmtDeclineReturnStockHint => '如果货物未退回（损坏、已使用或客户保留），请取消勾选。';
+
+  @override
+  String get invoiceMgmtDeclinedNoStockMessage => '销售已作废，库存未变。';
+
+  @override
+  String get invoiceMgmtTrashNoStockHint => '移至回收站不会归还库存。要取消销售，请使用“取消 / 作废”。';
+
+  @override
+  String get amountSeparatorLabel => '数字格式';
+
+  @override
+  String get amountSeparatorNoneLabel => '无分隔符（1234567.89）';
+
+  @override
+  String get amountSeparatorInternationalLabel => '国际（1,234,567.89）';
+
+  @override
+  String get amountSeparatorIndianLabel => '印度（12,34,567.89）';
 }

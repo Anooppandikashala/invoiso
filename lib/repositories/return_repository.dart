@@ -4,15 +4,18 @@ import 'package:invoiso/models/refund.dart';
 
 /// Return management — credit / debit notes, refunds, customer credit.
 abstract class ReturnRepository {
+  /// [replaceDraft]: finalizing a saved draft note with the same id.
   Future<void> createCreditNote({
     required Invoice creditNote,
     Invoice? originalInvoice,
     RefundInput? immediateRefund,
+    bool replaceDraft = false,
   });
 
   Future<void> createDebitNote({
     required Invoice debitNote,
     Invoice? originalInvoice,
+    bool replaceDraft = false,
   });
 
   Future<Refund> recordRefund({

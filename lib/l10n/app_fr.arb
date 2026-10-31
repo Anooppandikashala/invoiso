@@ -410,8 +410,8 @@
   "quotationStatusAccepted": "Accepté",
   "quotationStatusDeclined": "Refusé",
   "quotationStatusConverted": "Convertie",
-  "invoiceMgmtDeclineInvoiceTitle": "Refuser la facture ?",
-  "invoiceMgmtDeclineInvoiceBody": "Cela marquera la facture #{number} comme refusée et remettra ses articles en stock. Cette action est irréversible.",
+  "invoiceMgmtDeclineInvoiceTitle": "Annuler / invalider cette vente ?",
+  "invoiceMgmtDeclineInvoiceBody": "#{number} sera marquée comme refusée. Elle reste dans la liste mais n'est plus comptée dans les rapports ni les soldes. Cette action est irréversible.",
   "@invoiceMgmtDeclineInvoiceBody": {
     "placeholders": {
       "number": {
@@ -420,7 +420,7 @@
     }
   },
   "invoiceMgmtDeclineHasPaymentsMessage": "La facture #{number} a des paiements enregistrés. Supprimez-les dans Appliquer un paiement avant de la refuser.",
-  "invoiceMgmtDeclinedSuccessMessage": "Facture refusée, stock restauré.",
+  "invoiceMgmtDeclinedSuccessMessage": "Vente annulée, stock restauré.",
   "invoiceStatusDeclinedBadge": "Refusée",
   "createInvoiceConvertTitle": "Convertir en facture",
   "createInvoiceConvertedSuccessMessage": "Converti en facture n° {invoiceNumber}",
@@ -1473,5 +1473,14 @@
   "purchaseBillMgmtColItem": "Article",
   "purchaseBillMgmtColCost": "Coût",
   "purchaseBillMgmtColTaxPercent": "Taxe %",
-  "purchaseBillMgmtPaymentRecordedMessage": "Paiement enregistré."
+  "purchaseBillMgmtPaymentRecordedMessage": "Paiement enregistré.",
+  "invoiceMgmtCancelVoidAction": "Annuler / Invalider",
+  "invoiceMgmtDeclineReturnStockLabel": "Remettre tous les articles en stock",
+  "invoiceMgmtDeclineReturnStockHint": "Décochez si la marchandise n'est pas revenue (abîmée, utilisée ou conservée).",
+  "invoiceMgmtDeclinedNoStockMessage": "Vente annulée. Stock inchangé.",
+  "invoiceMgmtTrashNoStockHint": "La corbeille ne remet pas le stock. Pour annuler une vente, utilisez Annuler / Invalider.",
+  "amountSeparatorLabel": "Format des nombres",
+  "amountSeparatorNoneLabel": "Sans séparateur  (1234567.89)",
+  "amountSeparatorInternationalLabel": "International  (1,234,567.89)",
+  "amountSeparatorIndianLabel": "Indien  (12,34,567.89)"
 }

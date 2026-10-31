@@ -10,6 +10,7 @@ import 'package:invoiso/models/customer_field_settings.dart';
 import 'package:invoiso/models/invoice.dart';
 import 'package:invoiso/models/invoice_item.dart';
 import 'package:invoiso/utils/amount_in_words.dart';
+import 'package:invoiso/utils/formatters.dart';
 
 /// Tracks how much table-row height has been painted so far, so the
 /// watermark image reads as one continuous strip running down the items
@@ -316,7 +317,7 @@ pw.Widget buildBankDetailsSection({
           row('Bank', bankAccount.bankName),
         row('Account No.', bankAccount.accountNumber),
         if (bankAccount.ifscCode.isNotEmpty)
-          row('IFSC Code', bankAccount.ifscCode),
+          row(bankAccount.codeLabel, bankAccount.ifscCode),
         if (bankAccount.iban.isNotEmpty)
           row('IBAN', bankAccount.iban),
       ],
@@ -403,7 +404,7 @@ pw.Widget buildUpiQrSection({
           textAlign: pw.TextAlign.center,
         ),
         pw.Text(
-          '${currencyCode.toUpperCase()} ${amount.toStringAsFixed(2)}',
+          '${currencyCode.toUpperCase()} ${AmountFormat.money(amount)}',
           style: pw.TextStyle(
             fontSize: amountFontSize,
             fontWeight: pw.FontWeight.bold,
@@ -472,7 +473,7 @@ pw.Widget buildEnhancedTotals(
       children: [
         pdfTotalRow(
           "Subtotal",
-          "$currencySymbol ${(invoice.totalDiscount > 0 ? invoice.grossSubtotal : invoice.subtotal).toStringAsFixed(2)}",
+          "$currencySymbol ${AmountFormat.money(invoice.totalDiscount > 0 ? invoice.grossSubtotal : invoice.subtotal)}",
           fontSize: rowFontSize,
           horizontalPadding: rowHorizontalPadding,
           verticalPadding: rowVerticalPadding,
@@ -480,7 +481,7 @@ pw.Widget buildEnhancedTotals(
         if (invoice.totalDiscount > 0)
           pdfTotalRow(
             "Discount",
-            "-$currencySymbol ${invoice.totalDiscount.toStringAsFixed(2)}",
+            "-$currencySymbol ${AmountFormat.money(invoice.totalDiscount)}",
             color: PdfColors.orange800,
             fontSize: rowFontSize,
             horizontalPadding: rowHorizontalPadding,
@@ -488,21 +489,21 @@ pw.Widget buildEnhancedTotals(
           ),
         if (invoice.taxMode != TaxMode.none && !showCgstSgst && !showIgst)
           pdfTotalRow(invoiceTaxLabel(invoice),
-              "$currencySymbol ${invoice.tax.toStringAsFixed(2)}",
+              "$currencySymbol ${AmountFormat.money(invoice.tax)}",
               fontSize: rowFontSize,
               horizontalPadding: rowHorizontalPadding,
               verticalPadding: rowVerticalPadding),
         if (invoice.taxMode != TaxMode.none && showIgst)
-          pdfTotalRow("IGST", "$currencySymbol ${invoice.tax.toStringAsFixed(2)}",
+          pdfTotalRow("IGST", "$currencySymbol ${AmountFormat.money(invoice.tax)}",
               fontSize: rowFontSize,
               horizontalPadding: rowHorizontalPadding,
               verticalPadding: rowVerticalPadding),
         if (invoice.taxMode != TaxMode.none && showCgstSgst && !showIgst) ...[
-          pdfTotalRow("CGST", "$currencySymbol ${(invoice.tax / 2).toStringAsFixed(2)}",
+          pdfTotalRow("CGST", "$currencySymbol ${AmountFormat.money(invoice.tax / 2)}",
               fontSize: rowFontSize,
               horizontalPadding: rowHorizontalPadding,
               verticalPadding: rowVerticalPadding),
-          pdfTotalRow("SGST", "$currencySymbol ${(invoice.tax / 2).toStringAsFixed(2)}",
+          pdfTotalRow("SGST", "$currencySymbol ${AmountFormat.money(invoice.tax / 2)}",
               fontSize: rowFontSize,
               horizontalPadding: rowHorizontalPadding,
               verticalPadding: rowVerticalPadding),
@@ -510,8 +511,8 @@ pw.Widget buildEnhancedTotals(
         ...invoice.additionalCosts.map((c) => pdfTotalRow(
               c.label.isEmpty ? 'Extra Cost' : c.label,
               c.amount < 0
-                  ? "-$currencySymbol ${(-c.amount).toStringAsFixed(2)}"
-                  : "$currencySymbol ${c.amount.toStringAsFixed(2)}",
+                  ? "-$currencySymbol ${AmountFormat.money(-c.amount)}"
+                  : "$currencySymbol ${AmountFormat.money(c.amount)}",
               fontSize: rowFontSize,
               horizontalPadding: rowHorizontalPadding,
               verticalPadding: rowVerticalPadding,
@@ -521,7 +522,7 @@ pw.Widget buildEnhancedTotals(
             invoice.invoiceDiscountType == InvoiceDiscountType.percent
                 ? "Extra Discount (${invoice.invoiceDiscountValue.toStringAsFixed(1)}%)"
                 : "Extra Discount ",
-            "-$currencySymbol ${invoice.invoiceDiscountAmount.toStringAsFixed(2)}",
+            "-$currencySymbol ${AmountFormat.money(invoice.invoiceDiscountAmount)}",
             color: PdfColors.orange800,
             fontSize: rowFontSize,
             horizontalPadding: rowHorizontalPadding,
@@ -547,7 +548,7 @@ pw.Widget buildEnhancedTotals(
                       fontSize: highlightFontSize,
                       fontWeight: pw.FontWeight.bold,
                       color: PdfColors.white)),
-              pw.Text("$currencySymbol ${invoice.total.toStringAsFixed(2)}",
+              pw.Text("$currencySymbol ${AmountFormat.money(invoice.total)}",
                   style: pw.TextStyle(
                       fontSize: highlightFontSize,
                       fontWeight: pw.FontWeight.bold,
@@ -558,7 +559,7 @@ pw.Widget buildEnhancedTotals(
         if (hasPreviousBalance) ...[
           pdfTotalRow(
             "Previous Balance Due",
-            "$currencySymbol ${previousBalanceDue.toStringAsFixed(2)}",
+            "$currencySymbol ${AmountFormat.money(previousBalanceDue)}",
             color: PdfColors.orange800,
             fontSize: rowFontSize,
             horizontalPadding: rowHorizontalPadding,
@@ -584,7 +585,7 @@ pw.Widget buildEnhancedTotals(
                         fontSize: highlightFontSize,
                         fontWeight: pw.FontWeight.bold,
                         color: PdfColors.white)),
-                pw.Text("$currencySymbol ${totalDue.toStringAsFixed(2)}",
+                pw.Text("$currencySymbol ${AmountFormat.money(totalDue)}",
                     style: pw.TextStyle(
                         fontSize: highlightFontSize,
                         fontWeight: pw.FontWeight.bold,
@@ -596,7 +597,7 @@ pw.Widget buildEnhancedTotals(
         if (showRoundOff) ...[
           pdfTotalRow(
             "Round off",
-            "$currencySymbol ${netTotal.roundOff.toStringAsFixed(2)}",
+            "$currencySymbol ${AmountFormat.money(netTotal.roundOff)}",
             fontSize: rowFontSize,
             horizontalPadding: rowHorizontalPadding,
             verticalPadding: rowVerticalPadding,
@@ -621,7 +622,7 @@ pw.Widget buildEnhancedTotals(
                         fontSize: highlightFontSize,
                         fontWeight: pw.FontWeight.bold,
                         color: PdfColors.white)),
-                pw.Text("$currencySymbol ${netTotal.rounded.toStringAsFixed(2)}",
+                pw.Text("$currencySymbol ${AmountFormat.money(netTotal.rounded)}",
                     style: pw.TextStyle(
                         fontSize: highlightFontSize,
                         fontWeight: pw.FontWeight.bold,
@@ -633,7 +634,7 @@ pw.Widget buildEnhancedTotals(
         if (hasPaid) ...[
           pdfTotalRow(
             "Amount Paid",
-            "$currencySymbol ${invoice.amountPaid.toStringAsFixed(2)}",
+            "$currencySymbol ${AmountFormat.money(invoice.amountPaid)}",
             fontSize: rowFontSize,
             horizontalPadding: rowHorizontalPadding,
             verticalPadding: rowVerticalPadding,
@@ -660,7 +661,7 @@ pw.Widget buildEnhancedTotals(
                 ),
                 if (!isPaidInFull)
                   pw.Text(
-                    "$currencySymbol ${invoice.outstandingBalance.toStringAsFixed(2)}",
+                    "$currencySymbol ${AmountFormat.money(invoice.outstandingBalance)}",
                     style: pw.TextStyle(
                         fontSize: highlightFontSize,
                         fontWeight: pw.FontWeight.bold,
@@ -1044,7 +1045,7 @@ pw.Widget buildInvoiceTable(Invoice invoice,
                   item.discountPerUnit &&
                   item.discount > 0)
                 pw.Text(
-                  '(${item.effectivePrice.toStringAsFixed(2)} - ${item.discount.toStringAsFixed(2)} = ${(item.effectivePrice - item.discount).toStringAsFixed(2)}/item)',
+                  '(${AmountFormat.money(item.effectivePrice)} - ${AmountFormat.money(item.discount)} = ${AmountFormat.money(item.effectivePrice - item.discount)}/item)',
                   style: pw.TextStyle(
                       fontSize: tableFontSize * 0.7,
                       color: PdfColors.teal700),
@@ -1072,35 +1073,35 @@ pw.Widget buildInvoiceTable(Invoice invoice,
               textAlign: centerOnGridClassic),
         buildTableCell(
             showDiscount
-                ? item.effectivePrice.toStringAsFixed(2)
-                : (item.total / item.quantity).toStringAsFixed(2),
+                ? AmountFormat.money(item.effectivePrice)
+                : AmountFormat.money(item.total / item.quantity),
             fontSize: tableFontSize,
             cellPaddingH: cellPaddingH,
             cellPaddingV: cellPaddingV,
             textAlign: centerOnGridClassic),
         if (splitCgstSgst) ...[
           buildTableCell(
-              '${(isGlobalTaxMode ? (invoice.subtotal > 0 ? invoice.tax * (item.total / invoice.subtotal) / 2 : 0.0) : item.taxAmount / 2).toStringAsFixed(2)}\n(${(isGlobalTaxMode ? globalTaxRatePercent : item.product.tax_rate) / 2}%)',
+              '${AmountFormat.money(isGlobalTaxMode ? (invoice.subtotal > 0 ? invoice.tax * (item.total / invoice.subtotal) / 2 : 0.0) : item.taxAmount / 2)}\n(${(isGlobalTaxMode ? globalTaxRatePercent : item.product.tax_rate) / 2}%)',
               fontSize: tableFontSize,
               cellPaddingH: cellPaddingH,
               cellPaddingV: cellPaddingV,
               textAlign: centerOnGridClassic),
           buildTableCell(
-              '${(isGlobalTaxMode ? (invoice.subtotal > 0 ? invoice.tax * (item.total / invoice.subtotal) / 2 : 0.0) : item.taxAmount / 2).toStringAsFixed(2)}\n(${(isGlobalTaxMode ? globalTaxRatePercent : item.product.tax_rate) / 2}%)',
+              '${AmountFormat.money(isGlobalTaxMode ? (invoice.subtotal > 0 ? invoice.tax * (item.total / invoice.subtotal) / 2 : 0.0) : item.taxAmount / 2)}\n(${(isGlobalTaxMode ? globalTaxRatePercent : item.product.tax_rate) / 2}%)',
               fontSize: tableFontSize,
               cellPaddingH: cellPaddingH,
               cellPaddingV: cellPaddingV,
               textAlign: centerOnGridClassic),
         ] else if (showIgstCol)
           buildTableCell(
-              '${(isGlobalTaxMode ? (invoice.subtotal > 0 ? invoice.tax * (item.total / invoice.subtotal) : 0.0) : item.taxAmount).toStringAsFixed(2)}\n(${isGlobalTaxMode ? globalTaxRatePercent : item.product.tax_rate}%)',
+              '${AmountFormat.money(isGlobalTaxMode ? (invoice.subtotal > 0 ? invoice.tax * (item.total / invoice.subtotal) : 0.0) : item.taxAmount)}\n(${isGlobalTaxMode ? globalTaxRatePercent : item.product.tax_rate}%)',
               fontSize: tableFontSize,
               cellPaddingH: cellPaddingH,
               cellPaddingV: cellPaddingV,
               textAlign: centerOnGridClassic)
         else if (taxColumnOn)
           buildTableCell(
-              '${(isGlobalTaxMode ? (invoice.subtotal > 0 ? invoice.tax * (item.total / invoice.subtotal) : 0.0) : item.taxAmount).toStringAsFixed(2)}\n(${isGlobalTaxMode ? globalTaxRatePercent : item.product.tax_rate}%)',
+              '${AmountFormat.money(isGlobalTaxMode ? (invoice.subtotal > 0 ? invoice.tax * (item.total / invoice.subtotal) : 0.0) : item.taxAmount)}\n(${isGlobalTaxMode ? globalTaxRatePercent : item.product.tax_rate}%)',
               fontSize: tableFontSize,
               cellPaddingH: cellPaddingH,
               cellPaddingV: cellPaddingV,
@@ -1108,13 +1109,13 @@ pw.Widget buildInvoiceTable(Invoice invoice,
         if (showDiscount)
           buildTableCell(
               item.discountIsPercent && item.discount > 0
-                  ? '${item.totalDiscount.toStringAsFixed(2)}\n(${item.discount == item.discount.roundToDouble() ? item.discount.toInt() : item.discount}%)'
-                  : item.totalDiscount.toStringAsFixed(2),
+                  ? '${AmountFormat.money(item.totalDiscount)}\n(${item.discount == item.discount.roundToDouble() ? item.discount.toInt() : item.discount}%)'
+                  : AmountFormat.money(item.totalDiscount),
               fontSize: tableFontSize,
               cellPaddingH: cellPaddingH,
               cellPaddingV: cellPaddingV,
               textAlign: rightOnGridClassic),
-        buildTableCell(item.total.toStringAsFixed(2),
+        buildTableCell(AmountFormat.money(item.total),
             fontSize: tableFontSize,
             cellPaddingH: cellPaddingH,
             cellPaddingV: cellPaddingV,
@@ -1353,7 +1354,7 @@ List<String> returnInfoLines(Invoice invoice) {
   }
   for (final r in invoice.refunds) {
     lines.add('Refund ${r.receiptNumber}: '
-        '${invoice.currencySymbol}${r.amount.toStringAsFixed(2)} on '
+        '${invoice.currencySymbol}${AmountFormat.money(r.amount)} on '
         '${formatPdfDate(r.dateRefunded, 'dd MMM yyyy')}'
         '${(r.refundMethod ?? '').isNotEmpty ? ' via ${r.refundMethod}' : ''}');
   }

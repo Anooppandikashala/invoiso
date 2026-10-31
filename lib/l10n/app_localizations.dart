@@ -2637,13 +2637,13 @@ abstract class AppLocalizations {
   /// No description provided for @invoiceMgmtDeclineInvoiceTitle.
   ///
   /// In en, this message translates to:
-  /// **'Decline invoice?'**
+  /// **'Cancel / void this sale?'**
   String get invoiceMgmtDeclineInvoiceTitle;
 
   /// No description provided for @invoiceMgmtDeclineInvoiceBody.
   ///
   /// In en, this message translates to:
-  /// **'This will mark invoice #{number} as declined and return its items to stock. This can\'t be undone.'**
+  /// **'#{number} will be marked as declined. It stays in the list but no longer counts in reports or balances. This can\'t be undone.'**
   String invoiceMgmtDeclineInvoiceBody(String number);
 
   /// No description provided for @invoiceMgmtDeclineHasPaymentsMessage.
@@ -2655,7 +2655,7 @@ abstract class AppLocalizations {
   /// No description provided for @invoiceMgmtDeclinedSuccessMessage.
   ///
   /// In en, this message translates to:
-  /// **'Invoice declined, stock restored.'**
+  /// **'Sale cancelled (void), stock returned.'**
   String get invoiceMgmtDeclinedSuccessMessage;
 
   /// No description provided for @invoiceStatusDeclinedBadge.
@@ -8040,6 +8040,18 @@ abstract class AppLocalizations {
   /// **'Hides the Reports menu from non-admin users.'**
   String get accessibilityReportsAdminOnlySubtitle;
 
+  /// No description provided for @accessibilityPurchaseBillsAdminOnlyLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Purchase Bills & Suppliers: Admins Only'**
+  String get accessibilityPurchaseBillsAdminOnlyLabel;
+
+  /// No description provided for @accessibilityPurchaseBillsAdminOnlySubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Hides the Purchase Bills and Suppliers menus from non-admin users.'**
+  String get accessibilityPurchaseBillsAdminOnlySubtitle;
+
   /// No description provided for @cashExchangeCashLabel.
   ///
   /// In en, this message translates to:
@@ -9547,6 +9559,115 @@ abstract class AppLocalizations {
   /// **'Select a customer first'**
   String get returnSelectCustomerFirst;
 
+  /// No description provided for @productFormDuplicateTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Product already exists'**
+  String get productFormDuplicateTitle;
+
+  /// No description provided for @productFormDuplicateMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'A product named \"{name}\" already exists. Create another one anyway?'**
+  String productFormDuplicateMessage(String name);
+
+  /// No description provided for @productFormCreateAnywayButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Create anyway'**
+  String get productFormCreateAnywayButton;
+
+  /// No description provided for @productFormNewProductButton.
+  ///
+  /// In en, this message translates to:
+  /// **'New product'**
+  String get productFormNewProductButton;
+
+  /// No description provided for @productFormPurchaseStockHelper.
+  ///
+  /// In en, this message translates to:
+  /// **'Opening stock. Finalizing this purchase bill adds the purchased quantity on top.'**
+  String get productFormPurchaseStockHelper;
+
+  /// No description provided for @invoiceDraftBadge.
+  ///
+  /// In en, this message translates to:
+  /// **'DRAFT'**
+  String get invoiceDraftBadge;
+
+  /// No description provided for @createInvoiceStockShortTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Not enough stock'**
+  String get createInvoiceStockShortTitle;
+
+  /// No description provided for @createInvoiceStockShortMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Some items have less stock than this invoice needs:'**
+  String get createInvoiceStockShortMessage;
+
+  /// No description provided for @createInvoiceStockShortLine.
+  ///
+  /// In en, this message translates to:
+  /// **'{product}: in stock {available}, on invoice {needed} (short by {short})'**
+  String createInvoiceStockShortLine(
+      String product, String available, String needed, String short);
+
+  /// No description provided for @createInvoiceStockShortFooter.
+  ///
+  /// In en, this message translates to:
+  /// **'If you save, stock will go below zero.'**
+  String get createInvoiceStockShortFooter;
+
+  /// No description provided for @createInvoiceGoBackButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Go back'**
+  String get createInvoiceGoBackButton;
+
+  /// No description provided for @createInvoiceSaveAnywayButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Save anyway'**
+  String get createInvoiceSaveAnywayButton;
+
+  /// No description provided for @createInvoiceSaveDraftButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Save Draft'**
+  String get createInvoiceSaveDraftButton;
+
+  /// No description provided for @createInvoiceDraftSavedMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Draft saved'**
+  String get createInvoiceDraftSavedMessage;
+
+  /// No description provided for @createInvoiceFinalizeButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Finalize {type}'**
+  String createInvoiceFinalizeButton(String type);
+
+  /// No description provided for @createInvoiceFinalizedMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Finalized — {type} #{number}'**
+  String createInvoiceFinalizedMessage(String type, String number);
+
+  /// No description provided for @createInvoiceDraftPreviewTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Finalize the draft to get an invoice number before previewing the PDF'**
+  String get createInvoiceDraftPreviewTooltip;
+
+  /// No description provided for @createInvoiceDraftPrintTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Finalize the draft to get an invoice number before printing'**
+  String get createInvoiceDraftPrintTooltip;
+
   /// No description provided for @createInvoiceLockedByCreditNotes.
   ///
   /// In en, this message translates to:
@@ -9562,7 +9683,7 @@ abstract class AppLocalizations {
   /// No description provided for @invoiceMgmtDebitNoteRestoreBlocked.
   ///
   /// In en, this message translates to:
-  /// **'Invoice #{number} is declined or in trash, so its debit note can\'t be restored.'**
+  /// **'Invoice #{number} is declined or in trash, so this note can\'t be restored.'**
   String invoiceMgmtDebitNoteRestoreBlocked(String number);
 
   /// No description provided for @invoiceMgmtHasCreditNotesMessage.
@@ -9576,6 +9697,36 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Invoice #{number} has credit or debit notes. Void its credit notes and trash its debit notes before declining.'**
   String invoiceMgmtDeclineHasCreditNotesMessage(String number);
+
+  /// No description provided for @invoiceMgmtHasDraftNotesMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Invoice #{number} has a draft credit or debit note. Finalize or trash it from the Credit Notes / Debit Notes tab first.'**
+  String invoiceMgmtHasDraftNotesMessage(String number);
+
+  /// No description provided for @createInvoiceFinalizeDateTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Use today\'s date?'**
+  String get createInvoiceFinalizeDateTitle;
+
+  /// No description provided for @createInvoiceFinalizeDateMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'This draft is dated {date}. Invoice numbers should follow date order, so finalizing usually takes today\'s date.'**
+  String createInvoiceFinalizeDateMessage(String date);
+
+  /// No description provided for @createInvoiceFinalizeKeepDateButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Keep {date}'**
+  String createInvoiceFinalizeKeepDateButton(String date);
+
+  /// No description provided for @createInvoiceFinalizeUseTodayButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Use today'**
+  String get createInvoiceFinalizeUseTodayButton;
 
   /// No description provided for @returnGstAgainstInvoiceWarning.
   ///
@@ -9840,6 +9991,60 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Could not cancel: {error}'**
   String creditNoteCancelError(String error);
+
+  /// No description provided for @invoiceMgmtCancelVoidAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel / Void'**
+  String get invoiceMgmtCancelVoidAction;
+
+  /// No description provided for @invoiceMgmtDeclineReturnStockLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Return all items to stock'**
+  String get invoiceMgmtDeclineReturnStockLabel;
+
+  /// No description provided for @invoiceMgmtDeclineReturnStockHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Untick if the goods didn\'t come back (damaged, used or kept).'**
+  String get invoiceMgmtDeclineReturnStockHint;
+
+  /// No description provided for @invoiceMgmtDeclinedNoStockMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Sale cancelled (void). Stock unchanged.'**
+  String get invoiceMgmtDeclinedNoStockMessage;
+
+  /// No description provided for @invoiceMgmtTrashNoStockHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Trash doesn\'t return stock. To cancel a sale, use Cancel / Void.'**
+  String get invoiceMgmtTrashNoStockHint;
+
+  /// No description provided for @amountSeparatorLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Number format'**
+  String get amountSeparatorLabel;
+
+  /// No description provided for @amountSeparatorNoneLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'No separator  (1234567.89)'**
+  String get amountSeparatorNoneLabel;
+
+  /// No description provided for @amountSeparatorInternationalLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'International  (1,234,567.89)'**
+  String get amountSeparatorInternationalLabel;
+
+  /// No description provided for @amountSeparatorIndianLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Indian  (12,34,567.89)'**
+  String get amountSeparatorIndianLabel;
 }
 
 class _AppLocalizationsDelegate

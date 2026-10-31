@@ -36,19 +36,33 @@ enum InvoiceTemplate {
 class ProductUnits {
   static const List<String> presets = [
     'pcs',
+    'nos',
     'kg',
     'gm',
+    'qtl',
+    'ton',
     'ltr',
     'ml',
     'mtr',
     'cm',
+    'ft',
     'box',
+    'ctn',
+    'pack',
     'bag',
+    'btl',
+    'can',
+    'drum',
+    'tube',
+    'bdl',
+    'tab',
+    'strip',
     'dozen',
     'set',
     'pair',
     'roll',
     'sqft',
+    'sqm',
     'unit',
   ];
 }
@@ -195,6 +209,36 @@ String dateFormatOptionLabel(BuildContext context, DateFormatOption option) {
   }
 }
 
+/// Thousands grouping for displayed amounts (inputs / exports stay raw).
+enum AmountSeparator {
+  none, // 1234567.89 — default for existing installs
+  international, // 1,234,567.89
+  indian, // 12,34,567.89
+}
+
+extension AmountSeparatorExtension on AmountSeparator {
+  String get key => name;
+
+  static AmountSeparator fromKey(String? key) => AmountSeparator.values
+      .firstWhere((s) => s.name == key, orElse: () => AmountSeparator.none);
+
+  /// Default for a new install: lakh grouping for INR, else international.
+  static AmountSeparator defaultFor(String currencyCode) =>
+      currencyCode == 'INR' ? AmountSeparator.indian : AmountSeparator.international;
+}
+
+String amountSeparatorLabel(BuildContext context, AmountSeparator option) {
+  final l10n = AppLocalizations.of(context)!;
+  switch (option) {
+    case AmountSeparator.none:
+      return l10n.amountSeparatorNoneLabel;
+    case AmountSeparator.international:
+      return l10n.amountSeparatorInternationalLabel;
+    case AmountSeparator.indian:
+      return l10n.amountSeparatorIndianLabel;
+  }
+}
+
 enum BusinessType {
   product,
   service,
@@ -263,15 +307,25 @@ class BankAccount {
   final String label; // friendly name, e.g. "Business Account"
   final String bankName; // e.g. "HDFC Bank"
   final String accountNumber; // e.g. "123456789012"
-  final String ifscCode; // e.g. "HDFC0001234" (India)
+  final String ifscCode; // bank/branch code, e.g. "HDFC0001234" (IFSC) or "12-34-56" (Sort Code)
+  final String codeLabel; // label for [ifscCode], one of [codeLabels]
   final String iban; // e.g. "DE89370400440532013000" (outside India)
   final bool isDefault;
+
+  static const codeLabels = [
+    'IFSC Code',
+    'Sort Code',
+    'Routing Number',
+    'BSB',
+    'SWIFT/BIC',
+  ];
 
   const BankAccount({
     required this.label,
     required this.bankName,
     required this.accountNumber,
     required this.ifscCode,
+    this.codeLabel = 'IFSC Code',
     this.iban = '',
     this.isDefault = false,
   });
@@ -281,6 +335,7 @@ class BankAccount {
         'bankName': bankName,
         'accountNumber': accountNumber,
         'ifscCode': ifscCode,
+        'codeLabel': codeLabel,
         'iban': iban,
         'isDefault': isDefault,
       };
@@ -290,6 +345,7 @@ class BankAccount {
         bankName: json['bankName'] as String? ?? '',
         accountNumber: json['accountNumber'] as String? ?? '',
         ifscCode: json['ifscCode'] as String? ?? '',
+        codeLabel: json['codeLabel'] as String? ?? 'IFSC Code',
         iban: json['iban'] as String? ?? '',
         isDefault: json['isDefault'] as bool? ?? false,
       );

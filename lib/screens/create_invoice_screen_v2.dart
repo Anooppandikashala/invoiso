@@ -32,6 +32,8 @@ import 'package:invoiso/services/pdf_service.dart';
 import 'package:invoiso/widgets/apply_payment_dialog.dart';
 import 'package:invoiso/common/constants.dart';
 import 'package:invoiso/widgets/return_l10n.dart';
+import 'package:invoiso/widgets/product_form.dart';
+import 'package:invoiso/models/user.dart';
 import 'package:invoiso/services/refund_receipt_service.dart';
 
 /// Stamped on a credit note that puts at least one line back into stock.
@@ -67,6 +69,10 @@ class CreateInvoiceScreenV2 extends ConsumerStatefulWidget {
   final VoidCallback? onCreateNewInvoice;
   final InvoiceFormGuard? guard;
 
+  /// Logged-in user — admin-only rules of the "New product" form. Null →
+  /// non-admin rules.
+  final User? user;
+
   const CreateInvoiceScreenV2({
     super.key,
     this.invoiceToEdit,
@@ -76,6 +82,7 @@ class CreateInvoiceScreenV2 extends ConsumerStatefulWidget {
     this.convertFromQuotationId,
     this.onCreateNewInvoice,
     this.guard,
+    this.user,
   });
 
   @override
@@ -174,6 +181,7 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
   bool _isInterState = false; // India: interstate supply → IGST instead of CGST/SGST
   bool isEditing = false;
   bool isLoading = false;
+  bool _finalizing = false;
   // V2: inline product search dropdown (replaces click-to-open popup;
   // the popup dialog is now reserved for the Ctrl+F shortcut only).
   bool _showProductDropdownV2 = false;
@@ -282,10 +290,34 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
             .read(returnRepositoryProvider)
             .getNotesForInvoice(_invoice!.id)
             .then((notes) {
-          if (mounted && notes.any((n) => n.type == 'Credit Note')) {
+          if (mounted &&
+              notes.any((n) => n.type == 'Credit Note' && !n.isDraft)) {
             setState(() => _lockedByCreditNotes = true);
           }
         });
+      }
+      // A draft credit / debit note reopened: note fields + linked invoice
+      // (with what's already returned, for the Left cap).
+      if (_invoice!.type == 'Credit Note' || _invoice!.type == 'Debit Note') {
+        _returnReason = _invoice!.returnReason ?? '';
+        _creditSettlement =
+            _invoice!.creditSettlement ?? CreditSettlement.customerCredit;
+        final originalId = _invoice!.originalInvoiceId;
+        if (originalId != null) {
+          WidgetsBinding.instance.addPostFrameCallback((_) async {
+            final original = await ref
+                .read(invoiceRepositoryProvider)
+                .getInvoiceById(originalId);
+            final returned = await ref
+                .read(returnRepositoryProvider)
+                .getReturnedQtyByLine(originalId);
+            if (!mounted || original == null) return;
+            setState(() {
+              _againstInvoice = original;
+              _returnedByProduct = returned;
+            });
+          });
+        }
       }
       selectedCustomer = _invoice!.customer;
       invoiceItems = List.from(_invoice!.items);
@@ -612,7 +644,8 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
             offset: 0, limit: _customerFetchLimit), // 0
         ref.read(productRepositoryProvider).getProductsPaginated(
             offset: 0, limit: _productFetchLimit, type: _businessType.key), // 1
-        isEditing
+        // A draft has no number yet — preview the next one, like a new invoice.
+        isEditing && !(widget.invoiceToEdit?.isDraft ?? false)
             ? Future.value(widget.invoiceToEdit?.invoiceNumber ?? widget.invoiceToEdit?.id)
             : ref.read(invoiceRepositoryProvider).peekNextInvoiceNumber(invoiceType), // 2
         settingsRepo.getCurrency(), // 3 — discarded below when editing/cloning
@@ -805,7 +838,9 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
     }
   }
 
-  void addInvoiceProductPrompt(Product product)
+  // [newProduct]: just created in the New product dialog, where its stock
+  // was in view — skip the add-time stock prompts (the save check still runs).
+  void addInvoiceProductPrompt(Product product, {bool newProduct = false})
   {
     final quantityController = TextEditingController();
     final discountController = TextEditingController(
@@ -846,7 +881,8 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
       final extraCost = double.tryParse(extraCostController.text);
 
       // Check stock
-      if (!product.unlimitedStock &&
+      if (!newProduct &&
+          !product.unlimitedStock &&
           product.stock > 0 &&
           qty > product.stock) {
         // Insufficient stock — ask user if they want to add anyway
@@ -888,7 +924,7 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
                   discountIsPercent: discountIsPercent),
               insertAt: insertAt);
         }
-      } else if (!product.unlimitedStock && product.stock <= 0) {
+      } else if (!newProduct && !product.unlimitedStock && product.stock <= 0) {
         Navigator.pop(context);
         final addAnyway = await showDialog<bool>(
           context: context,
@@ -1345,7 +1381,27 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
     ), _customerFieldSettings);
   }
 
+  // Reopened draft note saved / finalized before its linked invoice finished
+  // loading — load it now so the link and Left cap aren't lost.
+  Future<void> _ensureDraftLinkLoaded() async {
+    final draftLinkId = _invoice?.isDraft == true && _isReturnDoc
+        ? _invoice!.originalInvoiceId
+        : null;
+    if (draftLinkId != null && _againstInvoice == null) {
+      final original =
+          await ref.read(invoiceRepositoryProvider).getInvoiceById(draftLinkId);
+      final returned = await ref
+          .read(returnRepositoryProvider)
+          .getReturnedQtyByLine(draftLinkId);
+      if (!mounted) return;
+      _againstInvoice = original;
+      _returnedByProduct = returned;
+    }
+  }
+
   Future<bool> _createInvoice() async {
+    await _ensureDraftLinkLoaded();
+    if (!mounted) return false;
     if (nameController.text.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -1411,11 +1467,18 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
       return false;
     }
 
+    if (!await _confirmStockForSave()) return false;
+
     if(!mounted) return false;
     setState(() => isLoading = true);
 
     try {
-      final invoiceId = await InvoicePdfServices.generateNextId();
+      // Finalizing a saved draft note keeps its id; the draft row is swapped
+      // for the final note when it's created below.
+      final draftNoteId =
+          _isReturnDoc && (_invoice?.isDraft ?? false) ? _invoice!.id : null;
+      final invoiceId =
+          draftNoteId ?? await InvoicePdfServices.generateNextId();
       final invoiceNumber =
           await InvoicePdfServices.generateNextInvoiceNumber(invoiceType);
       final invoice = Invoice(
@@ -1464,30 +1527,8 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
         convertedFromInvoiceId: widget.convertFromQuotationId,
       );
 
-      final payAmount = invoiceType != 'Invoice'
-          ? 0.0
-          : _payStatus == PaymentStatus.paid
-              ? invoice.total
-              : _payStatus == PaymentStatus.partial
-                  ? (double.tryParse(_payAmountController.text.trim()) ?? 0.0)
-                  : 0.0;
-      if (invoiceType == 'Invoice' &&
-          _payStatus == PaymentStatus.partial &&
-          (payAmount <= 0 || payAmount > invoice.total)) {
-        if (!mounted) return false;
-        setState(() => isLoading = false);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(payAmount <= 0
-                ? AppLocalizations.of(context)!.paymentDialogInvalidAmountError
-                : AppLocalizations.of(context)!.paymentDialogExceedsOutstandingError),
-            backgroundColor: Colors.red,
-            behavior: SnackBarBehavior.floating,
-            showCloseIcon: true,
-          ),
-        );
-        return false;
-      }
+      final payAmount = _paymentChoiceAmount(invoice.total);
+      if (payAmount == null) return false;
 
       SnackBarAction? voucherAction;
       if (invoiceType == 'Credit Note') {
@@ -1495,6 +1536,7 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
         await returnRepo.createCreditNote(
               creditNote: invoice,
               originalInvoice: _againstInvoice,
+              replaceDraft: draftNoteId != null,
               immediateRefund: _creditSettlement == CreditSettlement.refund
                   ? (
                       amount: invoice.total,
@@ -1523,48 +1565,22 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
           );
         }
       } else if (invoiceType == 'Debit Note') {
-        await ref.read(returnRepositoryProvider).createDebitNote(debitNote: invoice);
+        await ref.read(returnRepositoryProvider).createDebitNote(
+            debitNote: invoice, replaceDraft: draftNoteId != null);
       } else {
         await ref.read(invoiceRepositoryProvider).insertInvoice(invoice);
       }
 
-      // Separate transaction from the invoice insert: if it fails the
-      // invoice is kept and the user adds the payment from the Invoices list.
-      String? payError;
-      if (payAmount > 0) {
-        try {
-          invoice.payments = [
-            await ref.read(paymentRepositoryProvider).addPayment(
-                  invoice: invoice,
-                  amountPaid: payAmount,
-                  datePaid: DateTime.now(),
-                  paymentMethod: _payMethod,
-                )
-          ];
-        } catch (e) {
-          payError = e.toString();
-        }
-      }
-
-      // "Apply credit to this invoice" ticked — capped at what's still owed.
-      final unpaid = invoice.total - payAmount;
-      final creditToApply = _applyCustomerCredit && invoiceType == 'Invoice'
-          ? (_customerCreditAvailable < unpaid ? _customerCreditAvailable : unpaid)
-          : 0.0;
-      if (creditToApply > 0) {
-        try {
-          await ref.read(returnRepositoryProvider).applyCustomerCreditToInvoice(
-              invoice: invoice, amount: creditToApply);
-        } catch (e) {
-          payError ??= e.toString();
-        }
-      }
+      final (:payError, :creditToApply) =
+          await _applyPaymentChoice(invoice, payAmount);
 
       if (!mounted) return true;
       setState(() {
         _invoice = invoice;
         currentInvoiceNumber = invoice.invoiceNumber ?? invoice.id;
         isLoading = false;
+        // A finalized note is never edited — show the success screen.
+        if (draftNoteId != null) isEditing = false;
         if (creditToApply > 0) {
           _customerCreditAvailable -= creditToApply;
           _applyCustomerCredit = false;
@@ -1639,6 +1655,263 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
     }
   }
 
+  /// Payment section: amount to record on save, or null (error shown) when
+  /// the partial amount is invalid.
+  double? _paymentChoiceAmount(double total) {
+    final payAmount = invoiceType != 'Invoice'
+        ? 0.0
+        : _payStatus == PaymentStatus.paid
+            ? total
+            : _payStatus == PaymentStatus.partial
+                ? (double.tryParse(_payAmountController.text.trim()) ?? 0.0)
+                : 0.0;
+    if (invoiceType == 'Invoice' &&
+        _payStatus == PaymentStatus.partial &&
+        (payAmount <= 0 || payAmount > total)) {
+      if (!mounted) return null;
+      setState(() => isLoading = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(payAmount <= 0
+              ? AppLocalizations.of(context)!.paymentDialogInvalidAmountError
+              : AppLocalizations.of(context)!.paymentDialogExceedsOutstandingError),
+          backgroundColor: Colors.red,
+          behavior: SnackBarBehavior.floating,
+          showCloseIcon: true,
+        ),
+      );
+      return null;
+    }
+    return payAmount;
+  }
+
+  /// Records the Payment section's choice on a just-saved [invoice].
+  /// Separate transactions from the invoice save: if one fails the invoice
+  /// is kept and the user adds the payment from the Invoices list.
+  Future<({String? payError, double creditToApply})> _applyPaymentChoice(
+      Invoice invoice, double payAmount) async {
+    String? payError;
+    if (payAmount > 0) {
+      try {
+        invoice.payments = [
+          await ref.read(paymentRepositoryProvider).addPayment(
+                invoice: invoice,
+                amountPaid: payAmount,
+                datePaid: DateTime.now(),
+                paymentMethod: _payMethod,
+              )
+        ];
+      } catch (e) {
+        payError = e.toString();
+      }
+    }
+
+    // "Apply credit to this invoice" ticked — capped at what's still owed.
+    final unpaid = invoice.total - payAmount;
+    final creditToApply = _applyCustomerCredit && invoiceType == 'Invoice'
+        ? (_customerCreditAvailable < unpaid ? _customerCreditAvailable : unpaid)
+        : 0.0;
+    if (creditToApply > 0) {
+      try {
+        await ref.read(returnRepositoryProvider).applyCustomerCreditToInvoice(
+            invoice: invoice, amount: creditToApply);
+      } catch (e) {
+        payError ??= e.toString();
+      }
+    }
+    return (payError: payError, creditToApply: creditToApply);
+  }
+
+  /// Draft → final. Notes finalize through the create path (settle +
+  /// restock), invoices through _updateInvoice. One run at a time (a
+  /// double-click would start two), and a back-dated draft first asks
+  /// whether to take today's date.
+  Future<void> _finalizeDraft() async {
+    if (_finalizing) return;
+    _finalizing = true;
+    try {
+      if (!await _confirmFinalizeDate()) return;
+      _isReturnDoc ? await _createInvoice() : await _updateInvoice(finalize: true);
+    } finally {
+      _finalizing = false;
+    }
+  }
+
+  // Numbers follow date order, so a draft dated before today offers today's
+  // date (due date moves with it). False when the dialog is dismissed.
+  Future<bool> _confirmFinalizeDate() async {
+    final now = DateTime.now();
+    final old = _selectedOrderDate;
+    final days = DateTime.utc(now.year, now.month, now.day)
+        .difference(DateTime.utc(old.year, old.month, old.day))
+        .inDays;
+    if (days <= 0) return true;
+    final l10n = AppLocalizations.of(context)!;
+    final shown = DateFormat(_datePattern).format(old);
+    final useToday = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(l10n.createInvoiceFinalizeDateTitle),
+        content: Text(l10n.createInvoiceFinalizeDateMessage(shown)),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: Text(l10n.actionCancel)),
+          OutlinedButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: Text(l10n.createInvoiceFinalizeKeepDateButton(shown))),
+          FilledButton(
+              onPressed: () => Navigator.pop(ctx, true),
+              child: Text(l10n.createInvoiceFinalizeUseTodayButton)),
+        ],
+      ),
+    );
+    if (useToday == null || !mounted) return false;
+    if (useToday) {
+      setState(() {
+        _selectedOrderDate = DateTime(now.year, now.month, now.day, old.hour,
+            old.minute, old.second);
+        dateController.text = DateFormat(_datePattern).format(_selectedOrderDate);
+        final due = _selectedDueDate;
+        if (due != null) {
+          _selectedDueDate = DateTime(due.year, due.month, due.day + days,
+              due.hour, due.minute, due.second);
+          dueDateController.text =
+              DateFormat(_datePattern).format(_selectedDueDate!);
+        }
+      });
+    }
+    return true;
+  }
+
+  /// Draft is a scratchpad: customer name still required, items are not, and
+  /// it never touches the numbered sequence (invoiceNumber stays null until
+  /// _updateInvoice(finalize: true) assigns one). Handles both the first
+  /// save (insert) and re-saving an already-existing draft (update).
+  Future<bool> _saveDraft() async {
+    await _ensureDraftLinkLoaded();
+    if (!mounted) return false;
+    if (nameController.text.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Row(
+            children: [
+              const Icon(Icons.error_outline, color: Colors.white),
+              const SizedBox(width: 12),
+              Text(AppLocalizations.of(context)!.createInvoiceCustomerNameRequiredMessage),
+            ],
+          ),
+          backgroundColor: Colors.red,
+          behavior: SnackBarBehavior.floating,
+          showCloseIcon: true,
+          shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(AppBorderRadius.xsmall)),
+        ),
+      );
+      return false;
+    }
+
+    if (!mounted) return false;
+    setState(() => isLoading = true);
+
+    try {
+      final bool isNewRow = _invoice == null;
+      final invoice = Invoice(
+        id: isNewRow ? await InvoicePdfServices.generateNextId() : _invoice!.id,
+        invoiceNumber: null,
+        customer: _isReturnDoc && _againstInvoice != null
+            ? _againstInvoice!.customer
+            : _resolveInvoiceCustomer(),
+        items: List.from(invoiceItems),
+        date: _selectedOrderDate,
+        dueDate: _selectedDueDate,
+        notes: notesController.text.isNotEmpty ? notesController.text : null,
+        taxRate: _taxMode == TaxMode.global ? taxRate : 0.0,
+        type: invoiceType,
+        invoiceTitle: invoiceType == 'Invoice'
+            ? invoiceTitle
+            : invoiceType == 'Credit Note' &&
+                    invoiceItems.any((i) => i.restocked && _canRestock(i))
+                ? salesReturnTitle
+                : null,
+        currencyCode: _currencyCode,
+        currencySymbol: _currencySymbol,
+        taxMode: _taxMode,
+        isInterState: _isInterState,
+        upiId: _selectedUpi?.id,
+        bankAccountId: _selectedBankAccount?.accountNumber,
+        quantityLabel:
+            _quantityLabel.trim().isEmpty ? null : _quantityLabel.trim(),
+        additionalCosts: _buildAdditionalCosts(),
+        customFields: _buildCustomFields(),
+        invoiceDiscountType: _invoiceDiscountType,
+        invoiceDiscountValue: _invoiceDiscountValue,
+        hideInvoiceNumber: _hideInvoiceNumber,
+        customInvoiceNumber: customInvoiceNumberController.text.trim().isEmpty
+            ? null
+            : customInvoiceNumberController.text.trim(),
+        originalInvoiceId: _isReturnDoc ? _againstInvoice?.id : null,
+        originalInvoiceNumber: _isReturnDoc && _againstInvoice != null
+            ? (_againstInvoice!.invoiceNumber ?? _againstInvoice!.id)
+            : null,
+        originalInvoiceDate: _isReturnDoc ? _againstInvoice?.date : null,
+        returnReason:
+            _isReturnDoc && _returnReason.trim().isNotEmpty ? _returnReason : null,
+        creditSettlement:
+            invoiceType == 'Credit Note' ? _creditSettlement : null,
+        isDraft: true,
+      );
+
+      if (isNewRow) {
+        await ref.read(invoiceRepositoryProvider).insertInvoice(invoice);
+      } else {
+        await ref.read(invoiceRepositoryProvider).updateInvoice(invoice);
+      }
+
+      final nextNumber = await ref
+          .read(invoiceRepositoryProvider)
+          .peekNextInvoiceNumber(invoiceType);
+      if (!mounted) return true;
+      setState(() {
+        _invoice = invoice;
+        // Keep the edit form on screen instead of falling through to the
+        // "invoice created" success screen (`!isEditing && _invoice != null`
+        // in build()) — a draft isn't done yet, the user likely wants to
+        // keep adding to it.
+        isEditing = true;
+        currentInvoiceNumber = nextNumber;
+        isLoading = false;
+      });
+      _markFormClean();
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Row(
+            children: [
+              const Icon(Icons.check_circle, color: Colors.white),
+              const SizedBox(width: 12),
+              Text(AppLocalizations.of(context)!.createInvoiceDraftSavedMessage),
+            ],
+          ),
+          backgroundColor: Colors.green,
+          behavior: SnackBarBehavior.floating,
+          showCloseIcon: true,
+          shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(AppBorderRadius.xsmall)),
+        ),
+      );
+      return true;
+    } catch (e) {
+      if (!mounted) return false;
+      setState(() => isLoading = false);
+      if (kDebugMode) print(e);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(AppLocalizations.of(context)!.createInvoiceErrorCreatingMessage(e.toString())), showCloseIcon: true),
+      );
+      return false;
+    }
+  }
+
   void _editInvoiceItem(int index) {
     final item = invoiceItems[index];
     final quantityController = TextEditingController(
@@ -1663,6 +1936,7 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
     // editable here. Catalog products keep their catalog name.
     final isAdHoc = item.product.id.startsWith('custom-');
     final nameController = TextEditingController(text: item.product.name);
+    final hsnController = TextEditingController(text: item.product.hsncode);
     String? nameError;
     showDialog(
       context: context,
@@ -1755,6 +2029,21 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
                       if (nameError != null) setDialogState(() => nameError = null);
                     },
                   ),
+                  if (_columnsConfig.hsncode) ...[
+                    const SizedBox(height: 16),
+                    TextField(
+                      controller: hsnController,
+                      decoration: InputDecoration(
+                        labelText: AppLocalizations.of(context)!.productMgmtHsnSacLabel,
+                        border: OutlineInputBorder(
+                            borderRadius:
+                                BorderRadius.circular(AppBorderRadius.xsmall)),
+                        prefixIcon: const Icon(Icons.qr_code_2),
+                        filled: true,
+                        fillColor: Theme.of(context).colorScheme.surfaceContainerHighest,
+                      ),
+                    ),
+                  ],
                 ],
                 Builder(builder: (context) {
                   if (!_columnsConfig.productMetadata) return const SizedBox.shrink();
@@ -1926,6 +2215,7 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
               ),
               onPressed: () {
                 final newName = nameController.text.trim();
+                final newHsn = hsnController.text.trim();
                 if (isAdHoc && newName.isEmpty) {
                   setDialogState(() => nameError = 'Required');
                   return;
@@ -1939,8 +2229,14 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
                 final updatedItem = InvoiceItem(
                   // Copy rather than mutate: the original Product may be
                   // shared with the unsaved source invoice (edit/clone).
-                  product: isAdHoc && newName != item.product.name
-                      ? Product.fromMap({...item.product.toMap(), 'name': newName})
+                  product: isAdHoc &&
+                          (newName != item.product.name ||
+                              newHsn != item.product.hsncode)
+                      ? Product.fromMap({
+                          ...item.product.toMap(),
+                          'name': newName,
+                          'hsncode': newHsn,
+                        })
                       : item.product,
                   quantity: !_showQuantity
                       ? 1.0
@@ -1982,6 +2278,7 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
   void _addAdHocItemDialog() {
     final nameController = TextEditingController();
     final aliasNameController = TextEditingController();
+    final hsnController = TextEditingController();
     final priceController = TextEditingController();
     final quantityController = TextEditingController();
     final discountController = TextEditingController(text: '0');
@@ -2030,7 +2327,7 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
               description: '',
               price: price,
               stock: 0,
-              hsncode: '',
+              hsncode: hsnController.text.trim(),
               tax_rate: taxRate,
               unit: selectedUnit.trim(),
               type: dialogItemType,
@@ -2125,6 +2422,21 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
                           borderRadius:
                               BorderRadius.circular(AppBorderRadius.xsmall)),
                       prefixIcon: const Icon(Icons.translate),
+                      filled: true,
+                      fillColor: Theme.of(context).colorScheme.surfaceContainerHighest,
+                    ),
+                  ),
+                ],
+                if (_columnsConfig.hsncode) ...[
+                  const SizedBox(height: 16),
+                  TextField(
+                    controller: hsnController,
+                    decoration: InputDecoration(
+                      labelText: AppLocalizations.of(context)!.productMgmtHsnSacLabel,
+                      border: OutlineInputBorder(
+                          borderRadius:
+                              BorderRadius.circular(AppBorderRadius.xsmall)),
+                      prefixIcon: const Icon(Icons.qr_code_2),
                       filled: true,
                       fillColor: Theme.of(context).colorScheme.surfaceContainerHighest,
                     ),
@@ -3440,7 +3752,7 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
         const SizedBox(width: 8),
         Flexible(
           child: Text(
-            '$_currencySymbol${amount.toStringAsFixed(2)}',
+            '$_currencySymbol${AmountFormat.money(amount)}',
             textAlign: TextAlign.end,
             overflow: TextOverflow.ellipsis,
             style: TextStyle(
@@ -3468,7 +3780,7 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
                 ),
               )
             : Text(
-                '$_currencySymbol${_previousBalanceDue.toStringAsFixed(2)}',
+                '$_currencySymbol${AmountFormat.money(_previousBalanceDue)}',
                 textAlign: TextAlign.end,
                 overflow: TextOverflow.ellipsis,
                 maxLines: 1,
@@ -3550,7 +3862,7 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
               Flexible(
                 flex: compact ? 2 : 1,
                 child: Text(
-                  '$_currencySymbol${totalDue.toStringAsFixed(2)}',
+                  '$_currencySymbol${AmountFormat.money(totalDue)}',
                   textAlign: TextAlign.end,
                   overflow: TextOverflow.ellipsis,
                   maxLines: 1,
@@ -3587,7 +3899,7 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
               ),
             ),
             Text(
-              '$_currencySymbol${amountPaid.toStringAsFixed(2)}',
+              '$_currencySymbol${AmountFormat.money(amountPaid)}',
               style: TextStyle(
                 fontSize: 14,
                 fontWeight: FontWeight.bold,
@@ -3626,7 +3938,7 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
                 ),
               ),
               Text(
-                '$_currencySymbol${outstanding.toStringAsFixed(2)}',
+                '$_currencySymbol${AmountFormat.money(outstanding)}',
                 style: TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.bold,
@@ -3676,7 +3988,12 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
     );
   }
 
-  Future<bool> _updateInvoice() async {
+  /// finalize: true is how a draft leaves draft state — assigns the real
+  /// invoiceNumber (via generateNextInvoiceNumber, same as _createInvoice)
+  /// and flips isDraft off. Otherwise this just re-saves whatever
+  /// invoiceNumber/isDraft _invoice already had (plain edit, or "update
+  /// draft" which must stay unnumbered).
+  Future<bool> _updateInvoice({bool finalize = false}) async {
     if (_invoice == null) return false;
 
     if (nameController.text.isEmpty) {
@@ -3703,7 +4020,9 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
     // when the customer card is collapsed — render falls back to one block.
     if (!(_customerExtraFormKey.currentState?.validate() ?? true)) return false;
 
-    if (invoiceItems.isEmpty) {
+    // A draft being re-saved as a draft (not finalized) doesn't need items
+    // yet — only finalizing (or editing an already-final invoice) does.
+    if (invoiceItems.isEmpty && (finalize || !_invoice!.isDraft)) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Row(
@@ -3722,13 +4041,21 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
       );
       return false;
     }
+    // Re-saving a draft as a draft takes no stock, so nothing to check.
+    if ((finalize || !_invoice!.isDraft) && !await _confirmStockForSave()) {
+      return false;
+    }
+
     if(!mounted) return false;
     setState(() => isLoading = true);
 
     try {
+      final invoiceNumber = finalize
+          ? await InvoicePdfServices.generateNextInvoiceNumber(invoiceType)
+          : _invoice!.invoiceNumber;
       final updatedInvoice = Invoice(
         id: _invoice!.id,
-        invoiceNumber: _invoice!.invoiceNumber,
+        invoiceNumber: invoiceNumber,
         customer: _resolveInvoiceCustomer(),
         items: List.from(invoiceItems),
         date: _selectedOrderDate,
@@ -3753,6 +4080,7 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
         customInvoiceNumber: customInvoiceNumberController.text.trim().isEmpty
             ? null
             : customInvoiceNumberController.text.trim(),
+        isDraft: finalize ? false : _invoice!.isDraft,
       );
 
       // Block edits that drop the total below what's already been paid.
@@ -3765,7 +4093,7 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
           content: Text(AppLocalizations.of(context)!
               .createInvoiceTotalBelowPaidMessage(
-                  '$_currencySymbol ${paid.toStringAsFixed(2)}')),
+                  '$_currencySymbol ${AmountFormat.money(paid)}')),
           backgroundColor: Colors.red,
           showCloseIcon: true,
           behavior: SnackBarBehavior.floating,
@@ -3773,15 +4101,36 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
         return false;
       }
 
+      // Finalizing a draft records the Payment section's choice, like create.
+      final payNow = finalize && _invoice!.isDraft;
+      final payAmount = payNow ? _paymentChoiceAmount(updatedInvoice.total) : 0.0;
+      if (payAmount == null) return false;
+
       await ref.read(invoiceRepositoryProvider).updateInvoice(updatedInvoice);
+
+      final (:payError, :creditToApply) = payNow
+          ? await _applyPaymentChoice(updatedInvoice, payAmount)
+          : (payError: null, creditToApply: 0.0);
 
       final refreshedInvoice =
           await ref.read(invoiceRepositoryProvider).getInvoiceById(updatedInvoice.id);
+      final stillDraft = (refreshedInvoice ?? updatedInvoice).isDraft;
+      final nextNumber = stillDraft
+          ? await ref
+              .read(invoiceRepositoryProvider)
+              .peekNextInvoiceNumber(invoiceType)
+          : null;
 
       if (!mounted) return true;
       setState(() {
         _invoice = refreshedInvoice ?? updatedInvoice;
+        currentInvoiceNumber = nextNumber ??
+            (_invoice!.invoiceNumber ?? _invoice!.id);
         isLoading = false;
+        if (creditToApply > 0) {
+          _customerCreditAvailable -= creditToApply;
+          _applyCustomerCredit = false;
+        }
       });
       _markFormClean();
 
@@ -3791,7 +4140,10 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
             children: [
               const Icon(Icons.check_circle, color: Colors.white),
               const SizedBox(width: 12),
-              Text(AppLocalizations.of(context)!.createInvoiceUpdatedSuccessMessage(_invoiceTypeLabel(invoiceType))),
+              Text(finalize
+                  ? AppLocalizations.of(context)!.createInvoiceFinalizedMessage(
+                      _invoiceTypeLabel(invoiceType), updatedInvoice.invoiceNumber ?? '')
+                  : AppLocalizations.of(context)!.createInvoiceUpdatedSuccessMessage(_invoiceTypeLabel(invoiceType))),
             ],
           ),
           backgroundColor: Colors.green,
@@ -3802,6 +4154,17 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
               borderRadius: BorderRadius.circular(AppBorderRadius.xsmall)),
         ),
       );
+      if (payError != null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(AppLocalizations.of(context)!
+                .createInvoicePaymentNotRecordedMessage(payError)),
+            backgroundColor: Colors.red,
+            behavior: SnackBarBehavior.floating,
+            showCloseIcon: true,
+          ),
+        );
+      }
       return true;
     } catch (e) {
       if (!mounted) return false;
@@ -4145,7 +4508,13 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
         const SingleActivator(LogicalKeyboardKey.keyS, control: true): () {
           if (showingSuccessScreen) return;
           if (invoiceItems.isNotEmpty && !isLoading) {
-            widget.invoiceToEdit != null ? _updateInvoice() : _createInvoice();
+            if (_invoice == null) {
+              _createInvoice();
+            } else if (_invoice!.isDraft) {
+              _finalizeDraft();
+            } else {
+              _updateInvoice();
+            }
           } else {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(content: Text(AppLocalizations.of(context)!.createInvoiceAddItemBeforeCreatingMessage)),
@@ -4180,12 +4549,13 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
           if (showingSuccessScreen) return;
           _addAdHocItemDialog();
         },
+        // Drafts can't be previewed / printed — same rule as the buttons.
         const SingleActivator(LogicalKeyboardKey.keyO, control: true): () {
-          if (_invoice == null) return;
+          if (_invoice == null || _invoice!.isDraft) return;
           InvoicePdfServices.previewPDF(context, _invoice!);
         },
         const SingleActivator(LogicalKeyboardKey.keyP, control: true): () {
-          if (_invoice == null) return;
+          if (_invoice == null || _invoice!.isDraft) return;
           InvoicePdfServices.generatePDF(context, _invoice!);
         },
       },
@@ -4425,7 +4795,7 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
 
   String _againstInvoiceText(Invoice inv) =>
       '#${inv.invoiceNumber ?? inv.id}  ·  ${AppFormatters.formatShortDate(inv.date)}'
-      '  ·  ${inv.currencySymbol}${inv.total.toStringAsFixed(2)}';
+      '  ·  ${inv.currencySymbol}${AmountFormat.money(inv.total)}';
 
   // "Against invoice" picker for credit / debit notes: the selected
   // customer's invoices, searchable. Optional (empty = standalone note);
@@ -4478,13 +4848,17 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
       return;
     }
     // DB search (newest 50 matches) so every invoice is reachable.
-    Future<List<Invoice>> search(String q) =>
-        ref.read(invoiceRepositoryProvider).getInvoicesPaginated(
+    // Drafts have no number and no committed sale yet — nothing to return.
+    Future<List<Invoice>> search(String q) async => (await ref
+            .read(invoiceRepositoryProvider)
+            .getInvoicesPaginated(
               searchQuery: q.trim(),
               filterType: 'Invoice',
               customerId: customerId,
               filter: const InvoiceListFilter(hideDeclined: true),
-            );
+            ))
+        .where((i) => !i.isDraft)
+        .toList();
     var shown = await search('');
     if (!mounted) return;
     var query = '';
@@ -4559,6 +4933,11 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
   Future<void> _prefillCreditNoteFrom(Invoice inv) async {
     final returned =
         await ref.read(returnRepositoryProvider).getReturnedQtyByLine(inv.id);
+    // Drafts skip the Left cap but still hold the extra costs.
+    final hasEarlierNote = (await ref
+            .read(returnRepositoryProvider)
+            .getNotesForInvoice(inv.id))
+        .any((n) => n.type == 'Credit Note' && n.id != _invoice?.id);
     if (!mounted) return;
     final left = <String, double>{};
     for (final i in inv.items) {
@@ -4620,7 +4999,7 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
       }
       _additionalCostControllers.clear();
       // Extra costs (shipping…) go back once — only on the first return.
-      for (final c in returned.isEmpty ? inv.additionalCosts : const <AdditionalCost>[]) {
+      for (final c in hasEarlierNote ? const <AdditionalCost>[] : inv.additionalCosts) {
         _additionalCostControllers.add((
           label: TextEditingController(text: c.label),
           amount: TextEditingController(text: c.amount.toStringAsFixed(2)),
@@ -4672,6 +5051,66 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
 
   String _fmtQty(double q) =>
       q == q.roundToDouble() ? q.toInt().toString() : q.toString();
+
+  /// Save-time stock check for Create / Update / Finalize. "Add anyway" only
+  /// ran when a line was added; a draft finalized later, another sale in the
+  /// meantime, or a raised qty on edit can still take stock below zero. Same
+  /// warn-but-allow rule: lists the short products, user saves anyway or not.
+  Future<bool> _confirmStockForSave() async {
+    // Only sales take stock (quotations, notes and drafts don't).
+    if (invoiceType != 'Invoice' && invoiceType != 'Receipt') return true;
+    final l10n = AppLocalizations.of(context)!;
+    final need = <String, double>{};
+    for (final i in invoiceItems) {
+      need[i.product.id] = (need[i.product.id] ?? 0) + i.quantity;
+    }
+    // An already-final invoice gets its own saved qty back before re-deducting.
+    final saved = _invoice != null && !_invoice!.isDraft
+        ? _invoice!.items
+        : const <InvoiceItem>[];
+    final shortLines = <String>[];
+    for (final e in need.entries) {
+      if (e.key.startsWith('custom-')) continue;
+      final product =
+          await ref.read(productRepositoryProvider).getProductById(e.key);
+      if (product == null || product.unlimitedStock) continue;
+      final available = product.stock +
+          saved
+              .where((i) => i.product.id == e.key)
+              .fold<double>(0, (s, i) => s + i.quantity);
+      if (e.value > available + InvoiceCalculator.moneyEpsilon) {
+        final unit = product.unit.trim().isEmpty ? '' : ' ${product.unit.trim()}';
+        shortLines.add(l10n.createInvoiceStockShortLine(
+            product.name,
+            '${_fmtQty(available)}$unit',
+            '${_fmtQty(e.value)}$unit',
+            '${_fmtQty(e.value - available)}$unit'));
+      }
+    }
+    if (shortLines.isEmpty || !mounted) return mounted;
+    final go = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(l10n.createInvoiceStockShortTitle),
+        content: Text('${l10n.createInvoiceStockShortMessage}\n'
+            '${shortLines.map((l) => '• $l').join('\n')}\n\n'
+            '${l10n.createInvoiceStockShortFooter}'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: Text(l10n.createInvoiceGoBackButton),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.orange, foregroundColor: Colors.white),
+            child: Text(l10n.createInvoiceSaveAnywayButton),
+          ),
+        ],
+      ),
+    );
+    return go == true;
+  }
 
   InputDecoration _flatFieldDecorationV2(
     String label, {
@@ -5284,7 +5723,7 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
                         value: CreditSettlement.reduceInvoice,
                         child: Text(AppLocalizations.of(context)!
                             .returnSettlementReduceInvoice(
-                                '$_currencySymbol${_againstInvoice!.outstandingBalance.toStringAsFixed(2)}'))),
+                                '$_currencySymbol${AmountFormat.money(_againstInvoice!.outstandingBalance)}'))),
                   DropdownMenuItem(
                       value: CreditSettlement.customerCredit,
                       child: Text(AppLocalizations.of(context)!
@@ -5523,8 +5962,43 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
                 borderRadius: BorderRadius.circular(AppBorderRadius.xsmall)),
           ),
         ),
+        // Notes return / charge what was sold — no new catalogue products.
+        if (!_isReturnDoc) ...[
+        const SizedBox(width: 8),
+        OutlinedButton.icon(
+          onPressed: _addNewProductV2,
+          icon: const Icon(Icons.inventory_2_outlined, size: 16),
+          label: Text(AppLocalizations.of(context)!.productFormNewProductButton),
+          style: OutlinedButton.styleFrom(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
+            shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(AppBorderRadius.xsmall)),
+          ),
+        ),
+        ],
       ],
     );
+  }
+
+  // Saves a real catalogue product (same form and rules as Product
+  // Management), then adds it as a line like any picked product.
+  Future<void> _addNewProductV2() async {
+    final product = await showNewProductDialog(context,
+        user: widget.user, initialName: searchController.text);
+    if (product == null || !mounted) return;
+    // Its custom fields (batch, expiry…) snapshot onto the line like search.
+    final metadata = await ref
+        .read(productRepositoryProvider)
+        .getProductMetadataForIds([product.id]);
+    if (!mounted) return;
+    searchController.clear();
+    setState(() {
+      products = [...products, product];
+      filteredProducts = [...filteredProducts, product];
+      _productMetadata = {..._productMetadata, ...metadata};
+      _showProductDropdownV2 = false;
+    });
+    addInvoiceProductPrompt(product, newProduct: true);
   }
 
   void _ensureHighlightedProductVisibleV2() {
@@ -5620,7 +6094,7 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
                           children: [
                             TextSpan(
                                 text:
-                                    '$_currencySymbol${product.price.toStringAsFixed(2)}  ·  Stock: ${product.stock}'
+                                    '$_currencySymbol${AmountFormat.money(product.price)}  ·  Stock: ${product.stock}'
                                     '${product.hsncode.trim().isEmpty ? '' : '  ·  HSN ${product.hsncode}'}'),
                             if (hasStorage) ...[
                               const TextSpan(text: '  ·  '),
@@ -5819,11 +6293,11 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
                     children: [
                       if (item.unitPrice != null)
                         _buildItemDetail('Price',
-                            '$_currencySymbol${item.effectivePrice.toStringAsFixed(2)} *',
+                            '$_currencySymbol${AmountFormat.money(item.effectivePrice)} *',
                             color: Colors.orange[700])
                       else
                         _buildItemDetail('Price',
-                            '$_currencySymbol${item.product.price.toStringAsFixed(2)}'),
+                            '$_currencySymbol${AmountFormat.money(item.product.price)}'),
                       if (_taxMode == TaxMode.perItem)
                         _buildItemDetail(
                             'Tax', '${item.product.tax_rate}%'),
@@ -5833,7 +6307,7 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
                             'Inclusive',
                             color: Colors.teal[700]),
                         _buildItemDetail('Net Price',
-                            '$_currencySymbol${InvoiceTotalsCalculator.netPrice(price: item.effectivePrice, taxRatePercent: item.product.tax_rate.toDouble(), priceIncludesTax: true).toStringAsFixed(2)}',
+                            '$_currencySymbol${AmountFormat.money(InvoiceTotalsCalculator.netPrice(price: item.effectivePrice, taxRatePercent: item.product.tax_rate.toDouble(), priceIncludesTax: true))}',
                             color: Colors.teal[700]),
                       ],
                       if (_columnsConfig.hsncode)
@@ -5850,14 +6324,14 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
                         _buildItemDetail('Discount',
                             item.discountIsPercent
                                 ? '${item.discount.toStringAsFixed(2)}%'
-                                : '$_currencySymbol${item.discount.toStringAsFixed(2)}${item.discountPerUnit ? ' ×qty' : ''}'),
+                                : '$_currencySymbol${AmountFormat.money(item.discount)}${item.discountPerUnit ? ' ×qty' : ''}'),
                       if (!item.discountIsPercent && item.discountPerUnit && item.discount > 0)
                         _buildItemDetail('Net',
-                            '$_currencySymbol${(item.effectivePrice - item.discount).toStringAsFixed(2)}/item',
+                            '$_currencySymbol${AmountFormat.money(item.effectivePrice - item.discount)}/item',
                             color: Colors.teal[700]),
                       if (item.extraCost != null && item.extraCost! > 0)
                         _buildItemDetail('Extra',
-                            '+$_currencySymbol${item.extraCost!.toStringAsFixed(2)}',
+                            '+$_currencySymbol${AmountFormat.money(item.extraCost!)}',
                             color: Colors.teal[700]),
                       // Credit note: qty still returnable (linked invoice)
                       // and whether this line goes back into stock.
@@ -5900,7 +6374,7 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
           ),
           const SizedBox(width: 12),
           Text(
-            '$_currencySymbol${item.total.toStringAsFixed(2)}',
+            '$_currencySymbol${AmountFormat.money(item.total)}',
             style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
           ),
           if (!_lockedByCreditNotes) ...[
@@ -6231,7 +6705,7 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
                   setState(() => _applyCustomerCredit = v ?? false),
               title: Text(l10n.returnApplyCreditToInvoiceLabel),
               subtitle: Text(l10n.returnCreditAvailableLabel(
-                  '$_currencySymbol${_customerCreditAvailable.toStringAsFixed(2)}')),
+                  '$_currencySymbol${AmountFormat.money(_customerCreditAvailable)}')),
             ),
         ],
       ),
@@ -6609,7 +7083,7 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
               children: [
                 Text(AppLocalizations.of(context)!.createInvoiceDiscountColonLabel,
                     style: TextStyle(fontSize: 14, color: Colors.orange[700])),
-                Text('-$_currencySymbol${totalDiscount.toStringAsFixed(2)}',
+                Text('-$_currencySymbol${AmountFormat.money(totalDiscount)}',
                     style: TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.bold,
@@ -6639,7 +7113,7 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
                 ),
                 Flexible(
                   child: Text(
-                      '-$_currencySymbol${invoiceDiscountAmount.toStringAsFixed(2)}',
+                      '-$_currencySymbol${AmountFormat.money(invoiceDiscountAmount)}',
                       style: TextStyle(
                           fontSize: 14,
                           fontWeight: FontWeight.bold,
@@ -6699,7 +7173,8 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
                           _lockedV2(_buildAdditionalCostsSection()),
                           const SizedBox(height: 12),
                           _lockedV2(_invoiceDiscountSectionV2()),
-                          if (!isEditing && invoiceType == 'Invoice') ...[
+                          if ((!isEditing || (_invoice?.isDraft ?? false)) &&
+                              invoiceType == 'Invoice') ...[
                             const SizedBox(height: 18),
                             _sectionLabelV2(AppLocalizations.of(context)!
                                 .createInvoicePaymentSectionLabel),
@@ -6727,7 +7202,11 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
   }
 
   Widget _actionButtonsV2() {
-    final isEditMode = widget.invoiceToEdit != null;
+    // NOT widget.invoiceToEdit != null — Save Draft can create a saved row
+    // (_invoice != null) within this same session without the widget ever
+    // being reconstructed in edit mode, so routing must key off _invoice.
+    final hasSavedRow = _invoice != null;
+    final isDraftRow = _invoice?.isDraft ?? false;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 10),
       decoration: BoxDecoration(
@@ -6769,9 +7248,11 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
                     _buildActionButton(
                       icon: Icons.picture_as_pdf_outlined,
                       label: AppLocalizations.of(context)!.createInvoicePreviewLabel,
-                      tooltip: AppLocalizations.of(context)!.createInvoicePreviewTooltip,
+                      tooltip: isDraftRow
+                          ? AppLocalizations.of(context)!.createInvoiceDraftPreviewTooltip
+                          : AppLocalizations.of(context)!.createInvoicePreviewTooltip,
                       color: Colors.purple,
-                      onPressed: _invoice != null
+                      onPressed: hasSavedRow && !isDraftRow
                           ? () => InvoicePdfServices.previewPDF(context, _invoice!)
                           : null,
                     ),
@@ -6779,29 +7260,59 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
                       icon: Icons.download_outlined,
                       label: AppLocalizations.of(context)!.createInvoiceDownloadLabel,
                       color: Colors.deepPurple,
-                      onPressed: _invoice != null
+                      onPressed: hasSavedRow && !isDraftRow
                           ? () => PDFService.downloadPDF(context, _invoice!)
                           : null,
                     ),
                     _buildActionButton(
                       icon: Icons.print_outlined,
                       label: AppLocalizations.of(context)!.actionPrint,
-                      tooltip: AppLocalizations.of(context)!.createInvoicePrintTooltip,
+                      tooltip: isDraftRow
+                          ? AppLocalizations.of(context)!.createInvoiceDraftPrintTooltip
+                          : AppLocalizations.of(context)!.createInvoicePrintTooltip,
                       color: Colors.blue,
-                      onPressed: _invoice != null
+                      onPressed: hasSavedRow && !isDraftRow
                           ? () => InvoicePdfServices.generatePDF(context, _invoice!)
                           : null,
                     ),
                   ],
                 ),
               ),
+              // A quotation conversion links on create, so it can't be a
+              // draft. Draft notes stay inert until finalized (_createInvoice).
+              if ((!hasSavedRow || isDraftRow) &&
+                  widget.convertFromQuotationId == null) ...[
+                const SizedBox(width: 12),
+                Flexible(
+                  child: OutlinedButton.icon(
+                    onPressed: !isLoading ? _saveDraft : null,
+                    style: OutlinedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 18, vertical: 16),
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(AppBorderRadius.xsmall)),
+                    ),
+                    icon: const Icon(Icons.drafts_outlined),
+                    label: Text(
+                      AppLocalizations.of(context)!.createInvoiceSaveDraftButton,
+                      overflow: TextOverflow.ellipsis,
+                      maxLines: 1,
+                      style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+                    ),
+                  ),
+                ),
+              ],
               const SizedBox(width: 12),
               Flexible(
                 child: Tooltip(
                   message: 'Shortcut: Ctrl+s',
                   child: ElevatedButton.icon(
                     onPressed: invoiceItems.isNotEmpty && !isLoading
-                        ? (isEditMode ? _updateInvoice : _createInvoice)
+                        ? (!hasSavedRow
+                            ? _createInvoice
+                            : isDraftRow
+                                ? _finalizeDraft
+                                : _updateInvoice)
                         : null,
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Theme.of(context).primaryColor,
@@ -6819,13 +7330,21 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
                             child: CircularProgressIndicator(
                                 color: Colors.white, strokeWidth: 2),
                           )
-                        : Icon(isEditMode ? Icons.update : Icons.save_outlined),
+                        : Icon(!hasSavedRow
+                            ? Icons.save_outlined
+                            : isDraftRow
+                                ? Icons.task_alt
+                                : Icons.update),
                     label: Text(
                       isLoading
                           ? 'Processing...'
-                          : (isEditMode
-                              ? (compact ? 'Update $invoiceType' : 'Update $invoiceType (Ctrl+S)')
-                              : (compact ? 'Create $invoiceType' : 'Create $invoiceType (Ctrl+S)')),
+                          : (!hasSavedRow
+                              ? (compact ? 'Create $invoiceType' : 'Create $invoiceType (Ctrl+S)')
+                              : isDraftRow
+                                  ? (compact
+                                      ? AppLocalizations.of(context)!.createInvoiceFinalizeButton(_invoiceTypeLabel(invoiceType))
+                                      : '${AppLocalizations.of(context)!.createInvoiceFinalizeButton(_invoiceTypeLabel(invoiceType))} (Ctrl+S)')
+                                  : (compact ? 'Update $invoiceType' : 'Update $invoiceType (Ctrl+S)')),
                       overflow: TextOverflow.ellipsis,
                       maxLines: 1,
                       style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
@@ -6905,7 +7424,8 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
               _lockedV2(_buildAdditionalCostsSection()),
               const SizedBox(height: 12),
               _lockedV2(_invoiceDiscountSectionV2()),
-              if (!isEditing && invoiceType == 'Invoice') ...[
+              if ((!isEditing || (_invoice?.isDraft ?? false)) &&
+                  invoiceType == 'Invoice') ...[
                 const SizedBox(height: 18),
                 _sectionLabelV2(AppLocalizations.of(context)!
                     .createInvoicePaymentSectionLabel),

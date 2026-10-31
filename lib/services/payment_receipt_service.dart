@@ -11,6 +11,7 @@ import 'package:invoiso/services/pdf/pdf_widgets.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
+import 'package:invoiso/utils/formatters.dart';
 
 class PaymentReceiptService {
   // ─── Public entry point ───────────────────────────────────────────────────
@@ -42,6 +43,7 @@ class PaymentReceiptService {
     Invoice invoice,
     InvoicePayment payment,
   ) async {
+    await AmountFormat.load(); // Number format setting
     final pdfTheme = await PdfFontService.loadTheme();
     final pdf = pw.Document(theme: pdfTheme);
     final company = await BackendServices.companyInfo.getCompanyInfo();
@@ -360,7 +362,7 @@ class PaymentReceiptService {
     );
   }
 
-  static String _fmt(double v) => v.toStringAsFixed(2);
+  static String _fmt(double v) => AmountFormat.money(v);
 
   static String _formatDate(DateTime d, String pattern) {
     return DateFormat(pattern, 'en_US').format(d);

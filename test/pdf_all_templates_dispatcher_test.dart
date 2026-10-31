@@ -23,6 +23,7 @@ import 'package:invoiso/models/invoice_item.dart';
 import 'package:invoiso/models/product.dart';
 import 'package:invoiso/services/pdf/pdf_service.dart';
 import 'package:invoiso/services/pdf/pdf_settings.dart';
+import 'package:invoiso/utils/formatters.dart';
 
 final _company = CompanyInfo(
   name: 'MADATHIL HARDWARE',
@@ -175,6 +176,48 @@ PdfGenerationSettings _settings({
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
+
+  // Number format setting: lakh-grouped large amounts must fit the narrow
+  // layouts (Grid A6, Thermal 58mm) as well as A4. Rendered for a visual
+  // check in output/amount_separator/.
+  for (final (template, pageSize) in [
+    (InvoiceTemplate.classic, PageSize.a4),
+    (InvoiceTemplate.gridClassic, PageSize.a6),
+    (InvoiceTemplate.thermal, PageSize.thermal58),
+  ]) {
+    test('${template.name} ${pageSize.name} renders Indian-grouped amounts',
+        () async {
+      AmountFormat.style = AmountSeparator.indian;
+      addTearDown(() => AmountFormat.style = AmountSeparator.none);
+      final settings = _settings(
+        template: template,
+        pageSize: pageSize,
+        pdfTheme: await TestPdfFontService.loadTheme(),
+        logoBytes: await File('assets/images/demo_logo.png').readAsBytes(),
+        watermarkBytes: await File('assets/images/watermark.png').readAsBytes(),
+        signatureBytes: await File('assets/images/sig.jpeg').readAsBytes(),
+      );
+      final invoice = _sampleInvoice()
+        ..items = [
+          InvoiceItem(
+              product: Product(
+                  id: 'big',
+                  name: 'STEEL TMT BAR',
+                  description: '',
+                  price: 123456.78,
+                  stock: 10,
+                  hsncode: '7214',
+                  tax_rate: 18),
+              quantity: 10),
+        ];
+      final pdf = PDFService.generateInvoicePDFWithSettings(invoice, settings,
+          previousBalanceDue: 98765.43);
+      final out = File(
+          'output/amount_separator/${template.name}_${pageSize.name}.pdf');
+      await out.parent.create(recursive: true);
+      await out.writeAsBytes(await pdf.save());
+    });
+  }
   for (final template in InvoiceTemplate.values) {
     for (final logoVariant in _logoVariants.entries) {
       test(

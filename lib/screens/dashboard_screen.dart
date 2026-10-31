@@ -65,6 +65,10 @@ String _invoiceTypeLabel(BuildContext context, String type) {
   }
 }
 
+// Final credit / debit notes are settled at creation and never edited.
+bool _isFinalNote(Invoice inv) =>
+    (inv.type == 'Credit Note' || inv.type == 'Debit Note') && !inv.isDraft;
+
 // Dashboard Screen
 class DashboardScreen extends ConsumerStatefulWidget {
   final User loggedInUser;
@@ -80,6 +84,10 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   bool _reportsAdminOnly = false;
   // Reports hidden for this user (Settings → Accessibility).
   bool get _reportsLocked => _reportsAdminOnly && !_currentUser.isAdmin();
+  bool _purchaseBillsAdminOnly = false;
+  // Purchase Bills + Suppliers hidden for this user (Settings → Accessibility).
+  bool get _purchaseBillsLocked =>
+      _purchaseBillsAdminOnly && !_currentUser.isAdmin();
   bool _sidebarExpanded = true;
   late User _currentUser;
   String? _pendingReportsStatementCustomerKey;
@@ -109,6 +117,11 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     _loadServicesEnabled();
     _loadReturnsEnabled();
     _loadReportsAdminOnly();
+    _loadPurchaseBillsAdminOnly();
+    // Number format for every screen's amounts (cached; see AmountFormat).
+    AmountFormat.load().then((_) {
+      if (mounted) setState(() {});
+    });
     _loadCompanies();
     SessionManager.initialize(_onSessionTimeout);
     if (ref.read(appEditionConfigProvider).enableUpdateCheck) {
@@ -209,6 +222,14 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     setState(() => _reportsAdminOnly = v == 'true');
   }
 
+  Future<void> _loadPurchaseBillsAdminOnly() async {
+    final v = await ref
+        .read(settingsRepositoryProvider)
+        .getSetting(SettingKey.purchaseBillsAndSuppliersAdminOnly);
+    if (!mounted) return;
+    setState(() => _purchaseBillsAdminOnly = v == 'true');
+  }
+
   Future<void> _checkForUpdates() async {
     final info = await UpdateService.checkForUpdate();
     if (info == null) return;
@@ -288,6 +309,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
           convertFromQuotationId: _convertSourceQuotationId,
           guard: _invoiceFormGuard,
           onCreateNewInvoice: onCreateNewInvoice,
+          user: _currentUser,
         );
       case 2:
         return InvoiceManagementScreenV2(
@@ -345,13 +367,13 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
         );
       case 9: // Services (Cash / UPI-Bank exchange); shown after New Invoice
         return CashExchangeScreen(user: _currentUser);
-      case 10:
+      case 10 when !_purchaseBillsLocked:
         return ref.watch(enablePurchaseBillsAndSuppliersProvider)
             ? PurchaseBillManagementScreen(user: _currentUser)
             : Center(
                 child: Text(
                     AppLocalizations.of(context)!.dashboardUnknownTabLabel));
-      case 11:
+      case 11 when !_purchaseBillsLocked:
         return ref.watch(enablePurchaseBillsAndSuppliersProvider)
             ? SupplierManagementScreen(user: _currentUser)
             : Center(
@@ -458,6 +480,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
       await _loadServicesEnabled();
       await _loadReturnsEnabled();
       await _loadReportsAdminOnly();
+      await _loadPurchaseBillsAdminOnly();
     }
     if (!mounted) return;
     setState(() {
@@ -795,7 +818,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                         Icons.inventory_2_outlined,
                         Icons.inventory_2,
                         AppLocalizations.of(context)!.navProducts),
-                    if (showPurchaseBillsAndSuppliers) ...[
+                    if (showPurchaseBillsAndSuppliers && !_purchaseBillsLocked) ...[
                       _buildNavItem(10, Icons.shopping_cart_outlined,
                           Icons.shopping_cart, AppLocalizations.of(context)!.navPurchaseBills),
                       _buildNavItem(11, Icons.local_shipping_outlined,
@@ -1881,14 +1904,14 @@ class _DashboardHomeState extends ConsumerState<DashboardHome> {
                     _buildStatCard(
                       AppLocalizations.of(context)!
                           .dashboardRevenueCollectedLabel,
-                      '$_currencySymbol ${totalRevenue.toStringAsFixed(2)}',
+                      '$_currencySymbol ${AmountFormat.money(totalRevenue)}',
                       const Color(0xFF6A1B9A),
                       Icons.account_balance_wallet_outlined,
                     ),
                     const SizedBox(width: 16),
                     _buildStatCard(
                       AppLocalizations.of(context)!.dashboardOutstandingLabel,
-                      '$_currencySymbol ${totalOutstanding.toStringAsFixed(2)}',
+                      '$_currencySymbol ${AmountFormat.money(totalOutstanding)}',
                       const Color(0xFFC62828),
                       Icons.hourglass_top_outlined,
                       subtitle: overdueInvoices.isNotEmpty
@@ -2097,7 +2120,9 @@ class _DashboardHomeState extends ConsumerState<DashboardHome> {
                                               WrapCrossAlignment.center,
                                           children: [
                                             Text(
-                                              '${invoice.type} #${invoice.invoiceNumber ?? invoice.id}',
+                                              invoice.isDraft
+                                                  ? '${invoice.type} · ${AppLocalizations.of(context)!.invoiceDraftBadge}'
+                                                  : '${invoice.type} #${invoice.invoiceNumber ?? invoice.id}',
                                               style: const TextStyle(
                                                   fontSize: 18,
                                                   fontWeight: FontWeight.bold),
@@ -2270,7 +2295,7 @@ class _DashboardHomeState extends ConsumerState<DashboardHome> {
                                               BorderRadius.circular(8),
                                         ),
                                         child: Text(
-                                          '${invoice.currencySymbol} ${invoice.total.toStringAsFixed(2)}',
+                                          '${invoice.currencySymbol} ${AmountFormat.money(invoice.total)}',
                                           style: const TextStyle(
                                             fontSize: 20,
                                             fontWeight: FontWeight.bold,
@@ -2297,7 +2322,8 @@ class _DashboardHomeState extends ConsumerState<DashboardHome> {
                                               Colors.blue,
                                               AppLocalizations.of(context)!
                                                   .actionEdit,
-                                              invoice.status == 'declined'
+                                              invoice.status == 'declined' ||
+                                                      _isFinalNote(invoice)
                                                   ? null
                                                   : () => widget
                                                       .onEditInvoice(invoice)),
@@ -2307,6 +2333,9 @@ class _DashboardHomeState extends ConsumerState<DashboardHome> {
                                               AppLocalizations.of(context)!
                                                   .actionDuplicate,
                                               () => _showCloneDialog(invoice)),
+                                          // Drafts have no number yet — no
+                                          // PDF, like the invoice list.
+                                          if (!invoice.isDraft) ...[
                                           _buildActionButton(
                                               Icons.picture_as_pdf_outlined,
                                               Colors.orange,
@@ -2330,12 +2359,14 @@ class _DashboardHomeState extends ConsumerState<DashboardHome> {
                                               () => InvoicePdfServices
                                                   .generatePDF(
                                                       context, invoice)),
+                                          ],
                                           _buildActionButton(
                                               Icons.payments_outlined,
                                               Colors.purple,
                                               AppLocalizations.of(context)!
                                                   .actionPayment,
                                               invoice.type == 'Invoice' &&
+                                                      !invoice.isDraft &&
                                                       (invoice.status !=
                                                               'declined' ||
                                                           invoice.payments
@@ -2588,7 +2619,7 @@ class _DashboardHomeState extends ConsumerState<DashboardHome> {
                         borderRadius: BorderRadius.circular(6),
                       ),
                       child: Text(
-                        '$_currencySymbol ${invoice.outstandingBalance.toStringAsFixed(2)}',
+                        '$_currencySymbol ${AmountFormat.money(invoice.outstandingBalance)}',
                         style: TextStyle(
                             fontSize: 14,
                             fontWeight: FontWeight.bold,
@@ -2766,7 +2797,7 @@ class _DashboardHomeState extends ConsumerState<DashboardHome> {
                         borderRadius: BorderRadius.circular(6),
                       ),
                       child: Text(
-                        '$_currencySymbol ${invoice.outstandingBalance.toStringAsFixed(2)}',
+                        '$_currencySymbol ${AmountFormat.money(invoice.outstandingBalance)}',
                         style: TextStyle(
                             fontSize: 14,
                             fontWeight: FontWeight.bold,
@@ -2970,7 +3001,7 @@ class _DashboardHomeState extends ConsumerState<DashboardHome> {
                       const SizedBox(width: 16),
                       // Price
                       Text(
-                        '$_currencySymbol${product.price.toStringAsFixed(2)}',
+                        '$_currencySymbol${AmountFormat.money(product.price)}',
                         style: TextStyle(
                             fontSize: 14,
                             fontWeight: FontWeight.w600,
@@ -4024,7 +4055,9 @@ class _DashboardHomeState extends ConsumerState<DashboardHome> {
           Expanded(
             flex: 3,
             child: Text(
-                '#${inv.invoiceNumber ?? inv.id}',
+                inv.isDraft
+                    ? AppLocalizations.of(context)!.invoiceDraftBadge
+                    : '#${inv.invoiceNumber ?? inv.id}',
                 style:
                     const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
                 maxLines: 1,
@@ -4069,7 +4102,7 @@ class _DashboardHomeState extends ConsumerState<DashboardHome> {
                     fontWeight: FontWeight.w700)),
           ),
           const SizedBox(width: 8),
-          if (inv.status != 'declined') ...[
+          if (inv.status != 'declined' && !_isFinalNote(inv)) ...[
             Tooltip(
               message: 'Edit',
               child: InkWell(
@@ -4085,6 +4118,8 @@ class _DashboardHomeState extends ConsumerState<DashboardHome> {
             ),
             const SizedBox(width: 2),
           ],
+          // Drafts have no number yet — no PDF, like the invoice list.
+          if (!inv.isDraft)
           Tooltip(
             message: 'Download PDF',
             child: InkWell(
@@ -4519,7 +4554,7 @@ class _DashboardHomeState extends ConsumerState<DashboardHome> {
     }
     if (amount >= 100000) return '${(amount / 100000).toStringAsFixed(2)}L';
     if (amount >= 1000) return '${(amount / 1000).toStringAsFixed(1)}K';
-    return amount.toStringAsFixed(2);
+    return AmountFormat.money(amount);
   }
 
   // ── Layout: Bento Grid ──────────────────────────────────────────────────────

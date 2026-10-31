@@ -20,6 +20,7 @@ import 'package:invoiso/models/product_list_stats.dart';
 import 'package:invoiso/models/user.dart';
 import 'package:invoiso/utils/formatters.dart';
 import 'package:invoiso/screens/settings/product_columns_settings_screen.dart';
+import 'package:invoiso/widgets/product_form.dart';
 
 class ProductManagementScreenV2 extends ConsumerStatefulWidget {
   final User user;
@@ -49,38 +50,13 @@ class _ProductManagementScreenV2State extends ConsumerState<ProductManagementScr
   Timer? _searchDebounce;
   int _loadRequestId = 0;
 
-  // Form controllers
-  final _nameController = TextEditingController();
-  final _aliasNameController = TextEditingController();
-  final _defaultDiscountController = TextEditingController();
-  final _descriptionController = TextEditingController();
-  final _priceController = TextEditingController();
-  final _purchasePriceController = TextEditingController();
-  final _stockController = TextEditingController(text: '0');
-  final _lowStockLimitController = TextEditingController();
-  final _hsnCodeController = TextEditingController();
-  final _taxRateController = TextEditingController();
-  final _customUnitController = TextEditingController();
-  String _selectedUnit = '';
-  final _formKey = GlobalKey<FormState>();
-
-  // Metadata form controllers (add form)
-  final _storageLocationController = TextEditingController();
-  final _containerNumberController = TextEditingController();
-  final _batchNumberController = TextEditingController();
-  final _manufactureNameController = TextEditingController();
-  final _supplierNameController = TextEditingController();
-  final _skuCodeController = TextEditingController();
-  final _notesController = TextEditingController();
-  DateTime? _expiryDate;
-  DateTime? _manufactureDate;
+  // Add form (shared with the Create Invoice / Purchase Bill "New product"
+  // dialog) — fields, rules and saving live in ProductForm.
+  final _productFormKey = GlobalKey<ProductFormState>();
   String _datePattern = 'dd/MM/yyyy';
 
   String _currencySymbol = '₹';
   BusinessType _businessType = BusinessType.both;
-  String _newItemType = 'product'; // type for the add-product form
-  bool _unlimitedStock = false;
-  bool _priceIncludesTax = false;
 
   // ── V2 state ──────────────────────────────────────────────────────────
   // Only the visible page is loaded (tab/search/sort/paging in SQL, see
@@ -131,8 +107,6 @@ class _ProductManagementScreenV2State extends ConsumerState<ProductManagementScr
   @override
   void initState() {
     super.initState();
-    _taxRateController.text = "18";
-    _defaultDiscountController.text = "0";
     _loadBusinessType();
     _loadCurrency();
     _loadDateFormat();
@@ -207,8 +181,8 @@ class _ProductManagementScreenV2State extends ConsumerState<ProductManagementScr
       _hidePurchasePrice = hide;
       _stockLocked = config.stockEditAdminOnly && !widget.user.isAdmin();
       _columnsConfig = hide ? config.copyWith(purchasePrice: false) : config;
-      if (!config.stock) _unlimitedStock = true;
     });
+    _productFormKey.currentState?.reloadConfig();
   }
 
   Future<void> _loadListColumnsV2() async {
@@ -368,7 +342,6 @@ class _ProductManagementScreenV2State extends ConsumerState<ProductManagementScr
     final bt = await ref.read(settingsRepositoryProvider).getBusinessType();
     setState(() {
       _businessType = bt;
-      _newItemType = bt == BusinessType.service ? 'service' : 'product';
     });
   }
 
@@ -382,24 +355,6 @@ class _ProductManagementScreenV2State extends ConsumerState<ProductManagementScr
 
   @override
   void dispose() {
-    _nameController.dispose();
-    _aliasNameController.dispose();
-    _descriptionController.dispose();
-    _priceController.dispose();
-    _purchasePriceController.dispose();
-    _defaultDiscountController.dispose();
-    _stockController.dispose();
-    _lowStockLimitController.dispose();
-    _taxRateController.dispose();
-    _hsnCodeController.dispose();
-    _customUnitController.dispose();
-    _storageLocationController.dispose();
-    _containerNumberController.dispose();
-    _batchNumberController.dispose();
-    _manufactureNameController.dispose();
-    _supplierNameController.dispose();
-    _skuCodeController.dispose();
-    _notesController.dispose();
     _searchFocusNode.dispose();
     _horizontalScrollController.dispose();
     _searchDebounce?.cancel();
@@ -452,98 +407,6 @@ class _ProductManagementScreenV2State extends ConsumerState<ProductManagementScr
     }
   }
 
-  Future<void> _addProduct() async {
-    if (!_formKey.currentState!.validate()) return;
-
-    final price = double.parse(_priceController.text.trim());
-    final purchasePrice =
-        double.tryParse(_purchasePriceController.text.trim()) ?? 0.0;
-    if (!await _confirmIfSellingAtLoss(price, purchasePrice)) return;
-    if(!mounted) return;
-    final l10n = AppLocalizations.of(context)!;
-    setState(() => _isLoading = true);
-    try {
-      final newProduct = Product(
-        id: const Uuid().v4(),
-        name: _nameController.text.trim(),
-        description: _descriptionController.text.trim(),
-        price: price,
-        stock: _unlimitedStock || _stockLocked
-            ? 0
-            : int.parse(_stockController.text.trim()),
-        hsncode: _hsnCodeController.text.trim(),
-        tax_rate: int.parse(_taxRateController.text.trim()),
-        type: _newItemType,
-        defaultDiscount:
-            double.tryParse(_defaultDiscountController.text.trim()) ?? 0.0,
-        purchasePrice: purchasePrice,
-        aliasName: _aliasNameController.text.trim().isEmpty
-            ? null
-            : _aliasNameController.text.trim(),
-        unit: _selectedUnit.trim(),
-        unlimitedStock: _unlimitedStock,
-        priceIncludesTax: _priceIncludesTax,
-        lowStockLimit: _unlimitedStock || _stockLocked
-            ? null
-            : int.tryParse(_lowStockLimitController.text.trim()),
-      );
-
-      await ref.read(productRepositoryProvider).insertProduct(newProduct);
-      await ref.read(productRepositoryProvider).upsertProductMetadata(
-            ProductMetadata(
-              productId: newProduct.id,
-              storageLocation: _storageLocationController.text.trim(),
-              containerNumber: _containerNumberController.text.trim(),
-              batchNumber: _batchNumberController.text.trim(),
-              expiryDate: _isoDate(_expiryDate),
-              manufactureDate: _isoDate(_manufactureDate),
-              manufactureName: _manufactureNameController.text.trim(),
-              supplierName: _supplierNameController.text.trim(),
-              skuCode: _skuCodeController.text.trim(),
-              notes: _notesController.text.trim(),
-            ),
-          );
-      _clearForm();
-      await _loadProducts();
-      _showSnackBar(l10n.productMgmtAddedMessage);
-    } catch (e) {
-      _showSnackBar(l10n.productMgmtAddErrorMessage(e.toString()), isError: true);
-    } finally {
-      if (mounted) setState(() => _isLoading = false);
-    }
-  }
-
-  void _clearForm() {
-    _formKey.currentState?.reset();
-    _nameController.clear();
-    _aliasNameController.clear();
-    _descriptionController.clear();
-    _priceController.clear();
-    _purchasePriceController.clear();
-    _defaultDiscountController.clear();
-    _stockController.clear();
-    _lowStockLimitController.clear();
-    _hsnCodeController.clear();
-    _taxRateController.clear();
-    _taxRateController.text = "18";
-    _customUnitController.clear();
-    _storageLocationController.clear();
-    _containerNumberController.clear();
-    _batchNumberController.clear();
-    _manufactureNameController.clear();
-    _supplierNameController.clear();
-    _skuCodeController.clear();
-    _notesController.clear();
-    if (mounted) {
-      setState(() {
-      _selectedUnit = '';
-      _unlimitedStock = !_columnsConfig.stock;
-      _priceIncludesTax = false;
-      _expiryDate = null;
-      _manufactureDate = null;
-    });
-    }
-  }
 
   static String _isoDate(DateTime? d) =>
       d == null ? '' : DateFormat('yyyy-MM-dd').format(d);
@@ -578,31 +441,9 @@ class _ProductManagementScreenV2State extends ConsumerState<ProductManagementScr
   /// cancel option) when purchase price exceeds sale price, since that
   /// means selling at a loss.
   Future<bool> _confirmIfSellingAtLoss(double price, double purchasePrice) async {
-    if (_hidePurchasePrice || purchasePrice <= 0 || purchasePrice <= price) return true;
-    final l10n = AppLocalizations.of(context)!;
-    final proceed = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: Text(l10n.productMgmtSellingAtLossTitle),
-        content: Text(
-          l10n.productMgmtSellingAtLossMessage(
-            '$_currencySymbol${purchasePrice.toStringAsFixed(2)}',
-            '$_currencySymbol${price.toStringAsFixed(2)}',
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: Text(l10n.actionCancel),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            child: Text(l10n.actionSaveAnyway),
-          ),
-        ],
-      ),
-    );
-    return proceed ?? false;
+    if (_hidePurchasePrice) return true;
+    return confirmSellingAtLoss(context,
+        price: price, purchasePrice: purchasePrice, currencySymbol: _currencySymbol);
   }
 
   Widget _buildMetadataSection({
@@ -620,93 +461,21 @@ class _ProductManagementScreenV2State extends ConsumerState<ProductManagementScr
     required ValueChanged<DateTime?> onManufactureChanged,
     bool readOnly = false,
   }) {
-    Widget field(TextEditingController ctrl, String label, IconData icon,
-        {int maxLines = 1}) {
-      return Padding(
-        padding: const EdgeInsets.only(bottom: 16),
-        child: TextFormField(
-          controller: ctrl,
-          readOnly: readOnly,
-          maxLines: maxLines,
-          decoration: InputDecoration(
-            labelText: label,
-            prefixIcon: Icon(icon),
-            border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(AppBorderRadius.xsmall)),
-            filled: readOnly,
-            fillColor:
-                readOnly ? Theme.of(context).colorScheme.surfaceContainerHighest : null,
-          ),
-        ),
-      );
-    }
-
-    Widget dateField(String label, DateTime? value, ValueChanged<DateTime?> onChanged) {
-      final display = value == null ? '' : DateFormat(datePattern).format(value);
-      return Padding(
-        padding: const EdgeInsets.only(bottom: 16),
-        child: TextFormField(
-          readOnly: true,
-          controller: TextEditingController(text: display),
-          onTap: readOnly
-              ? null
-              : () async {
-                  final picked = await showDatePicker(
-                    context: context,
-                    initialDate: value ?? DateTime.now(),
-                    firstDate: DateTime(2000),
-                    lastDate: DateTime(2100),
-                  );
-                  if (picked != null) onChanged(picked);
-                },
-          decoration: InputDecoration(
-            labelText: label,
-            prefixIcon: const Icon(Icons.calendar_today_outlined),
-            suffixIcon: (!readOnly && value != null)
-                ? IconButton(
-                    icon: const Icon(Icons.clear, size: 18),
-                    onPressed: () => onChanged(null),
-                  )
-                : null,
-            border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(AppBorderRadius.xsmall)),
-            filled: readOnly,
-            fillColor:
-                readOnly ? Theme.of(context).colorScheme.surfaceContainerHighest : null,
-          ),
-        ),
-      );
-    }
-
-    final l10n = AppLocalizations.of(context)!;
-    return Theme(
-      data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
-      child: ExpansionTile(
-        tilePadding: EdgeInsets.zero,
-        title: Text(l10n.productMgmtAdvancedInformationLabel),
-        leading: const Icon(Icons.more_horiz),
-        childrenPadding: const EdgeInsets.only(top: 8),
-        children: [
-          if (_columnsConfig.metaStorageLocation)
-            field(storageLocationCtrl, l10n.productMgmtStorageLocationLabel, Icons.place_outlined),
-          if (_columnsConfig.metaContainerNumber)
-            field(containerNumberCtrl, l10n.productMgmtContainerNumberLabel, Icons.inventory_2_outlined),
-          if (_columnsConfig.metaBatchNumber)
-            field(batchNumberCtrl, l10n.productMgmtBatchNumberLabel, Icons.tag),
-          if (_columnsConfig.metaExpiryDate)
-            dateField(l10n.productMgmtExpiryDateLabel, expiryDate, onExpiryChanged),
-          if (_columnsConfig.metaManufactureDate)
-            dateField(l10n.productMgmtManufactureDateLabel, manufactureDate, onManufactureChanged),
-          if (_columnsConfig.metaManufactureName)
-            field(manufactureNameCtrl, l10n.productMgmtManufactureNameLabel, Icons.factory_outlined),
-          if (_columnsConfig.metaSupplierName)
-            field(supplierNameCtrl, l10n.productMgmtSupplierNameLabel, Icons.local_shipping_outlined),
-          if (_columnsConfig.metaSkuCode)
-            field(skuCodeCtrl, l10n.productMgmtSkuCodeLabel, Icons.qr_code_2),
-          if (_columnsConfig.metaNotes)
-            field(notesCtrl, l10n.productMgmtNotesLabel, Icons.notes, maxLines: 3),
-        ],
-      ),
+    return ProductMetadataSection(
+      config: _columnsConfig,
+      storageLocationCtrl: storageLocationCtrl,
+      containerNumberCtrl: containerNumberCtrl,
+      batchNumberCtrl: batchNumberCtrl,
+      manufactureNameCtrl: manufactureNameCtrl,
+      supplierNameCtrl: supplierNameCtrl,
+      skuCodeCtrl: skuCodeCtrl,
+      notesCtrl: notesCtrl,
+      expiryDate: expiryDate,
+      manufactureDate: manufactureDate,
+      datePattern: datePattern,
+      onExpiryChanged: onExpiryChanged,
+      onManufactureChanged: onManufactureChanged,
+      readOnly: readOnly,
     );
   }
 
@@ -1281,7 +1050,7 @@ class _ProductManagementScreenV2State extends ConsumerState<ProductManagementScr
                             dense: true,
                             title: Text(p.name),
                             subtitle: Text(
-                                '$_currencySymbol${p.price.toStringAsFixed(2)} · HSN/SAC: ${p.hsncode.isEmpty ? '—' : p.hsncode}'),
+                                '$_currencySymbol${AmountFormat.money(p.price)} · HSN/SAC: ${p.hsncode.isEmpty ? '—' : p.hsncode}'),
                             trailing: Row(
                               mainAxisSize: MainAxisSize.min,
                               children: [
@@ -1543,11 +1312,11 @@ class _ProductManagementScreenV2State extends ConsumerState<ProductManagementScr
                       e.$2.name,
                       e.$2.hsncode,
                       e.$2.description,
-                      e.$2.price.toStringAsFixed(2),
+                      AmountFormat.money(e.$2.price),
                       '${e.$2.tax_rate}%',
                       e.$2.unlimitedStock ? 'Unlimited' : e.$2.stock,
                       e.$2.type,
-                      e.$2.defaultDiscount > 0 ? e.$2.defaultDiscount.toStringAsFixed(2) : '-',
+                      e.$2.defaultDiscount > 0 ? AmountFormat.money(e.$2.defaultDiscount) : '-',
                       e.$2.unit,
                     ]),
               ],
@@ -1661,15 +1430,18 @@ class _ProductManagementScreenV2State extends ConsumerState<ProductManagementScr
   }
 
   Future<void> _addProductV2() async {
-    final nameBefore = _nameController.text;
-    await _addProduct();
-    final succeeded = _nameController.text.isEmpty && nameBefore.trim().isNotEmpty;
-    if (succeeded) {
-      await _loadStatsV2();
-      if (!mounted) return;
-      if (!_addAnotherAfterSavingV2) {
-        setState(() => _showAddPanelV2 = false);
-      }
+    final form = _productFormKey.currentState;
+    if (form == null) return;
+    final product = await form.submit();
+    if (product == null || !mounted) return;
+    final l10n = AppLocalizations.of(context)!;
+    form.reset();
+    await _loadProducts();
+    _showSnackBar(l10n.productMgmtAddedMessage);
+    await _loadStatsV2();
+    if (!mounted) return;
+    if (!_addAnotherAfterSavingV2) {
+      setState(() => _showAddPanelV2 = false);
     }
   }
 
@@ -1699,21 +1471,6 @@ class _ProductManagementScreenV2State extends ConsumerState<ProductManagementScr
         border:
             Border.all(color: Theme.of(context).colorScheme.outlineVariant),
       );
-
-  Widget _sectionLabelV2(String text) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 10, top: 4),
-      child: Text(
-        text.toUpperCase(),
-        style: TextStyle(
-          fontSize: 11,
-          fontWeight: FontWeight.w700,
-          letterSpacing: 0.6,
-          color: Theme.of(context).colorScheme.onSurfaceVariant,
-        ),
-      ),
-    );
-  }
 
   // A PopupMenuButton's `child` should stay non-interactive (PopupMenuButton
   // itself provides the tap-to-open handling) — using a real OutlinedButton
@@ -1839,7 +1596,7 @@ class _ProductManagementScreenV2State extends ConsumerState<ProductManagementScr
           break;
         case 'purchasePrice':
           child = text(p.purchasePrice > 0
-              ? '$_currencySymbol${p.purchasePrice.toStringAsFixed(2)}'
+              ? '$_currencySymbol${AmountFormat.money(p.purchasePrice)}'
               : '');
           break;
         case 'stock':
@@ -1853,7 +1610,7 @@ class _ProductManagementScreenV2State extends ConsumerState<ProductManagementScr
           break;
         case 'defaultDiscount':
           child = text(p.defaultDiscount > 0
-              ? p.defaultDiscount.toStringAsFixed(2)
+              ? AmountFormat.money(p.defaultDiscount)
               : '');
           break;
         case 'storageLocation':
@@ -2400,7 +2157,7 @@ class _ProductManagementScreenV2State extends ConsumerState<ProductManagementScr
           ),
           Expanded(
             flex: 2,
-            child: Text('$_currencySymbol${p.price.toStringAsFixed(2)}',
+            child: Text('$_currencySymbol${AmountFormat.money(p.price)}',
                 style: const TextStyle(fontWeight: FontWeight.w600)),
           ),
           ..._optionalRowCellsV2(p),
@@ -2593,216 +2350,17 @@ class _ProductManagementScreenV2State extends ConsumerState<ProductManagementScr
 
   // ── Slide-out "Add New Product" panel ──────────────────────────────────
 
-  // Sectioned form used by the Add panel — same section grouping/order as
-  // the View/Edit dialog (General / Pricing / Inventory / Advanced
-  // Information) instead of the old Basic Information / Advanced tabs.
-  Widget _addPanelFormV2() {
-    final l10n = AppLocalizations.of(context)!;
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        _sectionLabelV2(l10n.productMgmtSectionGeneral),
-        _buildFormField(_nameController, l10n.fieldNameLabel, Icons.inventory_2,
-            maxLength: 100, onSubmitted: _addProductV2),
-        if (_columnsConfig.aliasName) ...[
-          const SizedBox(height: 16),
-          _buildFormField(_aliasNameController,
-              l10n.productMgmtAliasNameLabel, Icons.translate,
-              maxLength: 100,
-              required: false,
-              helperText: l10n.productMgmtAliasHelperText),
-        ],
-        if (_columnsConfig.description) ...[
-          const SizedBox(height: 16),
-          _buildFormField(
-              _descriptionController, l10n.productMgmtDescriptionLabel, Icons.description,
-              maxLines: 3, maxLength: 500, required: false),
-        ],
-        if (_columnsConfig.hsncode) ...[
-          const SizedBox(height: 16),
-          _buildFormField(_hsnCodeController, l10n.productMgmtHsnSacLabel, Icons.qr_code,
-              maxLength: 100, required: false),
-        ],
-        const SizedBox(height: 20),
-        _sectionLabelV2(l10n.productMgmtSectionPricing),
-        Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Expanded(
-              child: _buildFormField(_priceController, l10n.productMgmtSalePriceLabel, Icons.attach_money,
-                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                  isPrice: true,
-                  prefixText: '$_currencySymbol ',
-                  onSubmitted: _addProductV2),
-            ),
-            if (_columnsConfig.purchasePrice) ...[
-              const SizedBox(width: 12),
-              Expanded(
-                child: _buildFormField(
-                    _purchasePriceController, l10n.productMgmtPurchasePriceLabel, Icons.shopping_cart_outlined,
-                    keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                    isPrice: true,
-                    required: _newItemType != 'service',
-                    prefixText: '$_currencySymbol '),
-              ),
-            ],
-          ],
-        ),
-        if (_columnsConfig.defaultDiscount) ...[
-          const SizedBox(height: 16),
-          _buildFormField(
-              _defaultDiscountController, l10n.productMgmtDefaultDiscountLabel, Icons.discount,
-              keyboardType: const TextInputType.numberWithOptions(decimal: true),
-              isPrice: true,
-              required: false,
-              prefixText: '$_currencySymbol '),
-        ],
-        if (_columnsConfig.taxRate) ...[
-          const SizedBox(height: 16),
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              Expanded(
-                child: _buildFormField(_taxRateController, l10n.productMgmtTaxPercentLabel, Icons.percent,
-                    keyboardType: TextInputType.number, isTaxRate: true),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Checkbox(
-                      value: _priceIncludesTax,
-                      onChanged: (v) {
-                        if (!mounted) return;
-                        setState(() => _priceIncludesTax = v ?? false);
-                      },
-                    ),
-                    Flexible(
-                      child: Text(l10n.fieldPriceIncludesTaxLabel,
-                          overflow: TextOverflow.ellipsis,
-                          style: Theme.of(context).textTheme.bodyMedium),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-          Padding(
-            padding: const EdgeInsets.only(left: 4),
-            child: Text(l10n.productMgmtPerItemTaxModeOnlyLabel,
-                style: TextStyle(
-                    fontSize: 11.5,
-                    color: Theme.of(context).colorScheme.onSurfaceVariant)),
-          ),
-        ],
-        if (_columnsConfig.stock || _columnsConfig.unit) ...[
-          const SizedBox(height: 12),
-          _sectionLabelV2(l10n.productMgmtSectionInventory),
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              if (_columnsConfig.stock)
-                Expanded(
-                  child: _buildFormField(_stockController, l10n.labelStock, Icons.inventory,
-                      keyboardType: TextInputType.number,
-                      isStock: true,
-                      required: !_unlimitedStock && !_stockLocked,
-                      enabled: !_unlimitedStock && !_stockLocked),
-                ),
-              if (_columnsConfig.stock && _columnsConfig.unit) const SizedBox(width: 12),
-              if (_columnsConfig.unit)
-                Expanded(
-                  child: _buildUnitField(
-                    selectedUnit: _selectedUnit,
-                    customController: _customUnitController,
-                    onUnitChanged: (v) {
-                      if (!mounted) return;
-                      setState(() => _selectedUnit = v);
-                    },
-                  ),
-                ),
-            ],
-          ),
-          if (_columnsConfig.stock)
-            CheckboxListTile(
-              contentPadding: EdgeInsets.zero,
-              controlAffinity: ListTileControlAffinity.leading,
-              dense: true,
-              value: _unlimitedStock,
-              onChanged: _stockLocked
-                  ? null
-                  : (v) {
-                      if (!mounted) return;
-                      setState(() => _unlimitedStock = v ?? false);
-                    },
-              title: Text(l10n.productMgmtUnlimitedStockLabel),
-              subtitle: Text(l10n.productMgmtTrackInfiniteStockSubtitle),
-            ),
-          if (_columnsConfig.stock && !_unlimitedStock)
-            _buildFormField(_lowStockLimitController,
-                l10n.productMgmtLowStockLimitLabel, Icons.notification_important_outlined,
-                keyboardType: TextInputType.number,
-                isStock: true,
-                required: false,
-                enabled: !_stockLocked,
-                helperText: l10n.productMgmtLowStockLimitHelper),
-        ],
-        if (_columnsConfig.productMetadata) ...[
-          const SizedBox(height: 8),
-          _buildMetadataSection(
-            storageLocationCtrl: _storageLocationController,
-            containerNumberCtrl: _containerNumberController,
-            batchNumberCtrl: _batchNumberController,
-            manufactureNameCtrl: _manufactureNameController,
-            supplierNameCtrl: _supplierNameController,
-            skuCodeCtrl: _skuCodeController,
-            notesCtrl: _notesController,
-            expiryDate: _expiryDate,
-            manufactureDate: _manufactureDate,
-            datePattern: _datePattern,
-            onExpiryChanged: (d) {
-              if (!mounted) return;
-              setState(() => _expiryDate = d);
-            },
-            onManufactureChanged: (d) {
-              if (!mounted) return;
-              setState(() => _manufactureDate = d);
-            },
-          ),
-        ],
-        const SizedBox(height: 8),
-        Container(
-          padding: const EdgeInsets.all(12),
-          decoration: BoxDecoration(
-            color: Colors.amber.withValues(alpha: 0.08),
-            borderRadius: BorderRadius.circular(AppBorderRadius.xsmall),
-            border: Border.all(color: Colors.amber.withValues(alpha: 0.3)),
-          ),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Icon(Icons.lightbulb_outline, size: 16, color: Colors.amber),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Text(l10n.productMgmtTipEnableCustomFieldsMessage,
-                    style: TextStyle(
-                        fontSize: 12,
-                        color: Theme.of(context).colorScheme.onSurfaceVariant)),
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-
+  // Form body is ProductForm (lib/widgets/product_form.dart) — same section
+  // grouping/order as the View/Edit dialog (General / Pricing / Inventory /
+  // Advanced Information).
   Widget _addPanelV2() {
     // Width is now controlled by the Positioned wrapper in _buildV2 (fixed
     // 400 on wide screens, screen-width-minus-margins on narrow ones), so
     // this no longer hardcodes its own width.
     final l10n = AppLocalizations.of(context)!;
-    final showTypeToggle = _businessType == BusinessType.both && _columnsConfig.type;
+    final form = _productFormKey.currentState;
+    final itemType = form?.itemType ?? 'product';
+    final showTypeToggle = form?.showTypeToggle ?? false;
     return Container(
       decoration: _flatCardDecorationV2(context),
       clipBehavior: Clip.antiAlias,
@@ -2819,7 +2377,7 @@ class _ProductManagementScreenV2State extends ConsumerState<ProductManagementScr
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                          l10n.productMgmtAddNewItemTitle(_newItemType == 'service'
+                          l10n.productMgmtAddNewItemTitle(itemType == 'service'
                               ? l10n.labelService
                               : l10n.labelProduct),
                           overflow: TextOverflow.ellipsis,
@@ -2845,14 +2403,8 @@ class _ProductManagementScreenV2State extends ConsumerState<ProductManagementScr
                           label: Text(l10n.labelService),
                           icon: const Icon(Icons.design_services_outlined, size: 14)),
                     ],
-                    selected: {_newItemType},
-                    onSelectionChanged: (val) {
-                      if (!mounted) return;
-                      setState(() {
-                        _newItemType = val.first;
-                        _unlimitedStock = _newItemType == 'service' || !_columnsConfig.stock;
-                      });
-                    },
+                    selected: {itemType},
+                    onSelectionChanged: (val) => form?.setItemType(val.first),
                   ),
                 ],
                 IconButton(
@@ -2866,9 +2418,13 @@ class _ProductManagementScreenV2State extends ConsumerState<ProductManagementScr
             child: SingleChildScrollView(
               padding: const EdgeInsets.fromLTRB(18, 0, 18, 18),
               child: FocusTraversalGroup(
-                child: Form(
-                  key: _formKey,
-                  child: _addPanelFormV2(),
+                child: ProductForm(
+                  key: _productFormKey,
+                  user: widget.user,
+                  onSubmitted: _addProductV2,
+                  onChanged: () {
+                    if (mounted) setState(() {});
+                  },
                 ),
               ),
             ),
@@ -2899,7 +2455,7 @@ class _ProductManagementScreenV2State extends ConsumerState<ProductManagementScr
                     Expanded(
                       child: OutlinedButton(
                         onPressed: () {
-                          _clearForm();
+                          form?.reset();
                           setState(() => _showAddPanelV2 = false);
                         },
                         child: Text(l10n.actionCancel),
@@ -2909,8 +2465,10 @@ class _ProductManagementScreenV2State extends ConsumerState<ProductManagementScr
                     Expanded(
                       flex: 2,
                       child: FilledButton.icon(
-                        onPressed: _isLoading ? null : _addProductV2,
-                        icon: _isLoading
+                        onPressed: _isLoading || (form?.saving ?? false)
+                            ? null
+                            : _addProductV2,
+                        icon: _isLoading || (form?.saving ?? false)
                             ? const SizedBox(
                                 width: 16,
                                 height: 16,
@@ -3564,95 +3122,11 @@ class _ProductManagementScreenV2State extends ConsumerState<ProductManagementScr
     required ValueChanged<String> onUnitChanged,
     bool readOnly = false,
   }) {
-    return _UnitField(
+    return ProductUnitField(
       initialUnit: selectedUnit,
       customController: customController,
       onUnitChanged: onUnitChanged,
       readOnly: readOnly,
-    );
-  }
-
-  Widget _buildFormField(
-    TextEditingController controller,
-    String label,
-    IconData icon, {
-    int maxLines = 1,
-    int? maxLength,
-    TextInputType? keyboardType,
-    bool required = true,
-    bool isPrice = false,
-    bool isStock = false,
-    bool isTaxRate = false,
-    String? prefixText,
-    String? helperText,
-    bool enabled = true,
-    VoidCallback? onSubmitted,
-  }) {
-    final l10n = AppLocalizations.of(context)!;
-    return TextFormField(
-      controller: controller,
-      enabled: enabled,
-      maxLines: maxLines,
-      maxLength: maxLength,
-      keyboardType: keyboardType,
-      onFieldSubmitted: (value) {
-        if (onSubmitted != null) {
-          onSubmitted();
-        } else {
-          FocusScope.of(context).nextFocus();
-        }
-      },
-      inputFormatters: isPrice
-          ? [FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d{0,2}$'))]
-          : (isStock || isTaxRate)
-              ? [FilteringTextInputFormatter.digitsOnly]
-              : null,
-      decoration: InputDecoration(
-        labelText: label,
-        prefixIcon: prefixText == null ? Icon(icon) : null,
-        prefixText: prefixText,
-        border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(AppBorderRadius.xsmall)),
-        counterText: '',
-        helper: helperText != null ? Tooltip(
-          message: helperText,
-          textStyle: TextStyle(fontSize: 15),
-          decoration: BoxDecoration(
-            color: Colors.grey.shade900, // Background color
-            borderRadius: BorderRadius.circular(8),
-          ),
-          padding: const EdgeInsets.all(10),
-          child: InkWell(
-            onTap: null,
-            borderRadius: BorderRadius.circular(4),
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
-              child: Icon(Icons.info_outline, size: 18, color: Colors.indigo[400]),
-            ),
-          ),
-        ) : null
-      ),
-      validator: (value) {
-        if (!required) return null;
-        if (value == null || value.trim().isEmpty) {
-          return l10n.fieldRequiredMessage(label);
-        }
-        if (isPrice) {
-          final price = double.tryParse(value);
-          if (price == null || price < 0) return l10n.fieldEnterValidPriceMessage;
-        }
-        if (isStock) {
-          final stock = int.tryParse(value);
-          if (stock == null || stock < 0) return l10n.fieldEnterValidStockMessage;
-        }
-        if (isTaxRate) {
-          final tax = int.tryParse(value);
-          if (tax == null || tax < 0 || tax > 100) {
-            return l10n.fieldTaxRangeMessage;
-          }
-        }
-        return null;
-      },
     );
   }
 
@@ -3700,85 +3174,3 @@ class _TableHeader extends StatelessWidget {
 /// NOT re-derived from the current unit string each rebuild, since that
 /// string is still empty right after picking "Custom…" and would otherwise
 /// make the field disappear before the user can type anything into it.
-class _UnitField extends StatefulWidget {
-  final String initialUnit;
-  final TextEditingController customController;
-  final ValueChanged<String> onUnitChanged;
-  final bool readOnly;
-
-  const _UnitField({
-    required this.initialUnit,
-    required this.customController,
-    required this.onUnitChanged,
-    this.readOnly = false,
-  });
-
-  @override
-  State<_UnitField> createState() => _UnitFieldState();
-}
-
-class _UnitFieldState extends State<_UnitField> {
-  late bool _isCustom;
-  late String _presetValue;
-
-  @override
-  void initState() {
-    super.initState();
-    _isCustom = widget.initialUnit.isNotEmpty &&
-        !ProductUnits.presets.contains(widget.initialUnit);
-    _presetValue = _isCustom ? '' : widget.initialUnit;
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context)!;
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        DropdownButtonFormField<String>(
-          value: _isCustom ? 'custom' : _presetValue,
-          decoration: InputDecoration(
-            labelText: l10n.fieldUnitLabel,
-            prefixIcon: const Icon(Icons.straighten),
-            border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(AppBorderRadius.xsmall)),
-            filled: widget.readOnly,
-            fillColor: widget.readOnly ? Theme.of(context).colorScheme.surfaceContainerHighest : null,
-          ),
-          items: [
-            DropdownMenuItem(value: '', child: Text(l10n.commonNoneLabel)),
-            for (final u in ProductUnits.presets)
-              DropdownMenuItem(value: u, child: Text(u.toUpperCase())),
-            DropdownMenuItem(value: 'custom', child: Text(l10n.commonCustomEllipsisLabel)),
-          ],
-          onChanged: widget.readOnly
-              ? null
-              : (val) {
-                  if (val == null) return;
-                  setState(() {
-                    _isCustom = val == 'custom';
-                    _presetValue = _isCustom ? '' : val;
-                  });
-                  widget.onUnitChanged(
-                      _isCustom ? widget.customController.text.trim() : val);
-                },
-        ),
-        if (_isCustom) ...[
-          const SizedBox(height: 12),
-          TextFormField(
-            controller: widget.customController,
-            readOnly: widget.readOnly,
-            decoration: InputDecoration(
-              labelText: l10n.fieldCustomUnitLabel,
-              border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(AppBorderRadius.xsmall)),
-              filled: widget.readOnly,
-              fillColor: widget.readOnly ? Theme.of(context).colorScheme.surfaceContainerHighest : null,
-            ),
-            onChanged: widget.onUnitChanged,
-          ),
-        ],
-      ],
-    );
-  }
-}

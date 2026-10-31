@@ -106,6 +106,7 @@ enum SettingKey {
   showShipToInPdf, // print the Ship To block on PDFs/receipts when shippingAddressEnabled (default true)
   cashUpiExchangeEnabled, // whether the Cash/UPI-Bank exchange Services tab is on (default false)
   reportsAdminOnly, // whether Reports is hidden from non-admin users (default false)
+  purchaseBillsAndSuppliersAdminOnly, // whether Purchase Bills + Suppliers are hidden from non-admin users (default false)
   pdfFontSize, // 'small' | 'medium' | 'large' | 'xlarge' — text size multiplier for non-thermal invoice PDFs; default 'medium'
   pdfCompanyNameFontSize, // PdfFontSize key for the company name; empty/absent = same as pdfFontSize
   pdfDocTitleFontSize, // PdfFontSize key for the document title; empty/absent = same as pdfFontSize
@@ -114,6 +115,7 @@ enum SettingKey {
   pdfTotalsFontSize, // PdfFontSize key for the totals block; empty/absent = same as pdfFontSize
   purchaseBillsBannerDismissed, // '1' once user dismisses the purchase-bills/suppliers discovery banner
   returnsBannerDismissed, // '1' once user dismisses the product-returns notice on the Invoices list
+  amountSeparator, // AmountSeparator.key: 'none' | 'international' | 'indian'
 }
 
 extension SettingKeyExtension on SettingKey {
@@ -333,6 +335,8 @@ extension SettingKeyExtension on SettingKey {
         return 'cash_upi_exchange_enabled';
       case SettingKey.reportsAdminOnly:
         return 'reports_admin_only';
+      case SettingKey.purchaseBillsAndSuppliersAdminOnly:
+        return 'purchase_bills_and_suppliers_admin_only';
       case SettingKey.pdfFontSize:
         return 'pdf_font_size';
       case SettingKey.pdfCompanyNameFontSize:
@@ -349,6 +353,8 @@ extension SettingKeyExtension on SettingKey {
         return 'purchase_bills_banner_dismissed';
       case SettingKey.returnsBannerDismissed:
         return 'returns_banner_dismissed';
+      case SettingKey.amountSeparator:
+        return 'amount_separator';
 
     }
   }

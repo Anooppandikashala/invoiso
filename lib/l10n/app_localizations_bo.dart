@@ -1522,7 +1522,7 @@ class AppLocalizationsBo extends AppLocalizations {
 
   @override
   String invoiceMgmtDeclineInvoiceBody(String number) {
-    return 'འདིས་ཁྲལ་ཤོག་ #$number ཁས་མི་ལེན་པར་རྟགས་རྒྱོབ་ནས་དེའི་ནང་དོན་ཚང་མ་ཅ་དངོས་ལ་སློག་ཡོང་། འདི་ལོག་སྟེ་བཟོ་མི་ཐུབ།';
+    return 'འདིས་ #$number ཁས་མི་ལེན་པར་རྟགས་རྒྱོབ་ཡོང་། འདི་ལོག་སྟེ་བཟོ་མི་ཐུབ།';
   }
 
   @override
@@ -4730,6 +4730,14 @@ class AppLocalizationsBo extends AppLocalizations {
       'དོ་དམ་པ་མ་ཡིན་པའི་སྤྱོད་མཁན་ལ་སྙན་ཐོའི་འདེམས་ཐོ་སྦས།';
 
   @override
+  String get accessibilityPurchaseBillsAdminOnlyLabel =>
+      'Purchase Bills & Suppliers: Admins Only';
+
+  @override
+  String get accessibilityPurchaseBillsAdminOnlySubtitle =>
+      'Hides the Purchase Bills and Suppliers menus from non-admin users.';
+
+  @override
   String get cashExchangeCashLabel => 'དངུལ་ལག';
 
   @override
@@ -5579,6 +5587,74 @@ class AppLocalizationsBo extends AppLocalizations {
   String get returnSelectCustomerFirst => 'Select a customer first';
 
   @override
+  String get productFormDuplicateTitle => 'Product already exists';
+
+  @override
+  String productFormDuplicateMessage(String name) {
+    return 'A product named \"$name\" already exists. Create another one anyway?';
+  }
+
+  @override
+  String get productFormCreateAnywayButton => 'Create anyway';
+
+  @override
+  String get productFormNewProductButton => 'New product';
+
+  @override
+  String get productFormPurchaseStockHelper =>
+      'Opening stock. Finalizing this purchase bill adds the purchased quantity on top.';
+
+  @override
+  String get invoiceDraftBadge => 'DRAFT';
+
+  @override
+  String get createInvoiceStockShortTitle => 'Not enough stock';
+
+  @override
+  String get createInvoiceStockShortMessage =>
+      'Some items have less stock than this invoice needs:';
+
+  @override
+  String createInvoiceStockShortLine(
+      String product, String available, String needed, String short) {
+    return '$product: in stock $available, on invoice $needed (short by $short)';
+  }
+
+  @override
+  String get createInvoiceStockShortFooter =>
+      'If you save, stock will go below zero.';
+
+  @override
+  String get createInvoiceGoBackButton => 'Go back';
+
+  @override
+  String get createInvoiceSaveAnywayButton => 'Save anyway';
+
+  @override
+  String get createInvoiceSaveDraftButton => 'Save Draft';
+
+  @override
+  String get createInvoiceDraftSavedMessage => 'Draft saved';
+
+  @override
+  String createInvoiceFinalizeButton(String type) {
+    return 'Finalize $type';
+  }
+
+  @override
+  String createInvoiceFinalizedMessage(String type, String number) {
+    return 'Finalized — $type #$number';
+  }
+
+  @override
+  String get createInvoiceDraftPreviewTooltip =>
+      'Finalize the draft to get an invoice number before previewing the PDF';
+
+  @override
+  String get createInvoiceDraftPrintTooltip =>
+      'Finalize the draft to get an invoice number before printing';
+
+  @override
   String get createInvoiceLockedByCreditNotes =>
       'This invoice has credit notes, so customer, items, extra costs, discount and tax are locked. Void the credit notes to change them.';
 
@@ -5589,7 +5665,7 @@ class AppLocalizationsBo extends AppLocalizations {
 
   @override
   String invoiceMgmtDebitNoteRestoreBlocked(String number) {
-    return 'Invoice #$number is declined or in trash, so its debit note can\'t be restored.';
+    return 'Invoice #$number is declined or in trash, so this note can\'t be restored.';
   }
 
   @override
@@ -5601,6 +5677,27 @@ class AppLocalizationsBo extends AppLocalizations {
   String invoiceMgmtDeclineHasCreditNotesMessage(String number) {
     return 'Invoice #$number has credit or debit notes. Void its credit notes and trash its debit notes before declining.';
   }
+
+  @override
+  String invoiceMgmtHasDraftNotesMessage(String number) {
+    return 'Invoice #$number has a draft credit or debit note. Finalize or trash it from the Credit Notes / Debit Notes tab first.';
+  }
+
+  @override
+  String get createInvoiceFinalizeDateTitle => 'Use today\'s date?';
+
+  @override
+  String createInvoiceFinalizeDateMessage(String date) {
+    return 'This draft is dated $date. Invoice numbers should follow date order, so finalizing usually takes today\'s date.';
+  }
+
+  @override
+  String createInvoiceFinalizeKeepDateButton(String date) {
+    return 'Keep $date';
+  }
+
+  @override
+  String get createInvoiceFinalizeUseTodayButton => 'Use today';
 
   @override
   String get returnGstAgainstInvoiceWarning =>
@@ -5767,4 +5864,35 @@ class AppLocalizationsBo extends AppLocalizations {
   String creditNoteCancelError(String error) {
     return 'Could not cancel: $error';
   }
+
+  @override
+  String get invoiceMgmtCancelVoidAction => 'Cancel / Void';
+
+  @override
+  String get invoiceMgmtDeclineReturnStockLabel => 'Return all items to stock';
+
+  @override
+  String get invoiceMgmtDeclineReturnStockHint =>
+      'Untick if the goods didn\'t come back (damaged, used or kept).';
+
+  @override
+  String get invoiceMgmtDeclinedNoStockMessage =>
+      'Sale cancelled (void). Stock unchanged.';
+
+  @override
+  String get invoiceMgmtTrashNoStockHint =>
+      'Trash doesn\'t return stock. To cancel a sale, use Cancel / Void.';
+
+  @override
+  String get amountSeparatorLabel => 'Number format';
+
+  @override
+  String get amountSeparatorNoneLabel => 'No separator  (1234567.89)';
+
+  @override
+  String get amountSeparatorInternationalLabel =>
+      'International  (1,234,567.89)';
+
+  @override
+  String get amountSeparatorIndianLabel => 'Indian  (12,34,567.89)';
 }

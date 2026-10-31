@@ -78,6 +78,7 @@ class InvoiceService {
         'status': invoice.status,
         'converted_to_invoice_id': invoice.convertedToInvoiceId,
         'converted_from_invoice_id': invoice.convertedFromInvoiceId,
+        'is_draft': invoice.isDraft ? 1 : 0,
       });
 
       for (var item in invoice.items) {
@@ -126,8 +127,9 @@ class InvoiceService {
     // Stock deduction happens outside the transaction to avoid nested DB calls.
     // Quotations are estimates, not completed sales — stock is only deducted
     // once a quotation is converted to a real Invoice (a fresh insertInvoice
-    // call with type == 'Invoice' at conversion time).
-    if (invoice.type == 'Quotation') return;
+    // call with type == 'Invoice' at conversion time). Drafts aren't a
+    // committed sale yet either — stock moves when the draft is finalized.
+    if (invoice.type == 'Quotation' || invoice.isDraft) return;
     for (var item in invoice.items) {
       final product = await ProductService.getProductById(item.product.id);
       if (product != null && !product.unlimitedStock) {
@@ -140,6 +142,20 @@ class InvoiceService {
   static Future<void> updateInvoice(Invoice invoice) async {
     final db = await dbHelper.database;
 
+    // A final credit / debit note settled its stock and credit when created,
+    // and a declined (void) sale already had its stock decided — re-saving
+    // either would run sale stock maths on it. Drafts stay editable.
+    final locked = (await db.query('invoices',
+            columns: ['id'],
+            where: "id = ? AND ((type IN ('Credit Note', 'Debit Note') "
+                'AND is_draft = 0) '
+                "OR (type IN ('Invoice', 'Receipt') AND status = 'declined'))",
+            whereArgs: [invoice.id]))
+        .isNotEmpty;
+    if (locked) {
+      throw StateError('${invoice.id} is final or void and can\'t be edited');
+    }
+
     // Never let an edit drop the total below what's already been paid.
     final paid = await PaymentService.getTotalPaidForInvoice(invoice.id);
     if (paid - invoice.total > InvoiceCalculator.moneyEpsilon) {
@@ -151,7 +167,7 @@ class InvoiceService {
     // once it has any, its customer, lines and total can't change.
     final hasCreditNotes = (await db.rawQuery(
       "SELECT 1 FROM invoices WHERE original_invoice_id = ? "
-      "AND type = 'Credit Note' AND deleted_at IS NULL LIMIT 1",
+      "AND type = 'Credit Note' AND deleted_at IS NULL AND is_draft = 0 LIMIT 1",
       [invoice.id],
     ))
         .isNotEmpty;
@@ -179,6 +195,10 @@ class InvoiceService {
       where: 'invoice_id = ?',
       whereArgs: [invoice.id],
     );
+    final oldInvoiceRow = await db.query('invoices',
+        columns: ['is_draft'], where: 'id = ?', whereArgs: [invoice.id]);
+    final oldWasDraft =
+        oldInvoiceRow.isNotEmpty && (oldInvoiceRow.first['is_draft'] as int? ?? 0) == 1;
 
     await db.transaction((txn) async {
       // 1. Update the main invoice row
@@ -226,6 +246,8 @@ class InvoiceService {
               invoice.originalInvoiceDate?.toIso8601String(),
           'return_reason': invoice.returnReason,
           'credit_settlement': invoice.creditSettlement?.key,
+          'invoice_number': invoice.invoiceNumber,
+          'is_draft': invoice.isDraft ? 1 : 0,
         },
         where: 'id = ?',
         whereArgs: [invoice.id],
@@ -275,24 +297,30 @@ class InvoiceService {
     // touch it either — only a real Invoice's edit restores/re-deducts.
     if (invoice.type == 'Quotation') return;
 
-    // Restore stock for old items (outside transaction)
-    for (var oldItem in oldItems) {
-      final product =
-          await ProductService.getProductById(oldItem['product_id'] as String);
-      if (product != null && !product.unlimitedStock) {
-        final rawQty = oldItem['quantity'];
-        final oldQty = rawQty is int ? rawQty : (rawQty as double).round();
-        final restoredStock = product.stock + oldQty;
-        await ProductService.updateProductStock(product.id, restoredStock);
+    // Restore stock for old items (outside transaction) — only if it was
+    // actually deducted, i.e. the saved row wasn't a draft.
+    if (!oldWasDraft) {
+      for (var oldItem in oldItems) {
+        final product = await ProductService.getProductById(
+            oldItem['product_id'] as String);
+        if (product != null && !product.unlimitedStock) {
+          final rawQty = oldItem['quantity'];
+          final oldQty = rawQty is int ? rawQty : (rawQty as double).round();
+          final restoredStock = product.stock + oldQty;
+          await ProductService.updateProductStock(product.id, restoredStock);
+        }
       }
     }
 
-    // Deduct stock for new items
-    for (var item in invoice.items) {
-      final product = await ProductService.getProductById(item.product.id);
-      if (product != null && !product.unlimitedStock) {
-        final newStock = product.stock - item.quantity.round();
-        await ProductService.updateProductStock(product.id, newStock);
+    // Deduct stock for new items — unless still a draft (finalizing a draft
+    // is the point stock actually gets committed for the first time).
+    if (!invoice.isDraft) {
+      for (var item in invoice.items) {
+        final product = await ProductService.getProductById(item.product.id);
+        if (product != null && !product.unlimitedStock) {
+          final newStock = product.stock - item.quantity.round();
+          await ProductService.updateProductStock(product.id, newStock);
+        }
       }
     }
   }
@@ -336,6 +364,7 @@ class InvoiceService {
     final invoiceWhere = 'customer_id = ? '
         "AND type IN ('Invoice', 'Debit Note') "
         'AND deleted_at IS NULL '
+        'AND is_draft = 0 '
         "AND (status IS NULL OR status != 'declined') "
         'AND currency_code = ? '
         'AND $dateFilter';
@@ -552,6 +581,7 @@ class InvoiceService {
       returnReason: i['return_reason'] as String?,
       creditSettlement:
           CreditSettlementExtension.fromKey(i['credit_settlement'] as String?),
+      isDraft: (i['is_draft'] as int?) == 1,
     );
   }
 
@@ -575,7 +605,8 @@ class InvoiceService {
     String? filterType,
   }) async {
     final db = await dbHelper.database;
-    final whereParts = <String>['deleted_at IS NULL'];
+    // Drafts have no number yet — not exportable documents.
+    final whereParts = <String>['deleted_at IS NULL', 'is_draft = 0'];
     final whereArgs = <dynamic>[];
 
     if (filterType != null && filterType.isNotEmpty) {
@@ -618,7 +649,8 @@ class InvoiceService {
     String? filterType,
   }) async {
     final db = await dbHelper.database;
-    final whereParts = <String>['deleted_at IS NULL'];
+    // Drafts have no number yet — not exportable documents.
+    final whereParts = <String>['deleted_at IS NULL', 'is_draft = 0'];
     final whereArgs = <dynamic>[];
 
     if (filterType != null && filterType.isNotEmpty) {
@@ -772,6 +804,11 @@ class InvoiceService {
         whereArgs.addAll([AppDate.dateKeyStart(today), AppDate.dateKeyStart(end)]);
       }
     }
+    // Drafts owe nothing yet — keep them out of due-date / payment filters.
+    if (filter.dueDate != 'all' ||
+        (filter.paymentStatus != 'all' && filter.paymentStatus != 'declined')) {
+      whereParts.add('is_draft = 0');
+    }
     // Declined is a stored status, so both declined filters run in SQL.
     if (filter.paymentStatus == 'declined') {
       whereParts.add("status = 'declined'");
@@ -887,9 +924,13 @@ class InvoiceService {
     return ids;
   }
 
+  // Used to gate whether numbering settings (prefix/starting number) can
+  // still be changed — drafts never consumed a number, so they don't count
+  // even though trashed (soft-deleted) rows deliberately do.
   static Future<int> getTotalInvoiceCountIncludingTrashed() async {
     final db = await dbHelper.database;
-    final result = await db.rawQuery('SELECT COUNT(*) FROM invoices');
+    final result =
+        await db.rawQuery('SELECT COUNT(*) FROM invoices WHERE is_draft = 0');
     return (result.first.values.first as int?) ?? 0;
   }
 
@@ -898,13 +939,13 @@ class InvoiceService {
   static Future<void> softDeleteInvoice(String id) async {
     final db = await dbHelper.database;
     await db.transaction((txn) async {
-      // Credit notes are removed only by ReturnService.voidCreditNote, which
-      // also reverses their stock and credit.
+      // Final credit notes are removed only by ReturnService.voidCreditNote,
+      // which also reverses their stock and credit; a draft has neither.
       // An invoice with active credit / debit notes waits until they're gone.
       await txn.update(
         'invoices',
         {'deleted_at': DateTime.now().toIso8601String()},
-        where: "id = ? AND type != 'Credit Note' "
+        where: "id = ? AND (type != 'Credit Note' OR is_draft = 1) "
             'AND NOT EXISTS (SELECT 1 FROM invoices cn '
             'WHERE cn.original_invoice_id = invoices.id '
             "AND cn.type IN ('Credit Note', 'Debit Note') AND cn.deleted_at IS NULL)",
@@ -917,14 +958,15 @@ class InvoiceService {
   static Future<void> restoreInvoice(String id) async {
     final db = await dbHelper.database;
     await db.transaction((txn) async {
-      // A trashed credit note was voided — restoring it would revive a note
-      // with no stock or credit behind it. A debit note stays in trash while
+      // A trashed final credit note was voided — restoring it would revive a
+      // note with no stock or credit behind it (drafts restore fine). A debit
+      // note or draft credit note stays in trash while
       // its invoice is declined or trashed.
       await txn.update(
         'invoices',
         {'deleted_at': null},
-        where: "id = ? AND type != 'Credit Note' "
-            "AND NOT (type = 'Debit Note' AND original_invoice_id IN "
+        where: "id = ? AND (type != 'Credit Note' OR is_draft = 1) "
+            "AND NOT (type IN ('Credit Note', 'Debit Note') AND original_invoice_id IN "
             "(SELECT id FROM invoices WHERE deleted_at IS NOT NULL "
             "OR status = 'declined'))",
         whereArgs: [id],
@@ -967,10 +1009,11 @@ class InvoiceService {
   }
 
   // ─────────────────────────────────────────────
-  // Invoice decline — voids an invoice and returns its stock. One-way: a
-  // 'declined' invoice can't be un-declined (would need to re-deduct stock
+  // Invoice / receipt decline (Cancel / Void) — voids the sale and, unless
+  // [restock] is false (goods never came back), returns its stock. One-way:
+  // a 'declined' sale can't be un-declined (would need to re-deduct stock
   // that may no longer be available).
-  static Future<void> declineInvoice(String id) async {
+  static Future<void> declineInvoice(String id, {bool restock = true}) async {
     final db = await dbHelper.database;
     await db.transaction((txn) async {
       // Status flip + stock return in one transaction. The status guard makes
@@ -978,7 +1021,8 @@ class InvoiceService {
       final changed = await txn.update(
         'invoices',
         {'status': 'declined'},
-        where: "id = ? AND type = 'Invoice' "
+        // Drafts never took stock out, so declining one would add stock back.
+        where: "id = ? AND type IN ('Invoice', 'Receipt') AND is_draft = 0 "
             "AND (status IS NULL OR status != 'declined') "
             // Paid money must be removed first — see _declineInvoice in the list.
             'AND NOT EXISTS (SELECT 1 FROM invoice_payments '
@@ -992,10 +1036,12 @@ class InvoiceService {
       );
       if (changed == 0) return;
 
-      final items = await txn.query('invoice_items',
-          columns: ['product_id', 'quantity'],
-          where: 'invoice_id = ?',
-          whereArgs: [id]);
+      final items = restock
+          ? await txn.query('invoice_items',
+              columns: ['product_id', 'quantity'],
+              where: 'invoice_id = ?',
+              whereArgs: [id])
+          : const <Map<String, Object?>>[];
       for (final item in items) {
         await txn.rawUpdate(
           'UPDATE products SET stock = stock + ? '
@@ -1129,6 +1175,7 @@ class InvoiceService {
           status: map['status'] as String?,
           convertedToInvoiceId: map['converted_to_invoice_id'] as String?,
           convertedFromInvoiceId: map['converted_from_invoice_id'] as String?,
+          isDraft: (map['is_draft'] as int?) == 1,
         ),
       );
     }
@@ -1172,10 +1219,10 @@ class InvoiceService {
       getDashboardFinancials() async {
     final db = await dbHelper.database;
 
-    // Count
+    // Count — drafts aren't a committed transaction yet.
     final countResult = await db.rawQuery(
       'SELECT COUNT(*) as cnt FROM invoices WHERE type = ? AND deleted_at IS NULL '
-      "AND (status IS NULL OR status != 'declined')",
+      "AND is_draft = 0 AND (status IS NULL OR status != 'declined')",
       ['Invoice'],
     );
     final count = (countResult.first['cnt'] as int?) ?? 0;
@@ -1186,7 +1233,7 @@ class InvoiceService {
       'FROM invoice_payments ip '
       'JOIN invoices i ON ip.invoice_id = i.id '
       'WHERE i.type = ? AND i.deleted_at IS NULL '
-      "AND (i.status IS NULL OR i.status != 'declined')",
+      "AND i.is_draft = 0 AND (i.status IS NULL OR i.status != 'declined')",
       ['Invoice'],
     );
     final revenue = (revenueResult.first['revenue'] as num?)?.toDouble() ?? 0.0;
@@ -1202,7 +1249,7 @@ class InvoiceService {
         'invoice_discount_type',
         'invoice_discount_value',
       ],
-      where: "type = ? AND deleted_at IS NULL "
+      where: "type = ? AND deleted_at IS NULL AND is_draft = 0 "
           "AND (status IS NULL OR status != 'declined')",
       whereArgs: ['Invoice'],
     );
@@ -1293,8 +1340,8 @@ class InvoiceService {
     final tomorrowEnd = AppDate.dateKeyStart(DateTime(now.year, now.month, now.day + 2));
     final rows = await db.query(
       'invoices',
-      where: 'deleted_at IS NULL AND type = ? AND due_date IS NOT NULL '
-          'AND due_date >= ? AND due_date < ?',
+      where: 'deleted_at IS NULL AND type = ? AND is_draft = 0 '
+          'AND due_date IS NOT NULL AND due_date >= ? AND due_date < ?',
       whereArgs: ['Invoice', todayStart, tomorrowEnd],
       orderBy: 'due_date ASC',
     );
@@ -1313,8 +1360,8 @@ class InvoiceService {
     // Fetch more than limit to account for some already being paid
     final rows = await db.query(
       'invoices',
-      where:
-          'deleted_at IS NULL AND type = ? AND due_date IS NOT NULL AND due_date < ?',
+      where: 'deleted_at IS NULL AND type = ? AND is_draft = 0 '
+          'AND due_date IS NOT NULL AND due_date < ?',
       whereArgs: ['Invoice', todayStart],
       orderBy: 'due_date ASC',
       limit: limit * 3,
@@ -1337,7 +1384,7 @@ class InvoiceService {
     final db = await dbHelper.database;
     final rows = await db.query(
       'invoices',
-      where: 'deleted_at IS NULL AND type = ? AND customer_id = ?',
+      where: 'deleted_at IS NULL AND type = ? AND is_draft = 0 AND customer_id = ?',
       whereArgs: ['Invoice', customerId],
       orderBy: 'date ASC',
     );
@@ -1385,7 +1432,7 @@ class InvoiceService {
       "COALESCE(SUM(ip.amount_paid), 0.0) as revenue "
       "FROM invoice_payments ip "
       "JOIN invoices i ON ip.invoice_id = i.id "
-      "WHERE i.type = 'Invoice' AND i.deleted_at IS NULL "
+      "WHERE i.type = 'Invoice' AND i.deleted_at IS NULL AND i.is_draft = 0 "
       "AND (i.status IS NULL OR i.status != 'declined') "
       "AND substr(ip.date_paid, 1, 10) >= ? "
       "GROUP BY substr(ip.date_paid, 1, 7) "
@@ -1410,7 +1457,7 @@ class InvoiceService {
       'COUNT(DISTINCT i.id) as invoice_count '
       'FROM invoices i '
       'LEFT JOIN invoice_payments ip ON i.id = ip.invoice_id '
-      "WHERE i.type = 'Invoice' AND i.deleted_at IS NULL "
+      "WHERE i.type = 'Invoice' AND i.deleted_at IS NULL AND i.is_draft = 0 "
       "AND (i.status IS NULL OR i.status != 'declined') "
       'GROUP BY i.customer_name '
       'ORDER BY total_paid DESC, invoice_count DESC '
@@ -1434,7 +1481,7 @@ class InvoiceService {
       'SELECT ii.product_name, COALESCE(SUM(ii.quantity), 0) as total_qty '
       'FROM invoice_items ii '
       'JOIN invoices i ON ii.invoice_id = i.id '
-      "WHERE i.type = 'Invoice' AND i.deleted_at IS NULL "
+      "WHERE i.type = 'Invoice' AND i.deleted_at IS NULL AND i.is_draft = 0 "
       "AND (i.status IS NULL OR i.status != 'declined') "
       "AND ii.product_name IS NOT NULL AND ii.product_name != '' "
       'GROUP BY ii.product_name '
@@ -1491,7 +1538,7 @@ class InvoiceService {
     final db = await dbHelper.database;
 
     final idResult = await db.rawQuery(
-        "SELECT id FROM invoices WHERE type = ? ORDER BY id DESC LIMIT 1",
+        "SELECT id FROM invoices WHERE type = ? AND is_draft = 0 ORDER BY id DESC LIMIT 1",
         [type]);
     final numResult = await db.rawQuery(
         "SELECT invoice_number FROM invoices WHERE type = ? AND invoice_number IS NOT NULL ORDER BY invoice_number DESC LIMIT 1",

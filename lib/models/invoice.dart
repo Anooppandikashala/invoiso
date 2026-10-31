@@ -53,6 +53,7 @@ class Invoice {
   // Credit / debit note, display-only: type of the linked document ('Invoice'
   // or 'Receipt'), loaded with [refunds] so labels say "Against Receipt".
   String? originalInvoiceType;
+  bool isDraft; // saved as a draft — no invoiceNumber yet, excluded from revenue/tax/stock
 
   Invoice({
     required this.id,
@@ -88,6 +89,7 @@ class Invoice {
     this.status,
     this.convertedToInvoiceId,
     this.convertedFromInvoiceId,
+    this.isDraft = false,
   });
 
   bool get isConverted => status == 'converted';
@@ -110,6 +112,7 @@ class Invoice {
 
   /// Text to render for the invoice number in PDF/receipt output, or null to omit the line entirely.
   String? pdfNumberText(String invoicePrefix, {bool showLeadingZeros = true}) {
+    if (isDraft) return null; // no real number assigned yet
     if (hideInvoiceNumber) {
       final c = customInvoiceNumber?.trim();
       return (c != null && c.isNotEmpty) ? c : null;

@@ -566,6 +566,14 @@ class SettingsService {
     await setSetting(SettingKey.dateFormat, option.key);
   }
 
+  static Future<AmountSeparator> getAmountSeparator() async =>
+      AmountSeparatorExtension.fromKey(
+          await getSetting(SettingKey.amountSeparator));
+
+  static Future<void> setAmountSeparator(AmountSeparator option) async {
+    await setSetting(SettingKey.amountSeparator, option.key);
+  }
+
   static Future<PageSize> getPageSize() async {
     final val = await getSetting(SettingKey.pageSize);
     return PageSizeExtension.fromKey(val);
