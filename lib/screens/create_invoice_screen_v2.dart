@@ -19,6 +19,7 @@ import 'package:invoiso/models/customer.dart';
 import 'package:invoiso/models/invoice.dart';
 import 'package:invoiso/models/invoice_list_filter.dart';
 import 'package:invoiso/utils/formatters.dart';
+import 'package:invoiso/utils/billing_fields_reference.dart';
 import 'package:invoiso/models/invoice_item.dart';
 import 'package:invoiso/models/product.dart';
 import 'package:invoiso/models/refund.dart';
@@ -5183,35 +5184,62 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
     );
   }
 
+  /// Copies the billing field reference (field names + descriptions) so it
+  /// can be used later to design a new billing layout. Does not change any
+  /// invoice or PDF setting.
+  Future<void> _copyBillingFieldsReference() async {
+    await Clipboard.setData(
+        const ClipboardData(text: BillingFieldsReference.text));
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Billing field names and info copied')),
+    );
+  }
+
   Widget _invoiceDetailsFormV2() {
     return _flatCardV2(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          InkWell(
-            onTap: () {
-              if (!mounted) return;
-              setState(() => _invoiceDetailsExpanded = !_invoiceDetailsExpanded);
-            },
-            child: Row(
-              children: [
-                Expanded(
-                  child: Text(
-                    AppLocalizations.of(context)!.createInvoiceDetailsHeading(_invoiceTypeLabel(invoiceType).toUpperCase()),
-                    style: const TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w700,
-                        letterSpacing: 0.6),
+          Row(
+            children: [
+              Expanded(
+                child: InkWell(
+                  onTap: () {
+                    if (!mounted) return;
+                    setState(() =>
+                        _invoiceDetailsExpanded = !_invoiceDetailsExpanded);
+                  },
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          AppLocalizations.of(context)!
+                              .createInvoiceDetailsHeading(
+                                  _invoiceTypeLabel(invoiceType).toUpperCase()),
+                          style: const TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w700,
+                              letterSpacing: 0.6),
+                        ),
+                      ),
+                      Icon(
+                        _invoiceDetailsExpanded
+                            ? Icons.expand_less
+                            : Icons.expand_more,
+                        size: 20,
+                      ),
+                    ],
                   ),
                 ),
-                Icon(
-                  _invoiceDetailsExpanded
-                      ? Icons.expand_less
-                      : Icons.expand_more,
-                  size: 20,
-                ),
-              ],
-            ),
+              ),
+              IconButton(
+                tooltip: 'Copy billing field names & info',
+                icon: const Icon(Icons.copy_all_rounded, size: 18),
+                visualDensity: VisualDensity.compact,
+                onPressed: _copyBillingFieldsReference,
+              ),
+            ],
           ),
           if (_invoiceDetailsExpanded) ...[
           const SizedBox(height: 14),

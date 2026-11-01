@@ -15,7 +15,6 @@ import 'package:invoiso/repositories/payment_repository.dart';
 import 'package:invoiso/repositories/settings_repository.dart';
 import 'package:invoiso/screens/settings/pdf_settings_screen_v2.dart';
 import 'package:invoiso/services/backend_services.dart';
-import 'package:invoiso/widgets/template_list_tile.dart';
 
 class FakeSettingsRepository implements SettingsRepository {
   final List<CustomInvoiceLayout> layouts = [];
@@ -27,7 +26,8 @@ class FakeSettingsRepository implements SettingsRepository {
       return Future.value(List<CustomInvoiceLayout>.of(layouts));
     }
     if (name.contains('saveCustomInvoiceLayouts')) {
-      final list = invocation.positionalArguments.first as List<CustomInvoiceLayout>;
+      final list =
+          invocation.positionalArguments.first as List<CustomInvoiceLayout>;
       layouts
         ..clear()
         ..addAll(list);
@@ -37,8 +37,10 @@ class FakeSettingsRepository implements SettingsRepository {
       return Future.value(InvoiceTemplate.classic);
     }
     if (name.contains('getPageSize')) return Future.value(PageSize.a4);
-    if (name.contains('getBusinessType')) return Future.value(BusinessType.both);
-    if (name.contains('getLogoPosition')) return Future.value(LogoPosition.left);
+    if (name.contains('getBusinessType'))
+      return Future.value(BusinessType.both);
+    if (name.contains('getLogoPosition'))
+      return Future.value(LogoPosition.left);
     if (name.contains('getLogoSize')) return Future.value('80');
     if (name.contains('getSignaturePosition')) return Future.value('left');
     if (name.contains('getSignatureSize')) return Future.value('50');
@@ -62,12 +64,14 @@ class FakeSettingsRepository implements SettingsRepository {
     if (name.contains('getPdfLandscape')) return Future.value(false);
     if (name.contains('getPdfThemeColor')) return Future.value(null);
     if (name.contains('getShowTotalQuantity')) return Future.value(false);
-    if (name.contains('getShowInvoiceFooterBranding')) return Future.value(true);
+    if (name.contains('getShowInvoiceFooterBranding'))
+      return Future.value(true);
     if (name.contains('getShow') || name.contains('getWatermarkFullPage')) {
       return Future.value(false);
     }
     if (name.contains('getLetterheadEnabled')) return Future.value(false);
-    if (name.contains('getLetterheadHideCompanyHeader')) return Future.value(true);
+    if (name.contains('getLetterheadHideCompanyHeader'))
+      return Future.value(true);
     if (name.contains('getPrintMarginTopMm')) return Future.value(40.0);
     if (name.contains('getPrintMarginBottomMm')) return Future.value(25.0);
     if (name.contains('getPrintMarginLeftMm')) return Future.value(10.0);
@@ -80,7 +84,8 @@ class FakeSettingsRepository implements SettingsRepository {
 
 class FakeCompanyInfoRepository implements CompanyInfoRepository {
   @override
-  dynamic noSuchMethod(Invocation invocation) => Future<CompanyInfo?>.value(null);
+  dynamic noSuchMethod(Invocation invocation) =>
+      Future<CompanyInfo?>.value(null);
 }
 
 class FakeInvoiceRepository implements InvoiceRepository {
@@ -99,7 +104,8 @@ class FakeInstallationRepository implements InstallationRepository {
 }
 
 void main() {
-  testWidgets('add layout from current settings appears in list', (tester) async {
+  testWidgets('saved inserted layout is listed and can be edited',
+      (tester) async {
     final loader = FontLoader('DejaVuSans')
       ..addFont(rootBundle.load('assets/fonts/DejaVuSans.ttf'));
     await loader.load();
@@ -109,6 +115,14 @@ void main() {
     addTearDown(tester.view.resetDevicePixelRatio);
 
     final repo = FakeSettingsRepository();
+    repo.layouts.add(CustomInvoiceLayout(
+      id: 'layout_existing',
+      name: 'Existing Layout',
+      description: 'Saved before this session',
+      baseTemplate: InvoiceTemplate.classic,
+      pageSize: PageSize.a4,
+      createdAt: DateTime(2024, 1, 1),
+    ));
     BackendServices.configure(
       settings: repo,
       companyInfo: FakeCompanyInfoRepository(),
@@ -130,30 +144,12 @@ void main() {
     );
     await tester.pump(const Duration(seconds: 1));
 
-    debugPrint('templates label size: ${tester.getSize(find.text('TEMPLATES'))}');
-    debugPrint('add layout size: ${tester.getSize(find.text('Add Layout'))}');
-
-    expect(find.text('Add Layout'), findsOneWidget);
-    await tester.tap(find.text('Add Layout'));
-    await tester.pump();
-    await tester.pump(const Duration(milliseconds: 500));
-
-    expect(find.text('Save Current Settings as Layout'), findsOneWidget);
-    await tester.tap(find.text('Save Current Settings as Layout'));
-    await tester.pump();
-    await tester.pump(const Duration(milliseconds: 500));
-
-    expect(find.text('Save as Custom Layout'), findsOneWidget);
-    await tester.enterText(
-        find.widgetWithText(TextField, 'Layout Name'), 'Test Layout');
-    await tester.tap(find.text('Save Layout'));
-    await tester.pump();
-    await tester.pump(const Duration(milliseconds: 500));
-
-    expect(repo.layouts, hasLength(1));
-    // The name appears on the inserted-layout tile and in the Preview header.
-    expect(find.text('Test Layout'), findsWidgets);
+    // The Add Layout entry point is gone; existing layouts still render.
+    expect(find.text('Add Layout'), findsNothing);
+    expect(find.text('Insert Layout'), findsNothing);
     expect(find.text('YOUR INSERTED LAYOUTS'), findsOneWidget);
+    // The name appears on the inserted-layout tile and in the Preview header.
+    expect(find.text('Existing Layout'), findsWidgets);
 
     // Edit the inserted layout through the JSON editor.
     await tester.tap(find.byTooltip('Edit layout JSON'));
@@ -163,34 +159,10 @@ void main() {
     await tester.tap(find.text('Save & Apply'));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 500));
-    expect(repo.layouts, hasLength(1));
 
-    // Add a second layout through the JSON editor.
-    await tester.tap(find.text('Add Layout'));
-    await tester.pump();
-    await tester.pump(const Duration(milliseconds: 500));
-    await tester.tap(find.text('Create / Edit JSON'));
-    await tester.pump();
-    await tester.pump(const Duration(milliseconds: 500));
-    expect(find.text('Create Layout from JSON'), findsOneWidget);
-    await tester.tap(find.text('Save & Apply'));
-    await tester.pump();
-    await tester.pump(const Duration(milliseconds: 500));
-    expect(repo.layouts, hasLength(2));
-
-    // Remove it again.
-    await tester.tap(find.descendant(
-      of: find.widgetWithText(TemplateListTile, 'Test Layout'),
-      matching: find.byTooltip('Remove inserted layout'),
-    ));
-    await tester.pump();
-    await tester.pump(const Duration(milliseconds: 500));
-    await tester.tap(find.text('Remove'));
-    await tester.pump();
-    await tester.pump(const Duration(milliseconds: 500));
-    // Only the first layout is removed; the second JSON-created layout stays.
+    // Editing updates the existing entry instead of creating a new one.
     expect(repo.layouts, hasLength(1));
-    expect(repo.layouts.single.name, 'My Custom Layout');
-    expect(find.text('Test Layout'), findsNothing);
+    expect(repo.layouts.single.id, 'layout_existing');
+    expect(repo.layouts.single.name, 'Existing Layout');
   });
 }

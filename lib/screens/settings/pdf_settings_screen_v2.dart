@@ -17,8 +17,6 @@ import 'package:syncfusion_flutter_pdfviewer/pdfviewer.dart';
 import 'package:invoiso/services/pdf/pdf_service.dart';
 import 'package:invoiso/services/pdf/pdf_settings.dart';
 import 'package:invoiso/services/pdf/pdf_preview_sample.dart';
-import 'dart:io';
-import 'package:file_picker/file_picker.dart';
 import 'package:printing/printing.dart';
 import 'package:invoiso/services/thermal_printer_service_v1.dart';
 import 'package:invoiso/models/custom_invoice_layout.dart';
@@ -871,84 +869,6 @@ class _PdfSettingsScreenV2State extends ConsumerState<PdfSettingsScreenV2> {
     }
   }
 
-  Future<void> _showAddLayoutDialog() async {
-    showModalBottomSheet(
-      context: context,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
-      ),
-      builder: (ctx) => SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text(
-                'Add Custom Layout',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 6),
-              Text(
-                'Import a custom .json layout file or save current customizations as a new layout.',
-                style: TextStyle(
-                    fontSize: 12.5,
-                    color: Theme.of(context).colorScheme.onSurfaceVariant),
-              ),
-              const SizedBox(height: 16),
-              ListTile(
-                leading: const CircleAvatar(
-                  backgroundColor: Color(0xFFF3E8FF),
-                  child: Icon(Icons.code_rounded, color: Color(0xFF7E22CE)),
-                ),
-                title: const Text('Create / Edit JSON',
-                    style: TextStyle(fontWeight: FontWeight.w600)),
-                subtitle: const Text(
-                    'Paste or edit the layout configuration with a live validation check'),
-                onTap: () {
-                  Navigator.pop(ctx);
-                  _showJsonLayoutDialog();
-                },
-              ),
-              const Divider(),
-              ListTile(
-                leading: const CircleAvatar(
-                  backgroundColor: Color(0xFFE0E7FF),
-                  child: Icon(Icons.file_upload_outlined,
-                      color: Color(0xFF3730A3)),
-                ),
-                title: const Text('Import from JSON File',
-                    style: TextStyle(fontWeight: FontWeight.w600)),
-                subtitle: const Text(
-                    'Select a .json or .invoiso-layout file from your device'),
-                onTap: () {
-                  Navigator.pop(ctx);
-                  _importCustomLayoutFile();
-                },
-              ),
-              const Divider(),
-              ListTile(
-                leading: const CircleAvatar(
-                  backgroundColor: Color(0xFFDCFCE7),
-                  child: Icon(Icons.bookmark_add_outlined,
-                      color: Color(0xFF166534)),
-                ),
-                title: const Text('Save Current Settings as Layout',
-                    style: TextStyle(fontWeight: FontWeight.w600)),
-                subtitle: const Text(
-                    'Create a reusable template from currently configured options'),
-                onTap: () {
-                  Navigator.pop(ctx);
-                  _saveCurrentAsCustomLayout();
-                },
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
   Future<void> _showJsonLayoutDialog({CustomInvoiceLayout? existing}) async {
     final seed = existing ??
         _layoutFromCurrentSettings(
@@ -1120,111 +1040,6 @@ class _PdfSettingsScreenV2State extends ConsumerState<PdfSettingsScreenV2> {
       return 'Error on JSON file';
     }
     return error.toString();
-  }
-
-  Future<void> _importCustomLayoutFile() async {
-    try {
-      final result = await FilePicker.platform.pickFiles(
-        type: FileType.custom,
-        allowedExtensions: ['json', 'invoiso-layout'],
-      );
-      if (result == null || result.files.isEmpty) return;
-      final picked = result.files.single;
-      // Prefer in-memory bytes (always available on web); fall back to the
-      // path for desktop/mobile pickers that only provide a file path.
-      String content;
-      if (picked.bytes != null) {
-        content = utf8.decode(picked.bytes!);
-      } else if (picked.path != null) {
-        content = await File(picked.path!).readAsString();
-      } else {
-        throw const FormatException('The selected layout file is empty.');
-      }
-      final layout = CustomInvoiceLayout.fromJson(content);
-
-      // Apply the imported payload to the live layout state first. The
-      // renderer reads the persisted settings (not this screen's fields), so
-      // the layout must also be saved as the active settings below; otherwise
-      // imported layouts silently fall back to the previously saved/default
-      // theme when an invoice is previewed or generated.
-      _applyCustomLayout(layout);
-
-      // Validate first, persist second: an invalid file never mutates the
-      // in-memory or stored layout list.
-      await _upsertCustomLayout(layout);
-      await _saveTemplate(showSavedSnackBar: false);
-
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              'Imported custom layout \'${layout.name}\' successfully!',
-            ),
-          ),
-        );
-      }
-    } catch (e) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(_friendlyLayoutError(e)),
-          backgroundColor: Colors.red,
-        ),
-      );
-    }
-  }
-
-  Future<void> _saveCurrentAsCustomLayout() async {
-    final nameCtrl = TextEditingController(text: 'My Custom Layout');
-    final descCtrl =
-        TextEditingController(text: 'Custom template with personal styling');
-
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Save as Custom Layout'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(
-              controller: nameCtrl,
-              decoration: const InputDecoration(
-                  labelText: 'Layout Name', border: OutlineInputBorder()),
-            ),
-            const SizedBox(height: 12),
-            TextField(
-              controller: descCtrl,
-              decoration: const InputDecoration(
-                  labelText: 'Description', border: OutlineInputBorder()),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-              onPressed: () => Navigator.pop(ctx, false),
-              child: const Text('Cancel')),
-          FilledButton(
-              onPressed: () => Navigator.pop(ctx, true),
-              child: const Text('Save Layout')),
-        ],
-      ),
-    );
-    if (confirmed != true || !mounted) return;
-
-    final newLayout = _layoutFromCurrentSettings(
-      name:
-          nameCtrl.text.trim().isEmpty ? 'Custom Layout' : nameCtrl.text.trim(),
-      description: descCtrl.text.trim(),
-      blockLayout: _previewedBlockLayout,
-    );
-
-    await _upsertCustomLayout(newLayout);
-
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Saved custom layout \'${newLayout.name}\'!')),
-      );
-    }
   }
 
   void _resetToDefaultV2() {
@@ -1415,24 +1230,7 @@ class _PdfSettingsScreenV2State extends ConsumerState<PdfSettingsScreenV2> {
           const SizedBox(height: 8),
           _pageSizeDropdownV2(),
           const SizedBox(height: 16),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              _sectionLabel(l10n.pdfSettingsTemplatesLabel),
-              TextButton.icon(
-                onPressed: _showAddLayoutDialog,
-                icon: const Icon(Icons.add_rounded, size: 15),
-                label: const Text('Add Layout',
-                    style:
-                        TextStyle(fontSize: 11.5, fontWeight: FontWeight.w600)),
-                style: TextButton.styleFrom(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                  visualDensity: VisualDensity.compact,
-                ),
-              ),
-            ],
-          ),
+          _sectionLabel(l10n.pdfSettingsTemplatesLabel),
           const SizedBox(height: 10),
           Expanded(
             child: Builder(builder: (context) {
@@ -2545,58 +2343,28 @@ class _PdfSettingsScreenV2State extends ConsumerState<PdfSettingsScreenV2> {
             ),
           ),
           const SizedBox(height: 8),
-          Row(
-            children: [
-              Expanded(
-                child: OutlinedButton.icon(
-                  onPressed: _showAddLayoutDialog,
-                  icon: const Icon(Icons.bookmark_add_outlined, size: 14),
-                  label: const Text(
-                    'Insert Layout',
-                    style: TextStyle(
-                      fontSize: AppFontSize.xsmall,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: primaryColor,
-                    side:
-                        BorderSide(color: primaryColor.withValues(alpha: 0.5)),
-                    padding: const EdgeInsets.symmetric(vertical: 8),
-                    shape: RoundedRectangleBorder(
-                      borderRadius:
-                          BorderRadius.circular(AppBorderRadius.small),
-                    ),
-                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                  ),
+          SizedBox(
+            width: double.infinity,
+            child: OutlinedButton.icon(
+              onPressed: widget.onNavigateToCustomization,
+              icon: const Icon(Icons.arrow_forward_rounded, size: 14),
+              label: Text(
+                l10n.pdfSettingsCustomizationOptionsButton,
+                style: const TextStyle(
+                  fontSize: AppFontSize.xsmall,
+                  fontWeight: FontWeight.w600,
                 ),
               ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: OutlinedButton.icon(
-                  onPressed: widget.onNavigateToCustomization,
-                  icon: const Icon(Icons.arrow_forward_rounded, size: 14),
-                  label: Text(
-                    l10n.pdfSettingsCustomizationOptionsButton,
-                    style: const TextStyle(
-                      fontSize: AppFontSize.xsmall,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: primaryColor,
-                    side:
-                        BorderSide(color: primaryColor.withValues(alpha: 0.5)),
-                    padding: const EdgeInsets.symmetric(vertical: 8),
-                    shape: RoundedRectangleBorder(
-                      borderRadius:
-                          BorderRadius.circular(AppBorderRadius.small),
-                    ),
-                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                  ),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: primaryColor,
+                side: BorderSide(color: primaryColor.withValues(alpha: 0.5)),
+                padding: const EdgeInsets.symmetric(vertical: 8),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(AppBorderRadius.small),
                 ),
+                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
               ),
-            ],
+            ),
           ),
         ],
       ),
