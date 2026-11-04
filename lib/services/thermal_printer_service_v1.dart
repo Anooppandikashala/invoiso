@@ -397,9 +397,9 @@ class ThermalPrinterService {
     }
 
     // ── Totals ──
+    twoCol('Subtotal:', '$currency ${AmountFormat.money(invoice.grossSubtotal)}');
     if (invoice.totalDiscount > 0) {
-      twoCol('Subtotal:', '$currency ${AmountFormat.money(invoice.grossSubtotal)}');
-      twoCol('Discount:', '-$currency ${AmountFormat.money(invoice.totalDiscount)}');
+      twoCol('Discount:', '-$currency ${AmountFormat.money(invoice.taxableDiscount)}');
     }
     if (invoice.taxMode != TaxMode.none) {
       twoCol(invoiceTaxLabel(invoice), '$currency ${AmountFormat.money(invoice.tax)}');

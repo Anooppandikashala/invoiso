@@ -4496,7 +4496,7 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
     );
     final subtotal = totals.subtotal;
     final grossSubtotal = totals.grossSubtotal;
-    final totalDiscount = totals.totalDiscount;
+    final totalDiscount = totals.taxableDiscount;
     final tax = totals.tax;
     final invoiceDiscountAmount = totals.invoiceDiscountAmount;
     final total = totals.total;
