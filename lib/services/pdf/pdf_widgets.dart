@@ -423,7 +423,7 @@ pw.Widget buildUpiQrSection({
 /// e.g. net=1234.56 -> (rounded: 1235.0, roundOff: 0.44).
 ({double rounded, double roundOff}) roundNetTotal(double net) {
   final rounded = net.roundToDouble();
-  return (rounded: rounded, roundOff: rounded - net);
+  return (rounded: rounded, roundOff: ((rounded - net) * 100).round() / 100);
 }
 
 pw.Widget buildEnhancedTotals(
@@ -482,7 +482,7 @@ pw.Widget buildEnhancedTotals(
         if (invoice.totalDiscount > 0)
           pdfTotalRow(
             "Discount",
-            "-$currencySymbol ${AmountFormat.money(invoice.totalDiscount)}",
+            "-$currencySymbol ${AmountFormat.money(invoice.taxableDiscount)}",
             color: PdfColors.orange800,
             fontSize: rowFontSize,
             horizontalPadding: rowHorizontalPadding,
@@ -779,6 +779,7 @@ pw.Widget buildInvoiceTable(Invoice invoice,
   // header to claw back space whenever any are on.
   final bool shortDiscountHeader = !isLandscape && metaKeys.isNotEmpty;
   final bool isGlobalTaxMode = invoice.taxMode == TaxMode.global;
+  final double itemsTotal = invoice.items.fold(0.0, (s, i) => s + i.total);
   final bool taxColumnOn = showTaxColumn && invoice.taxMode != TaxMode.none;
   final bool splitCgstSgst = taxColumnOn && showCgstSgst && !showIgst;
   final bool showIgstCol = taxColumnOn && showIgst;
@@ -1082,27 +1083,27 @@ pw.Widget buildInvoiceTable(Invoice invoice,
             textAlign: centerOnGridClassic),
         if (splitCgstSgst) ...[
           buildTableCell(
-              '${AmountFormat.money(isGlobalTaxMode ? (invoice.subtotal > 0 ? invoice.tax * (item.total / invoice.subtotal) / 2 : 0.0) : item.taxAmount / 2)}\n(${AppFormatters.formatTaxRate((isGlobalTaxMode ? globalTaxRatePercent : item.product.tax_rate) / 2)}%)',
+              '${AmountFormat.money(isGlobalTaxMode ? (itemsTotal > 0 ? invoice.tax * (item.total / itemsTotal) / 2 : 0.0) : item.taxAmount / 2)}\n(${AppFormatters.formatTaxRate((isGlobalTaxMode ? globalTaxRatePercent : item.product.tax_rate) / 2)}%)',
               fontSize: tableFontSize,
               cellPaddingH: cellPaddingH,
               cellPaddingV: cellPaddingV,
               textAlign: centerOnGridClassic),
           buildTableCell(
-              '${AmountFormat.money(isGlobalTaxMode ? (invoice.subtotal > 0 ? invoice.tax * (item.total / invoice.subtotal) / 2 : 0.0) : item.taxAmount / 2)}\n(${AppFormatters.formatTaxRate((isGlobalTaxMode ? globalTaxRatePercent : item.product.tax_rate) / 2)}%)',
+              '${AmountFormat.money(isGlobalTaxMode ? (itemsTotal > 0 ? invoice.tax * (item.total / itemsTotal) / 2 : 0.0) : item.taxAmount / 2)}\n(${AppFormatters.formatTaxRate((isGlobalTaxMode ? globalTaxRatePercent : item.product.tax_rate) / 2)}%)',
               fontSize: tableFontSize,
               cellPaddingH: cellPaddingH,
               cellPaddingV: cellPaddingV,
               textAlign: centerOnGridClassic),
         ] else if (showIgstCol)
           buildTableCell(
-              '${AmountFormat.money(isGlobalTaxMode ? (invoice.subtotal > 0 ? invoice.tax * (item.total / invoice.subtotal) : 0.0) : item.taxAmount)}\n(${AppFormatters.formatTaxRate(isGlobalTaxMode ? globalTaxRatePercent : item.product.tax_rate)}%)',
+              '${AmountFormat.money(isGlobalTaxMode ? (itemsTotal > 0 ? invoice.tax * (item.total / itemsTotal) : 0.0) : item.taxAmount)}\n(${AppFormatters.formatTaxRate(isGlobalTaxMode ? globalTaxRatePercent : item.product.tax_rate)}%)',
               fontSize: tableFontSize,
               cellPaddingH: cellPaddingH,
               cellPaddingV: cellPaddingV,
               textAlign: centerOnGridClassic)
         else if (taxColumnOn)
           buildTableCell(
-              '${AmountFormat.money(isGlobalTaxMode ? (invoice.subtotal > 0 ? invoice.tax * (item.total / invoice.subtotal) : 0.0) : item.taxAmount)}\n(${AppFormatters.formatTaxRate(isGlobalTaxMode ? globalTaxRatePercent : item.product.tax_rate)}%)',
+              '${AmountFormat.money(isGlobalTaxMode ? (itemsTotal > 0 ? invoice.tax * (item.total / itemsTotal) : 0.0) : item.taxAmount)}\n(${AppFormatters.formatTaxRate(isGlobalTaxMode ? globalTaxRatePercent : item.product.tax_rate)}%)',
               fontSize: tableFontSize,
               cellPaddingH: cellPaddingH,
               cellPaddingV: cellPaddingV,

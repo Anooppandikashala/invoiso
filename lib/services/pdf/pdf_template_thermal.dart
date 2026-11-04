@@ -529,12 +529,11 @@ pw.Page buildThermalTemplate(
 
       // ── Totals ──
       pw.SizedBox(height: 2),
-      if (invoice.totalDiscount > 0)
-        labelValue('Subtotal:',
-            '$currencySymbol ${AmountFormat.money(invoice.grossSubtotal)}'),
+      labelValue('Subtotal:',
+          '$currencySymbol ${AmountFormat.money(invoice.grossSubtotal)}'),
       if (invoice.totalDiscount > 0)
         labelValue('Discount:',
-            '-$currencySymbol ${AmountFormat.money(invoice.totalDiscount)}'),
+            '-$currencySymbol ${AmountFormat.money(invoice.taxableDiscount)}'),
       if (invoice.taxMode != TaxMode.none)
         labelValue(invoiceTaxLabel(invoice),
             '$currencySymbol ${AmountFormat.money(invoice.tax)}'),

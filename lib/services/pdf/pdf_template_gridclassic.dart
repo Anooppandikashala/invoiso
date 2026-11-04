@@ -520,7 +520,7 @@ pw.MultiPage buildGridClassicTemplate(
                         '$currencySymbol ${AmountFormat.money(invoice.totalDiscount > 0 ? invoice.grossSubtotal : invoice.subtotal)}'),
                     if (invoice.totalDiscount > 0)
                       totalsRow('Discount',
-                          '-$currencySymbol ${AmountFormat.money(invoice.totalDiscount)}'),
+                          '-$currencySymbol ${AmountFormat.money(invoice.taxableDiscount)}'),
                     if (invoice.taxMode != TaxMode.none && !showIgst)
                       totalsRow(invoiceTaxLabel(invoice),
                           '$currencySymbol ${AmountFormat.money(invoice.tax)}'),

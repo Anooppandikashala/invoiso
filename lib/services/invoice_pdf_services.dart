@@ -167,7 +167,7 @@ class InvoicePdfServices {
                     const Text('Discount:',
                         style: TextStyle(fontWeight: FontWeight.bold)),
                     Text(
-                        '-${invoice.currencySymbol} ${AmountFormat.money(invoice.totalDiscount)}'),
+                        '-${invoice.currencySymbol} ${AmountFormat.money(invoice.taxableDiscount)}'),
                   ],
                 ),
               Row(

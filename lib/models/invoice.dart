@@ -146,6 +146,8 @@ class Invoice {
 
   double get totalDiscount => _totals.totalDiscount;
 
+  double get taxableDiscount => _totals.taxableDiscount;
+
   double get tax => _totals.tax;
 
   double get additionalCostsTotal =>
