@@ -12,6 +12,10 @@ import 'package:path/path.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 import 'package:invoiso/backup/backup_manager.dart';
 import 'package:invoiso/database/database_helper.dart';
+import 'package:invoiso/database/invoice_attachment_service.dart';
+import 'package:invoiso/models/invoice_attachment.dart';
+import 'package:archive/archive_io.dart';
+import 'package:image/image.dart' as img;
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -143,5 +147,109 @@ void main() {
       expect(result.message, contains('newer version'));
     }
     expect(await db.query('customers', where: "id = 'keep'"), hasLength(1));
+  });
+
+  // ── Invoice photos in .invoicedb backups ──
+
+  Future<void> addPhotos(String invoiceId, int count) async {
+    final src = join(tmp.path, 'src_$invoiceId.jpg');
+    File(src).writeAsBytesSync(img.encodeJpg(img.Image(width: 20, height: 10)));
+    await InvoiceAttachmentService.sync(invoiceId, [
+      for (var i = 0; i < count; i++)
+        AttachmentDraft(path: src, isPublic: i.isEven, caption: 'c$i'),
+    ]);
+  }
+
+  bool isZip(String path) {
+    final b = File(path).readAsBytesSync();
+    return b.length > 2 && b[0] == 0x50 && b[1] == 0x4B;
+  }
+
+  Future<String> backup() async {
+    final r = await BackupManager().createBackup(
+        companyId: 'default', companyName: 'Test', customPath: join(tmp.path, 'out'));
+    expect(r.success, isTrue, reason: r.message);
+    return r.filePath!;
+  }
+
+  test('no photos: backup stays a bare SQLite file', () async {
+    final path = await backup();
+    expect(isZip(path), isFalse);
+    expect(await BackupManager().verifyBackup(path), isTrue);
+  });
+
+  test('photos: zip backup round-trips database rows and files', () async {
+    await addPhotos('inv1', 3);
+    final before = await InvoiceAttachmentService.listFor('inv1');
+    final bytes = {
+      for (final a in before)
+        a.fileName: File(InvoiceAttachmentService.filePath(a)).readAsBytesSync()
+    };
+    final path = await backup();
+    expect(isZip(path), isTrue);
+    expect(await BackupManager().verifyBackup(path), isTrue);
+
+    // Change things after the backup: drop a photo, add another invoice's.
+    await InvoiceAttachmentService.sync('inv1', []);
+    await addPhotos('inv2', 1);
+
+    final r = await BackupManager().restoreBackup(backupPath: path);
+    expect(r.success, isTrue, reason: r.message);
+
+    final after = await InvoiceAttachmentService.listFor('inv1');
+    expect(after.map((a) => [a.id, a.isPublic, a.caption]),
+        before.map((a) => [a.id, a.isPublic, a.caption]));
+    for (final a in after) {
+      expect(File(InvoiceAttachmentService.filePath(a)).readAsBytesSync(),
+          bytes[a.fileName]);
+    }
+    expect(await InvoiceAttachmentService.listFor('inv2'), isEmpty);
+    expect(Directory(InvoiceAttachmentService.invoiceDir('inv2')).existsSync(),
+        isFalse);
+    // No leftovers next to the database.
+    final dbDir = Directory(dirname(DatabaseHelper.path!));
+    expect(
+        dbDir.listSync(recursive: true).map((e) => e.path).where(
+            (p) => p.contains('.restore_') || p.contains('.pre_restore')),
+        isEmpty);
+  });
+
+  test('restoring a photo-less backup clears the current photos', () async {
+    final path = await backup(); // bare SQLite, no photos
+    await addPhotos('inv1', 2);
+    final r = await BackupManager().restoreBackup(backupPath: path);
+    expect(r.success, isTrue, reason: r.message);
+    expect(await InvoiceAttachmentService.listFor('inv1'), isEmpty);
+    expect(Directory(InvoiceAttachmentService.companyDir).existsSync(), isFalse);
+  });
+
+  test('zip entries outside the backup layout are never written', () async {
+    await addPhotos('inv1', 1);
+    final good = await backup();
+    // Rebuild the zip with an extra "../escape.txt" entry.
+    final archive = ZipDecoder().decodeBytes(File(good).readAsBytesSync());
+    archive.addFile(ArchiveFile('../escape.txt', 4, [1, 2, 3, 4]));
+    archive.addFile(ArchiveFile('attachments/../../escape2.txt', 4, [1, 2, 3, 4]));
+    final evil = join(tmp.path, 'evil.invoicedb');
+    File(evil).writeAsBytesSync(ZipEncoder().encode(archive));
+
+    final r = await BackupManager().restoreBackup(backupPath: evil);
+    expect(r.success, isTrue, reason: r.message);
+    final dbDir = dirname(DatabaseHelper.path!);
+    expect(File(join(dirname(dbDir), 'escape.txt')).existsSync(), isFalse);
+    expect(File(join(dbDir, 'escape.txt')).existsSync(), isFalse);
+    expect(File(join(dbDir, 'escape2.txt')).existsSync(), isFalse);
+    expect((await InvoiceAttachmentService.listFor('inv1')).length, 1);
+  });
+
+  test('a zip without a database is refused and current data kept', () async {
+    await addPhotos('inv1', 1);
+    final bad = join(tmp.path, 'nodb.invoicedb');
+    File(bad).writeAsBytesSync(ZipEncoder().encode(
+        Archive()..addFile(ArchiveFile('attachments/x/y.jpg', 3, [1, 2, 3]))));
+    expect(await BackupManager().verifyBackup(bad), isFalse);
+    final r = await BackupManager().restoreBackup(backupPath: bad);
+    expect(r.success, isFalse);
+    expect((await InvoiceAttachmentService.listFor('inv1')).length, 1);
   });
 }

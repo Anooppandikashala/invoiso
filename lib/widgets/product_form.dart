@@ -212,7 +212,7 @@ class ProductFormState extends ConsumerState<ProductForm> {
             ? 0
             : int.parse(_stockController.text.trim()),
         hsncode: _hsnCodeController.text.trim(),
-        tax_rate: int.parse(_taxRateController.text.trim()),
+        tax_rate: double.parse(_taxRateController.text.trim()),
         type: _newItemType,
         defaultDiscount:
             double.tryParse(_defaultDiscountController.text.trim()) ?? 0.0,
@@ -388,7 +388,7 @@ class ProductFormState extends ConsumerState<ProductForm> {
               children: [
                 Expanded(
                   child: _buildFormField(_taxRateController, l10n.productMgmtTaxPercentLabel, Icons.percent,
-                      keyboardType: TextInputType.number, isTaxRate: true),
+                      keyboardType: const TextInputType.numberWithOptions(decimal: true), isTaxRate: true),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
@@ -569,9 +569,11 @@ class ProductFormState extends ConsumerState<ProductForm> {
       },
       inputFormatters: isPrice
           ? [FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d{0,2}$'))]
-          : (isStock || isTaxRate)
-              ? [FilteringTextInputFormatter.digitsOnly]
-              : null,
+          : isTaxRate
+              ? [FilteringTextInputFormatter.allow(AppFormatters.taxRateInputPattern)]
+              : isStock
+                  ? [FilteringTextInputFormatter.digitsOnly]
+                  : null,
       decoration: InputDecoration(
         labelText: label,
         prefixIcon: prefixText == null ? Icon(icon) : null,
@@ -596,7 +598,7 @@ class ProductFormState extends ConsumerState<ProductForm> {
           if (stock == null || stock < 0) return l10n.fieldEnterValidStockMessage;
         }
         if (isTaxRate) {
-          final tax = int.tryParse(value);
+          final tax = double.tryParse(value);
           if (tax == null || tax < 0 || tax > 100) {
             return l10n.fieldTaxRangeMessage;
           }

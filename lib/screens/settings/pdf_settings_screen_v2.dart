@@ -34,6 +34,8 @@ class _PdfSettingsScreenV2State extends ConsumerState<PdfSettingsScreenV2> {
 
   bool _savedShowTotalQuantity = false;
   bool _previewedShowTotalQuantity = false;
+  String _savedAttachmentLayout = 'grid';
+  String _previewedAttachmentLayout = 'grid';
   final _thermalWidthMarginController = TextEditingController();
   String _savedThermalWidthMargin = '1';
   String _previewedThermalWidthMargin = '1';
@@ -89,6 +91,9 @@ class _PdfSettingsScreenV2State extends ConsumerState<PdfSettingsScreenV2> {
       ref.read(settingsRepositoryProvider).getSetting(SettingKey.pdfFontSize),
       for (final key in _pdfSectionSizeKeys)
         ref.read(settingsRepositoryProvider).getSetting(key),
+      ref
+          .read(settingsRepositoryProvider)
+          .getSetting(SettingKey.attachmentLayout),
     ]);
     final saved = results[0] as InvoiceTemplate;
     final savedThemeColor = results[1] as String?;
@@ -103,6 +108,8 @@ class _PdfSettingsScreenV2State extends ConsumerState<PdfSettingsScreenV2> {
       for (var i = 0; i < _pdfSectionSizeKeys.length; i++)
         _pdfSectionSizeKeys[i]: (results[9 + i] as String?) ?? '',
     };
+    final savedAttachmentLayout =
+        results[9 + _pdfSectionSizeKeys.length] == 'list' ? 'list' : 'grid';
     final previewedTemplate =
         effectiveInvoiceTemplateForPageSize(saved, savedPageSize);
     setState(() {
@@ -117,6 +124,8 @@ class _PdfSettingsScreenV2State extends ConsumerState<PdfSettingsScreenV2> {
       _previewedLandscape = savedLandscape;
       _savedShowTotalQuantity = savedShowTotalQty;
       _previewedShowTotalQuantity = savedShowTotalQty;
+      _savedAttachmentLayout = savedAttachmentLayout;
+      _previewedAttachmentLayout = savedAttachmentLayout;
       _savedThermalWidthMargin = savedThermalWidthMargin ?? '1';
       _previewedThermalWidthMargin = _savedThermalWidthMargin;
       _thermalWidthMarginController.text = _savedThermalWidthMargin;
@@ -165,6 +174,8 @@ class _PdfSettingsScreenV2State extends ConsumerState<PdfSettingsScreenV2> {
         for (final key in _pdfSectionSizeKeys)
           ref.read(settingsRepositoryProvider).setSetting(
               key, _previewedPdfSectionSizes[key] ?? ''),
+        ref.read(settingsRepositoryProvider).setSetting(
+            SettingKey.attachmentLayout, _previewedAttachmentLayout),
       ]);
       setState(() {
         _savedTemplate = _previewedTemplate;
@@ -172,6 +183,7 @@ class _PdfSettingsScreenV2State extends ConsumerState<PdfSettingsScreenV2> {
         _savedPageSize = _previewedPageSize;
         _savedLandscape = _previewedLandscape;
         _savedShowTotalQuantity = _previewedShowTotalQuantity;
+        _savedAttachmentLayout = _previewedAttachmentLayout;
         _savedThermalWidthMargin = _previewedThermalWidthMargin;
         _savedThermalItemLayout = _previewedThermalItemLayout;
         _savedThermalCompanyNameSize = _previewedThermalCompanyNameSize;
@@ -314,6 +326,7 @@ class _PdfSettingsScreenV2State extends ConsumerState<PdfSettingsScreenV2> {
           _previewedPageSize != _savedPageSize ||
           _previewedLandscape != _savedLandscape ||
           _previewedShowTotalQuantity != _savedShowTotalQuantity ||
+          _previewedAttachmentLayout != _savedAttachmentLayout ||
           _previewedThermalWidthMargin != _savedThermalWidthMargin ||
           _previewedThermalItemLayout != _savedThermalItemLayout ||
           _previewedThermalCompanyNameSize != _savedThermalCompanyNameSize ||
@@ -330,6 +343,7 @@ class _PdfSettingsScreenV2State extends ConsumerState<PdfSettingsScreenV2> {
       _themeColorController.clear();
       _themeColorInputValid = true;
       _previewedShowTotalQuantity = false;
+      _previewedAttachmentLayout = 'grid';
       _previewedThermalWidthMargin = '1';
       _thermalWidthMarginController.text = '1';
       _previewedThermalItemLayout = 'table';
@@ -592,6 +606,8 @@ class _PdfSettingsScreenV2State extends ConsumerState<PdfSettingsScreenV2> {
                   _previewedTemplate == InvoiceTemplate.gridClassic)
                 const SizedBox(height: 8),
               _buildPdfFontSizeField(),
+              const SizedBox(height: 8),
+              _buildAttachmentLayoutField(),
             ],
             const SizedBox(height: 18),
             _sectionLabel(l10n.pdfSettingsThemeColorLabel),
@@ -808,6 +824,57 @@ class _PdfSettingsScreenV2State extends ConsumerState<PdfSettingsScreenV2> {
             value: _previewedShowTotalQuantity,
             onChanged: (v) => setState(() => _previewedShowTotalQuantity = v),
             materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+          ),
+        ],
+      ),
+    );
+  }
+
+  // Customer photos on the PDF's Attachments page(s). Not for thermal.
+  Widget _buildAttachmentLayoutField() {
+    final l10n = AppLocalizations.of(context)!;
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surfaceContainer,
+        borderRadius: BorderRadius.circular(AppBorderRadius.small),
+        border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            l10n.pdfSettingsAttachmentLayoutLabel,
+            style: TextStyle(
+              fontSize: AppFontSize.small,
+              fontWeight: FontWeight.w600,
+              color: Theme.of(context).colorScheme.onSurface,
+            ),
+          ),
+          const SizedBox(height: 8),
+          SegmentedButton<String>(
+            segments: [
+              ButtonSegment(
+                value: 'grid',
+                label: Text(l10n.pdfSettingsAttachmentLayoutGrid),
+                icon: const Icon(Icons.grid_view_outlined, size: 16),
+              ),
+              ButtonSegment(
+                value: 'list',
+                label: Text(l10n.pdfSettingsAttachmentLayoutList),
+                icon: const Icon(Icons.view_list_outlined, size: 16),
+              ),
+            ],
+            selected: {_previewedAttachmentLayout},
+            onSelectionChanged: (selection) =>
+                setState(() => _previewedAttachmentLayout = selection.first),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            l10n.pdfSettingsAttachmentLayoutHelpText,
+            style: TextStyle(
+                fontSize: 11,
+                color: Theme.of(context).colorScheme.onSurfaceVariant),
           ),
         ],
       ),

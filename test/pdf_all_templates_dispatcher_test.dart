@@ -19,6 +19,7 @@ import 'package:invoiso/common/common.dart';
 import 'package:invoiso/models/company_info.dart';
 import 'package:invoiso/models/customer.dart';
 import 'package:invoiso/models/invoice.dart';
+import 'package:invoiso/models/invoice_attachment.dart';
 import 'package:invoiso/models/invoice_item.dart';
 import 'package:invoiso/models/product.dart';
 import 'package:invoiso/services/pdf/pdf_service.dart';
@@ -120,6 +121,7 @@ PdfGenerationSettings _settings({
   double fontSizeScale = 1.0,
   // Section scales; null = same as overall, like PDFService resolves them.
   double? sectionScale,
+  bool attachmentsAsList = false,
 }) {
   return PdfGenerationSettings(
     company: _company,
@@ -171,6 +173,7 @@ PdfGenerationSettings _settings({
     tableHeaderScale: sectionScale ?? fontSizeScale,
     tableItemsScale: sectionScale ?? fontSizeScale,
     totalsScale: sectionScale ?? fontSizeScale,
+    attachmentsAsList: attachmentsAsList,
   );
 }
 
@@ -334,4 +337,98 @@ void main() {
       await outputFile.writeAsBytes(bytes);
     });
   }
+
+  // Customer photos: Attachments section after the invoice, grid and list,
+  // on every page size each template supports. Thermal never prints them.
+  // Rendered for a visual check in output/attachments/.
+  group('attachments pages', () {
+    late List<PdfAttachmentImage> photos;
+    setUpAll(() async {
+      final imgs = [
+        await File('assets/images/demo_logo.png').readAsBytes(),
+        await File('assets/images/watermark.png').readAsBytes(),
+        await File('assets/images/sig.jpeg').readAsBytes(),
+      ];
+      photos = [
+        for (var i = 0; i < 7; i++)
+          (
+            bytes: imgs[i % 3],
+            caption: i == 1
+                ? 'Before repair\nWall cracked near the window, two coats needed'
+                : (i.isEven ? 'Photo ${i + 1}' : null),
+          ),
+      ];
+    });
+
+    int pages(pw.Document d) => d.document.pdfPageList.pages.length;
+
+    for (final template in InvoiceTemplate.values) {
+      final sizes = template == InvoiceTemplate.thermal
+          ? [_pageSizeFor(template)]
+          : PageSize.values.where(template.supportsPageSize);
+      for (final pageSize in sizes) {
+        for (final asList in [false, true]) {
+          final layout = asList ? 'list' : 'grid';
+          test('${template.name} ${pageSize.name} $layout', () async {
+            final settings = _settings(
+              template: template,
+              pageSize: pageSize,
+              pdfTheme: await TestPdfFontService.loadTheme(),
+              logoBytes: await File('assets/images/demo_logo.png').readAsBytes(),
+              watermarkBytes:
+                  await File('assets/images/watermark.png').readAsBytes(),
+              signatureBytes: await File('assets/images/sig.jpeg').readAsBytes(),
+              attachmentsAsList: asList,
+            );
+            final without = PDFService.generateInvoicePDFWithSettings(
+                _sampleInvoice(), settings);
+            final withPhotos = PDFService.generateInvoicePDFWithSettings(
+                _sampleInvoice()..pdfAttachments = photos, settings);
+            final bytes = await withPhotos.save();
+            if (template == InvoiceTemplate.thermal) {
+              expect(pages(withPhotos), pages(without));
+            } else {
+              // 7 photos never fit in what's left of the last invoice page.
+              expect(pages(withPhotos), greaterThan(pages(without)));
+            }
+            final out = File(
+                'output/attachments/${template.name}_${pageSize.name}_$layout.pdf');
+            await out.parent.create(recursive: true);
+            await out.writeAsBytes(bytes);
+          });
+        }
+      }
+    }
+
+    // A short invoice keeps its photos on page 1 instead of wasting it.
+    // (Minimal's taller footer leaves less than one photo row, so its
+    // photos rightly start on page 2 — not checked here.)
+    for (final template in [
+      InvoiceTemplate.classic,
+      InvoiceTemplate.modern,
+      InvoiceTemplate.executive,
+      InvoiceTemplate.gridClassic,
+    ]) {
+      test('${template.name} a4: 1 item + 2 photos stay on page 1', () async {
+        final settings = _settings(
+          template: template,
+          pageSize: PageSize.a4,
+          pdfTheme: await TestPdfFontService.loadTheme(),
+          logoBytes: await File('assets/images/demo_logo.png').readAsBytes(),
+          watermarkBytes:
+              await File('assets/images/watermark.png').readAsBytes(),
+          signatureBytes: await File('assets/images/sig.jpeg').readAsBytes(),
+        );
+        final invoice = _sampleInvoice()
+          ..items = [_sampleInvoice().items.first]
+          ..pdfAttachments = photos.take(2).toList();
+        final pdf = PDFService.generateInvoicePDFWithSettings(invoice, settings);
+        final bytes = await pdf.save();
+        expect(pages(pdf), 1);
+        final out = File('output/attachments/${template.name}_a4_short.pdf');
+        await out.parent.create(recursive: true);
+        await out.writeAsBytes(bytes);
+      });
+    }
+  });
 }

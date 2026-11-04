@@ -18,6 +18,7 @@ import 'package:invoiso/screens/onboarding/onboarding_step_company.dart';
 import 'package:invoiso/screens/onboarding/onboarding_step_done.dart';
 import 'package:invoiso/screens/onboarding/onboarding_step_invoice.dart';
 import 'package:invoiso/screens/onboarding/onboarding_step_purchase_bills.dart';
+import 'package:invoiso/utils/formatters.dart';
 
 /// One-time, skippable first-login setup wizard. Each step persists its own
 /// fields immediately on "Next" so progress survives even if the app is
@@ -190,7 +191,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
       settingsRepo.setSetting(
           SettingKey.invoiceLeadingZeros, _leadingZeros.toString()),
       settingsRepo.setSetting(
-          SettingKey.defaultTaxRate, taxRate.clamp(0, 100).toStringAsFixed(1)),
+          SettingKey.defaultTaxRate, AppFormatters.formatTaxRate(taxRate.clamp(0, 100))),
     ]);
   }
 

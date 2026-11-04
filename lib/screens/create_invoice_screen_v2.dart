@@ -16,7 +16,11 @@ import 'package:invoiso/providers/app_config_provider.dart';
 import 'package:invoiso/providers/repositories.dart';
 import 'package:uuid/uuid.dart';
 import 'package:invoiso/models/customer.dart';
+import 'package:invoiso/database/invoice_attachment_service.dart';
 import 'package:invoiso/models/invoice.dart';
+import 'package:invoiso/models/invoice_attachment.dart';
+import 'package:invoiso/screens/invoice_attachments_screen.dart';
+import 'package:invoiso/utils/error_handler.dart';
 import 'package:invoiso/models/invoice_list_filter.dart';
 import 'package:invoiso/utils/formatters.dart';
 import 'package:invoiso/models/invoice_item.dart';
@@ -152,6 +156,10 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
   final _payAmountController = TextEditingController();
 
   final notesController = TextEditingController();
+  final privateNotesController = TextEditingController();
+  // Photos staged in the Attachments screen; written by _syncAttachments
+  // after the invoice itself is saved.
+  List<AttachmentDraft> _attachmentDrafts = [];
   final customInvoiceNumberController = TextEditingController();
   bool _hideInvoiceNumber = false;
   final searchController = TextEditingController();
@@ -266,7 +274,7 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
         });
       }
     });
-    taxRateController.text = (taxRate * 100).toStringAsFixed(1);
+    taxRateController.text = AppFormatters.formatTaxRate(taxRate * 100);
     // Resolve the document type before the first load so the previewed number
     // uses the right series — Invoice and Quotation have separate sequences,
     // and _loadCustomersAndProducts peeks the next number using invoiceType.
@@ -329,7 +337,7 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
       businessNameController.text = _invoice!.customer.businessName;
       _customerExtraFields.load(_invoice!.customer);
       taxRate = _invoice!.taxRate;
-      taxRateController.text = (taxRate * 100).toStringAsFixed(1);
+      taxRateController.text = AppFormatters.formatTaxRate(taxRate * 100);
       _isTaxEnabled = _invoice!.taxMode != TaxMode.none;
       _isPerItem = _invoice!.taxMode == TaxMode.perItem;
       _isInterState = _invoice!.isInterState;
@@ -406,7 +414,7 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
       businessNameController.text = src.customer.businessName;
       _customerExtraFields.load(src.customer);
       taxRate = src.taxRate;
-      taxRateController.text = (taxRate * 100).toStringAsFixed(1);
+      taxRateController.text = AppFormatters.formatTaxRate(taxRate * 100);
       _isTaxEnabled = src.taxMode != TaxMode.none;
       _isPerItem = src.taxMode == TaxMode.perItem;
       _isInterState = src.isInterState;
@@ -447,6 +455,15 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
 
   Future<void> _setAdditionalNote({bool forceDefault = false}) async {
     final String addNote;
+    // Private notes carry over on edit and quotation→invoice convert only —
+    // a clone or credit / debit note starts without them.
+    final String privateNote = forceDefault
+        ? ''
+        : widget.invoiceToEdit?.privateNotes ??
+            (widget.convertFromQuotationId != null
+                ? widget.cloneFrom?.privateNotes
+                : null) ??
+            '';
     if (!forceDefault && widget.invoiceToEdit != null) {
       addNote = widget.invoiceToEdit!.notes ?? '';
     } else if (!forceDefault && widget.cloneFrom != null) {
@@ -461,11 +478,27 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
     final parsedRate = double.tryParse(taxRateSetting ?? '') ?? 18.0;
     if (widget.invoiceToEdit == null && widget.cloneFrom == null) {
       taxRate = parsedRate / 100.0;
-      taxRateController.text = parsedRate.toStringAsFixed(1);
+      taxRateController.text = AppFormatters.formatTaxRate(parsedRate);
     }
+    // Attachments follow the same rule as private notes. A converted
+    // quotation's photos become new drafts, so the invoice gets its own copies.
+    final attachments = forceDefault
+        ? <AttachmentDraft>[]
+        : widget.invoiceToEdit != null
+            ? await InvoiceAttachmentService.draftsFor(widget.invoiceToEdit!.id)
+            : widget.convertFromQuotationId != null
+                ? [
+                    for (final d in await InvoiceAttachmentService.draftsFor(
+                        widget.convertFromQuotationId!))
+                      AttachmentDraft(
+                          path: d.path, isPublic: d.isPublic, caption: d.caption),
+                  ]
+                : <AttachmentDraft>[];
     if(!mounted) return;
     setState(() {
       notesController.text = addNote;
+      privateNotesController.text = privateNote;
+      _attachmentDrafts = attachments;
     });
     _completeInitialLoad();
   }
@@ -481,6 +514,7 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
       widget.guard?.canLeave = null;
     }
     notesController.dispose();
+    privateNotesController.dispose();
     customInvoiceNumberController.dispose();
     searchController.dispose();
     customerSearchController.dispose();
@@ -572,6 +606,11 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
           .toList(),
       'showAdditionalCosts': _showAdditionalCosts,
       'notes': notesController.text.trim(),
+      'privateNotes': privateNotesController.text.trim(),
+      'attachments': [
+        for (final d in _attachmentDrafts)
+          [d.id, d.path, d.isPublic, (d.caption ?? '').trim()],
+      ],
       'invoiceType': invoiceType,
       'taxEnabled': _isTaxEnabled,
       'perItemTax': _isPerItem,
@@ -1491,6 +1530,9 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
         date: _selectedOrderDate,
         dueDate: _selectedDueDate,
         notes: notesController.text.isNotEmpty ? notesController.text : null,
+        privateNotes: privateNotesController.text.trim().isNotEmpty
+            ? privateNotesController.text
+            : null,
         taxRate: _taxMode == TaxMode.global ? taxRate : 0.0,
         type: invoiceType,
         invoiceTitle: invoiceType == 'Invoice'
@@ -1570,6 +1612,7 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
       } else {
         await ref.read(invoiceRepositoryProvider).insertInvoice(invoice);
       }
+      await _syncAttachments(invoice.id);
 
       final (:payError, :creditToApply) =
           await _applyPaymentChoice(invoice, payAmount);
@@ -1826,6 +1869,9 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
         date: _selectedOrderDate,
         dueDate: _selectedDueDate,
         notes: notesController.text.isNotEmpty ? notesController.text : null,
+        privateNotes: privateNotesController.text.trim().isNotEmpty
+            ? privateNotesController.text
+            : null,
         taxRate: _taxMode == TaxMode.global ? taxRate : 0.0,
         type: invoiceType,
         invoiceTitle: invoiceType == 'Invoice'
@@ -1867,6 +1913,7 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
       } else {
         await ref.read(invoiceRepositoryProvider).updateInvoice(invoice);
       }
+      await _syncAttachments(invoice.id);
 
       final nextNumber = await ref
           .read(invoiceRepositoryProvider)
@@ -2318,8 +2365,8 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
               return;
             }
             final taxRate = _taxMode == TaxMode.perItem
-                ? (int.tryParse(taxRateController.text) ?? 0)
-                : 0;
+                ? (double.tryParse(taxRateController.text) ?? 0.0).clamp(0.0, 100.0)
+                : 0.0;
 
             final adHocProduct = Product(
               id: 'custom-${const Uuid().v4()}',
@@ -2784,6 +2831,7 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
       _additionalCostControllers.clear();
       _showAdditionalCosts = false;
       notesController.clear();
+      privateNotesController.clear();
       nameController.clear();
       emailController.clear();
       phoneController.clear();
@@ -4061,6 +4109,9 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
         date: _selectedOrderDate,
         dueDate: _selectedDueDate,
         notes: notesController.text.isNotEmpty ? notesController.text : null,
+        privateNotes: privateNotesController.text.trim().isNotEmpty
+            ? privateNotesController.text
+            : null,
         taxRate: _taxMode == TaxMode.global ? taxRate : 0.0,
         type: invoiceType,
         invoiceTitle: invoiceType == 'Invoice' ? invoiceTitle : null,
@@ -4107,6 +4158,7 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
       if (payAmount == null) return false;
 
       await ref.read(invoiceRepositoryProvider).updateInvoice(updatedInvoice);
+      await _syncAttachments(updatedInvoice.id);
 
       final (:payError, :creditToApply) = payNow
           ? await _applyPaymentChoice(updatedInvoice, payAmount)
@@ -4990,7 +5042,7 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
       _currencyCode = inv.currencyCode;
       _currencySymbol = inv.currencySymbol;
       taxRate = inv.taxRate;
-      taxRateController.text = (taxRate * 100).toStringAsFixed(1);
+      taxRateController.text = AppFormatters.formatTaxRate(taxRate * 100);
       _isTaxEnabled = inv.taxMode != TaxMode.none;
       _isPerItem = inv.taxMode == TaxMode.perItem;
       _isInterState = inv.isInterState;
@@ -6301,14 +6353,14 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
                             '$_currencySymbol${AmountFormat.money(item.product.price)}'),
                       if (_taxMode == TaxMode.perItem)
                         _buildItemDetail(
-                            'Tax', '${item.product.tax_rate}%'),
+                            'Tax', '${AppFormatters.formatTaxRate(item.product.tax_rate)}%'),
                       if (item.product.priceIncludesTax) ...[
                         _buildItemDetail(
                             _taxMode == TaxMode.perItem ? '' : 'Tax',
                             'Inclusive',
                             color: Colors.teal[700]),
                         _buildItemDetail('Net Price',
-                            '$_currencySymbol${AmountFormat.money(InvoiceTotalsCalculator.netPrice(price: item.effectivePrice, taxRatePercent: item.product.tax_rate.toDouble(), priceIncludesTax: true))}',
+                            '$_currencySymbol${AmountFormat.money(InvoiceTotalsCalculator.netPrice(price: item.effectivePrice, taxRatePercent: item.product.tax_rate, priceIncludesTax: true))}',
                             color: Colors.teal[700]),
                       ],
                       if (_columnsConfig.hsncode)
@@ -6725,6 +6777,84 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
             tooltip: AppLocalizations.of(context)!.tooltipEditInLargerView,
             onPressed: _editNotesDialogV2,
           )),
+    );
+  }
+
+  Widget _privateNotesFieldV2() {
+    final l10n = AppLocalizations.of(context)!;
+    return TextField(
+      controller: privateNotesController,
+      maxLength: DefaultValues.additionalNotesLength,
+      maxLines: 3,
+      decoration: _flatFieldDecorationV2(l10n.createInvoicePrivateNotesLabel,
+          hint: l10n.createInvoicePrivateNotesHint,
+          prefixIcon: const Icon(Icons.lock_outline, size: 18),
+          suffixIcon: IconButton(
+            icon: const Icon(Icons.open_in_full, size: 18),
+            tooltip: l10n.tooltipEditInLargerView,
+            onPressed: () => _editLongTextDialogV2(
+              title: l10n.invoiceDetailsPrivateNotesTitle,
+              controller: privateNotesController,
+              maxLength: DefaultValues.additionalNotesLength,
+            ),
+          )),
+    );
+  }
+
+  // Writes the staged photos once the invoice row exists, then reloads them
+  // so a second save (drafts stay on screen) doesn't add them again. A
+  // failure here leaves the saved invoice alone and just reports it.
+  Future<void> _syncAttachments(String invoiceId) async {
+    try {
+      await InvoiceAttachmentService.sync(invoiceId, _attachmentDrafts);
+      _attachmentDrafts = await InvoiceAttachmentService.draftsFor(invoiceId);
+    } catch (e) {
+      if (mounted) {
+        AppError.show(context,
+            AppLocalizations.of(context)!.attachmentsSaveFailedMessage('$e'));
+      }
+    }
+  }
+
+  Widget _attachmentsRowV2() {
+    final l10n = AppLocalizations.of(context)!;
+    final publicCount = _attachmentDrafts.where((d) => d.isPublic).length;
+    final privateCount = _attachmentDrafts.length - publicCount;
+    return OutlinedButton.icon(
+      style: OutlinedButton.styleFrom(
+        alignment: Alignment.centerLeft,
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+        shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(AppBorderRadius.xsmall)),
+      ),
+      icon: const Icon(Icons.attach_file, size: 18),
+      label: Row(
+        children: [
+          Text(l10n.attachmentsTitle),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              _attachmentDrafts.isEmpty
+                  ? l10n.attachmentsNone
+                  : l10n.attachmentsSummary(publicCount, privateCount),
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                  color: Theme.of(context).colorScheme.onSurfaceVariant),
+            ),
+          ),
+          Text(l10n.attachmentsManage),
+        ],
+      ),
+      onPressed: () async {
+        final result = await InvoiceAttachmentsScreen.open(context,
+            document: currentInvoiceNumber.isNotEmpty
+                ? '$invoiceType #$currentInvoiceNumber'
+                : invoiceType,
+            initial: _attachmentDrafts);
+        if (result != null && mounted) {
+          setState(() => _attachmentDrafts = result);
+        }
+      },
     );
   }
 
@@ -7184,6 +7314,10 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
                           const SizedBox(height: 18),
                           _sectionLabelV2('Notes'),
                           _notesFieldV2(),
+                          const SizedBox(height: 10),
+                          _privateNotesFieldV2(),
+                          const SizedBox(height: 10),
+                          _attachmentsRowV2(),
                           const SizedBox(height: 18),
                           _sectionLabelV2('Tax settings'),
                           _lockedV2(_taxSettingsSectionV2()),
@@ -7433,6 +7567,10 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
               const SizedBox(height: 18),
               _sectionLabelV2('Notes'),
               _notesFieldV2(),
+              const SizedBox(height: 10),
+              _privateNotesFieldV2(),
+              const SizedBox(height: 10),
+              _attachmentsRowV2(),
               const SizedBox(height: 18),
               _sectionLabelV2('Tax settings'),
               _lockedV2(_taxSettingsSectionV2()),

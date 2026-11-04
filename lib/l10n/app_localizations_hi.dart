@@ -1050,6 +1050,150 @@ class AppLocalizationsHi extends AppLocalizations {
   String get createInvoiceNotesTitle => 'नोट्स';
 
   @override
+  String get createInvoicePrivateNotesLabel => 'निजी नोट्स (केवल आपको दिखेंगे)';
+
+  @override
+  String get createInvoicePrivateNotesHint =>
+      'इनवॉइस या रसीद पर कभी प्रिंट नहीं होते';
+
+  @override
+  String get invoiceDetailsPrivateNotesTitle => 'निजी नोट्स';
+
+  @override
+  String get invoiceCsvColumnsDialogTitle => 'CSV कॉलम चुनें';
+
+  @override
+  String get invoiceCsvColumnsSelectAll => 'सभी चुनें';
+
+  @override
+  String get invoiceCsvColumnsPrivateHint =>
+      'केवल आपको दिखते हैं — फ़ाइल साझा करते समय इसे न चुनें';
+
+  @override
+  String get attachmentsTitle => 'अटैचमेंट';
+
+  @override
+  String get backupPhotosNote =>
+      'डेटाबेस बैकअप में इनवॉइस की फ़ोटो शामिल होती हैं। JSON एक्सपोर्ट में केवल डेटा होता है — फ़ोटो नहीं।';
+
+  @override
+  String get pdfSettingsAttachmentLayoutLabel => 'अटैच की गई फ़ोटो का लेआउट';
+
+  @override
+  String get pdfSettingsAttachmentLayoutGrid => 'ग्रिड';
+
+  @override
+  String get pdfSettingsAttachmentLayoutList => 'सूची';
+
+  @override
+  String get pdfSettingsAttachmentLayoutHelpText =>
+      'ग्राहक फ़ोटो अटैचमेंट सेक्शन में कैसे प्रिंट हों। सूची में हर पंक्ति में एक फ़ोटो और उसका कैप्शन दिखता है।';
+
+  @override
+  String attachmentsTabCustomer(int count, int limit) {
+    return 'ग्राहक ($count/$limit)';
+  }
+
+  @override
+  String attachmentsTabPrivate(int count) {
+    return 'निजी ($count)';
+  }
+
+  @override
+  String get attachmentsCustomerSubtitle => 'इनवॉइस PDF पर दिखाई जाती हैं';
+
+  @override
+  String get attachmentsPrivateSubtitle =>
+      'केवल आपको दिखती हैं — इनवॉइस पर कभी नहीं';
+
+  @override
+  String get attachmentsEmptyHint =>
+      'अभी कोई फ़ोटो नहीं — जोड़ने के लिए + दबाएँ';
+
+  @override
+  String get attachmentsAddTitle => 'फ़ोटो जोड़ें';
+
+  @override
+  String get attachmentsAddAsLabel => 'इस रूप में जोड़ें';
+
+  @override
+  String get attachmentsAddAsCustomer => 'ग्राहक को दिखाएँ';
+
+  @override
+  String get attachmentsAddAsPrivate => 'निजी';
+
+  @override
+  String attachmentsCustomerFullHint(int limit) {
+    return '$limit/$limit भर गया';
+  }
+
+  @override
+  String get attachmentsTakePhoto => 'फ़ोटो लें';
+
+  @override
+  String get attachmentsChooseGallery => 'गैलरी से चुनें';
+
+  @override
+  String get attachmentsChooseFiles => 'फ़ाइलें चुनें';
+
+  @override
+  String get attachmentsCaptionHint => 'कैप्शन जोड़ें';
+
+  @override
+  String get attachmentsMoveToPrivate => 'निजी में ले जाएँ';
+
+  @override
+  String get attachmentsMoveToCustomer => 'ग्राहक में ले जाएँ';
+
+  @override
+  String get attachmentsMoveLeft => 'बाएँ ले जाएँ';
+
+  @override
+  String get attachmentsMoveRight => 'दाएँ ले जाएँ';
+
+  @override
+  String get attachmentsDeleteTitle => 'यह फ़ोटो हटाएँ?';
+
+  @override
+  String attachmentsLimitReachedMessage(int limit, int skipped) {
+    return 'केवल $limit ग्राहक फ़ोटो की अनुमति है — $skipped नहीं जोड़ी गईं';
+  }
+
+  @override
+  String get attachmentsDiscardTitle => 'अटैचमेंट के बदलाव छोड़ दें?';
+
+  @override
+  String get attachmentsDiscardBody =>
+      'यहाँ जोड़ी, हटाई या बदली गई फ़ोटो खो जाएँगी।';
+
+  @override
+  String get attachmentsMissingFile => 'फ़ाइल नहीं मिली';
+
+  @override
+  String attachmentsSaveFailedMessage(String error) {
+    return 'अटैचमेंट सहेजे नहीं जा सके: $error';
+  }
+
+  @override
+  String attachmentsSummary(int publicCount, int privateCount) {
+    return '$publicCount ग्राहक · $privateCount निजी';
+  }
+
+  @override
+  String get attachmentsNone => 'कोई फ़ोटो नहीं';
+
+  @override
+  String get attachmentsManage => 'प्रबंधित करें';
+
+  @override
+  String get attachmentsDone => 'हो गया';
+
+  @override
+  String attachmentsMenuLabel(int count) {
+    return 'अटैचमेंट ($count)';
+  }
+
+  @override
   String get createInvoiceHideNumberInPdfLabel => 'PDF में इनवॉइस नंबर छिपाएं';
 
   @override

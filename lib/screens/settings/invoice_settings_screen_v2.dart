@@ -320,7 +320,7 @@ class _InvoiceSettingsScreenV2State
         settingsRepo.setSetting(
             SettingKey.quantityLabel, quantityLabelController.text.trim()),
         settingsRepo.setSetting(SettingKey.defaultTaxRate,
-            taxRateVal.clamp(0, 100).toStringAsFixed(1)),
+            AppFormatters.formatTaxRate(taxRateVal.clamp(0, 100))),
         settingsRepo.setShowQuantity(_showQuantity),
         settingsRepo.setShowDiscount(_showDiscount),
         settingsRepo.setShowTypeTag(_showTypeTag),

@@ -40,7 +40,7 @@ Product _prod({
       price: price,
       stock: stock,
       hsncode: '',
-      tax_rate: taxRate,
+      tax_rate: taxRate.toDouble(),
       unlimitedStock: unlimited,
     );
 

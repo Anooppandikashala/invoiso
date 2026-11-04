@@ -72,6 +72,8 @@ class PdfGenerationSettings {
   final Map<String, bool> metadataColumns;
   // Optional customer fields (Ship To, age/DOB/gender, custom fields).
   final CustomerFieldSettings customerFields;
+  // Attachments page(s): one photo per row with its caption, else a grid.
+  final bool attachmentsAsList;
   // Multiplier for every font in non-thermal templates (PdfFontSize.scale).
   final double fontSizeScale;
   // Resolved per-section scales (section preset, else fontSizeScale).
@@ -144,6 +146,7 @@ class PdfGenerationSettings {
     this.landscape = false,
     this.metadataColumns = const {},
     this.customerFields = const CustomerFieldSettings(),
+    this.attachmentsAsList = false,
     this.fontSizeScale = 1.0,
     this.companyNameScale = 1.0,
     this.docTitleScale = 1.0,

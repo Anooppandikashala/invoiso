@@ -1018,6 +1018,144 @@ class AppLocalizationsZh extends AppLocalizations {
   String get createInvoiceNotesTitle => '备注';
 
   @override
+  String get createInvoicePrivateNotesLabel => '私人备注（仅您可见）';
+
+  @override
+  String get createInvoicePrivateNotesHint => '绝不会打印在发票或收据上';
+
+  @override
+  String get invoiceDetailsPrivateNotesTitle => '私人备注';
+
+  @override
+  String get invoiceCsvColumnsDialogTitle => '选择 CSV 列';
+
+  @override
+  String get invoiceCsvColumnsSelectAll => '全选';
+
+  @override
+  String get invoiceCsvColumnsPrivateHint => '仅您可见——分享文件时请取消勾选';
+
+  @override
+  String get attachmentsTitle => '附件';
+
+  @override
+  String get backupPhotosNote => '数据库备份包含发票照片。JSON 导出仅包含数据——不含照片。';
+
+  @override
+  String get pdfSettingsAttachmentLayoutLabel => '附件照片布局';
+
+  @override
+  String get pdfSettingsAttachmentLayoutGrid => '网格';
+
+  @override
+  String get pdfSettingsAttachmentLayoutList => '列表';
+
+  @override
+  String get pdfSettingsAttachmentLayoutHelpText =>
+      '客户照片在附件部分的打印方式。列表模式每行显示一张照片及其说明。';
+
+  @override
+  String attachmentsTabCustomer(int count, int limit) {
+    return '客户 ($count/$limit)';
+  }
+
+  @override
+  String attachmentsTabPrivate(int count) {
+    return '私人 ($count)';
+  }
+
+  @override
+  String get attachmentsCustomerSubtitle => '显示在发票 PDF 上';
+
+  @override
+  String get attachmentsPrivateSubtitle => '仅您可见——绝不会出现在发票上';
+
+  @override
+  String get attachmentsEmptyHint => '暂无照片——点击 + 添加';
+
+  @override
+  String get attachmentsAddTitle => '添加照片';
+
+  @override
+  String get attachmentsAddAsLabel => '添加为';
+
+  @override
+  String get attachmentsAddAsCustomer => '客户可见';
+
+  @override
+  String get attachmentsAddAsPrivate => '私人';
+
+  @override
+  String attachmentsCustomerFullHint(int limit) {
+    return '$limit/$limit 已满';
+  }
+
+  @override
+  String get attachmentsTakePhoto => '拍照';
+
+  @override
+  String get attachmentsChooseGallery => '从相册选择';
+
+  @override
+  String get attachmentsChooseFiles => '选择文件';
+
+  @override
+  String get attachmentsCaptionHint => '添加说明';
+
+  @override
+  String get attachmentsMoveToPrivate => '移至私人';
+
+  @override
+  String get attachmentsMoveToCustomer => '移至客户';
+
+  @override
+  String get attachmentsMoveLeft => '左移';
+
+  @override
+  String get attachmentsMoveRight => '右移';
+
+  @override
+  String get attachmentsDeleteTitle => '删除这张照片？';
+
+  @override
+  String attachmentsLimitReachedMessage(int limit, int skipped) {
+    return '客户照片最多 $limit 张——$skipped 张未添加';
+  }
+
+  @override
+  String get attachmentsDiscardTitle => '放弃附件更改？';
+
+  @override
+  String get attachmentsDiscardBody => '在此添加、删除或编辑的照片将会丢失。';
+
+  @override
+  String get attachmentsMissingFile => '文件丢失';
+
+  @override
+  String attachmentsSaveFailedMessage(String error) {
+    return '无法保存附件：$error';
+  }
+
+  @override
+  String attachmentsSummary(int publicCount, int privateCount) {
+    return '客户 $publicCount · 私人 $privateCount';
+  }
+
+  @override
+  String get attachmentsNone => '无照片';
+
+  @override
+  String get attachmentsManage => '管理';
+
+  @override
+  String get attachmentsDone => '完成';
+
+  @override
+  String attachmentsMenuLabel(int count) {
+    return '附件 ($count)';
+  }
+
+  @override
   String get createInvoiceHideNumberInPdfLabel => '在 PDF 中隐藏发票编号';
 
   @override

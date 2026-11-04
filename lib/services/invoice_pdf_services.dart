@@ -77,7 +77,9 @@ class InvoicePdfServices {
       void Function(Invoice note)? onVoidNote,
       Map<String, List<Refund>> refundsByNote = const {},
       void Function(Invoice note, Refund refund, String action)?
-          onVoucherAction}) async {
+          onVoucherAction,
+      int attachmentCount = 0,
+      VoidCallback? onAttachments}) async {
     await PDFService.attachReturnInfo(invoice);
     if (!context.mounted) return;
     showDialog(
@@ -223,10 +225,47 @@ class InvoicePdfServices {
                     style: TextStyle(fontWeight: FontWeight.bold)),
                 Text(invoice.notes!),
               ],
+              if (invoice.privateNotes?.isNotEmpty ?? false) ...[
+                const SizedBox(height: 16),
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(children: [
+                        const Icon(Icons.lock_outline, size: 16),
+                        const SizedBox(width: 6),
+                        Text(
+                            AppLocalizations.of(context)!
+                                .invoiceDetailsPrivateNotesTitle,
+                            style: const TextStyle(fontWeight: FontWeight.bold)),
+                      ]),
+                      const SizedBox(height: 4),
+                      Text(invoice.privateNotes!),
+                    ],
+                  ),
+                ),
+              ],
             ],
           ),
         ),
         actions: [
+          if (onAttachments != null)
+            TextButton.icon(
+                icon: const Icon(Icons.attach_file, size: 18),
+                // Close first: the screen saves straight away, and the list
+                // refreshes its counts — the dialog would show stale ones.
+                onPressed: () {
+                  Navigator.pop(context);
+                  onAttachments();
+                },
+                label: Text(AppLocalizations.of(context)!
+                    .attachmentsMenuLabel(attachmentCount))),
           TextButton(
               onPressed: () => Navigator.pop(context),
               child: const Text('Close')),
@@ -354,7 +393,7 @@ class InvoicePdfServices {
   static String _taxLabel(Invoice invoice) {
     switch (invoice.taxMode) {
       case TaxMode.global:
-        return 'Tax (${(invoice.taxRate * 100).toStringAsFixed(0)}%):';
+        return 'Tax (${AppFormatters.formatTaxRate(invoice.taxRate * 100)}%):';
       case TaxMode.perItem:
         return 'Tax (per item):';
       case TaxMode.none:

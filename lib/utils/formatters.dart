@@ -45,6 +45,14 @@ class AppFormatters {
 
   static String formatAmount(double amount, String symbol) =>
       '$symbol ${_numberFormat.format(amount)}';
+
+  /// Tax rate percent for display: up to 2 decimals, trailing zeros
+  /// trimmed — 18 → "18", 8.5 → "8.5", 10.25 → "10.25".
+  static String formatTaxRate(num rate) =>
+      rate.toStringAsFixed(2).replaceFirst(RegExp(r'\.?0+$'), '');
+
+  /// Tax rate input: 0–100 with up to 2 decimals.
+  static final taxRateInputPattern = RegExp(r'^\d{0,3}(\.\d{0,2})?$');
 }
 
 /// Displayed amounts per the Number format setting (Settings → Invoice

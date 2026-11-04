@@ -352,7 +352,7 @@ class ThermalPrinterService {
 
       if (useTable) {
         line(singleLineRow('${i + 1}', item.product.name, qty, rate,
-            showItemTax ? '${item.product.tax_rate}%' : null, total));
+            showItemTax ? '${AppFormatters.formatTaxRate(item.product.tax_rate)}%' : null, total));
       } else {
         line(settings.showSlNo
             ? '${i + 1} ${item.product.name}'
@@ -361,7 +361,7 @@ class ThermalPrinterService {
           if (settings.showQuantity) '$qtyLabel:$qty',
           'Rate:$rate',
         ];
-        if (showItemTax) detailParts.add('${item.product.tax_rate}%');
+        if (showItemTax) detailParts.add('${AppFormatters.formatTaxRate(item.product.tax_rate)}%');
         detailParts.add(total);
         line('  ${detailParts.join('  ')}');
       }

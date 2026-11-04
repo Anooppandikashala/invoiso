@@ -1326,7 +1326,7 @@ class _BillDetailDialogState extends ConsumerState<_BillDetailDialog> {
                     Expanded(flex: 3, child: Text(item.productName, style: const TextStyle(fontSize: 13))),
                     Expanded(child: Text(item.quantity.toString(), style: const TextStyle(fontSize: 13))),
                     Expanded(child: Text(AmountFormat.money(item.costPerUnit), style: const TextStyle(fontSize: 13))),
-                    Expanded(child: Text(item.taxRate.toStringAsFixed(0), style: const TextStyle(fontSize: 13))),
+                    Expanded(child: Text(AppFormatters.formatTaxRate(item.taxRate), style: const TextStyle(fontSize: 13))),
                     Expanded(child: Text('$sym ${AmountFormat.money(item.total)}', style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500))),
                   ],
                 ),
@@ -1703,7 +1703,7 @@ class _PurchaseBillFormScreenState extends ConsumerState<_PurchaseBillFormScreen
     final descController = TextEditingController(text: item.productDescription);
     final quantityController = TextEditingController(text: item.quantity.toString());
     final costController = TextEditingController(text: item.costPerUnit.toString());
-    final taxController = TextEditingController(text: item.taxRate.toString());
+    final taxController = TextEditingController(text: AppFormatters.formatTaxRate(item.taxRate));
     final formKey = GlobalKey<FormState>();
     final isCustom = item.productId == null;
     bool costIncludesTax = item.costIncludesTax;
@@ -2056,7 +2056,7 @@ class _PurchaseBillFormScreenState extends ConsumerState<_PurchaseBillFormScreen
     final quantityController = TextEditingController(text: '1');
     final costController = TextEditingController(
         text: (product.purchasePrice > 0 ? product.purchasePrice : product.price).toStringAsFixed(2));
-    final taxController = TextEditingController(text: product.tax_rate.toString());
+    final taxController = TextEditingController(text: AppFormatters.formatTaxRate(product.tax_rate));
     final formKey = GlobalKey<FormState>();
     bool costIncludesTax = false;
 
@@ -2756,7 +2756,7 @@ class _PurchaseBillFormScreenState extends ConsumerState<_PurchaseBillFormScreen
                                     .toStringAsFixed(item.taxRate == item.taxRate.roundToDouble() ? 0 : 1)),
                                 color: Colors.teal[700])
                             : _buildItemDetail(l10n.fieldTaxLabel,
-                                '${item.taxRate.toStringAsFixed(item.taxRate == item.taxRate.roundToDouble() ? 0 : 1)}%'),
+                                '${AppFormatters.formatTaxRate(item.taxRate)}%'),
                         if (item.costIncludesTax)
                           _buildItemDetail(l10n.purchaseBillMgmtNetCostDetailLabel,
                               '$_currencySymbol${AmountFormat.money(item.netCostPerUnit)}',

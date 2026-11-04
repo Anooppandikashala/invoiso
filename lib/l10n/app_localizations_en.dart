@@ -1050,6 +1050,150 @@ class AppLocalizationsEn extends AppLocalizations {
   String get createInvoiceNotesTitle => 'Notes';
 
   @override
+  String get createInvoicePrivateNotesLabel =>
+      'Private notes (only visible to you)';
+
+  @override
+  String get createInvoicePrivateNotesHint =>
+      'Never printed on the invoice or receipt';
+
+  @override
+  String get invoiceDetailsPrivateNotesTitle => 'Private notes';
+
+  @override
+  String get invoiceCsvColumnsDialogTitle => 'Choose CSV columns';
+
+  @override
+  String get invoiceCsvColumnsSelectAll => 'Select all';
+
+  @override
+  String get invoiceCsvColumnsPrivateHint =>
+      'Only visible to you — leave off when sharing the file';
+
+  @override
+  String get attachmentsTitle => 'Attachments';
+
+  @override
+  String get backupPhotosNote =>
+      'Database backups include invoice photos. JSON exports contain data only — photos are not included.';
+
+  @override
+  String get pdfSettingsAttachmentLayoutLabel => 'Attachment photos layout';
+
+  @override
+  String get pdfSettingsAttachmentLayoutGrid => 'Grid';
+
+  @override
+  String get pdfSettingsAttachmentLayoutList => 'List';
+
+  @override
+  String get pdfSettingsAttachmentLayoutHelpText =>
+      'How customer photos print on the Attachments page. List shows one photo per row with its caption.';
+
+  @override
+  String attachmentsTabCustomer(int count, int limit) {
+    return 'Customer ($count/$limit)';
+  }
+
+  @override
+  String attachmentsTabPrivate(int count) {
+    return 'Private ($count)';
+  }
+
+  @override
+  String get attachmentsCustomerSubtitle => 'Shown on the invoice PDF';
+
+  @override
+  String get attachmentsPrivateSubtitle =>
+      'Only visible to you — never on the invoice';
+
+  @override
+  String get attachmentsEmptyHint => 'No photos yet — tap + to add';
+
+  @override
+  String get attachmentsAddTitle => 'Add photos';
+
+  @override
+  String get attachmentsAddAsLabel => 'Add as';
+
+  @override
+  String get attachmentsAddAsCustomer => 'Shown to customer';
+
+  @override
+  String get attachmentsAddAsPrivate => 'Private';
+
+  @override
+  String attachmentsCustomerFullHint(int limit) {
+    return '$limit/$limit full';
+  }
+
+  @override
+  String get attachmentsTakePhoto => 'Take photo';
+
+  @override
+  String get attachmentsChooseGallery => 'Choose from gallery';
+
+  @override
+  String get attachmentsChooseFiles => 'Choose files';
+
+  @override
+  String get attachmentsCaptionHint => 'Add caption';
+
+  @override
+  String get attachmentsMoveToPrivate => 'Move to Private';
+
+  @override
+  String get attachmentsMoveToCustomer => 'Move to Customer';
+
+  @override
+  String get attachmentsMoveLeft => 'Move left';
+
+  @override
+  String get attachmentsMoveRight => 'Move right';
+
+  @override
+  String get attachmentsDeleteTitle => 'Delete this photo?';
+
+  @override
+  String attachmentsLimitReachedMessage(int limit, int skipped) {
+    return 'Only $limit customer photos allowed — $skipped not added';
+  }
+
+  @override
+  String get attachmentsDiscardTitle => 'Discard attachment changes?';
+
+  @override
+  String get attachmentsDiscardBody =>
+      'Photos added, removed or edited here will be lost.';
+
+  @override
+  String get attachmentsMissingFile => 'File missing';
+
+  @override
+  String attachmentsSaveFailedMessage(String error) {
+    return 'Couldn\'t save attachments: $error';
+  }
+
+  @override
+  String attachmentsSummary(int publicCount, int privateCount) {
+    return '$publicCount customer · $privateCount private';
+  }
+
+  @override
+  String get attachmentsNone => 'No photos';
+
+  @override
+  String get attachmentsManage => 'Manage';
+
+  @override
+  String get attachmentsDone => 'Done';
+
+  @override
+  String attachmentsMenuLabel(int count) {
+    return 'Attachments ($count)';
+  }
+
+  @override
   String get createInvoiceHideNumberInPdfLabel => 'Hide invoice number in PDF';
 
   @override

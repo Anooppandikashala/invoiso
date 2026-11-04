@@ -3,6 +3,8 @@ import 'dart:convert';
 import 'package:invoiso/common/app_config.dart';
 import 'package:invoiso/database/company_registry_service.dart';
 import 'package:invoiso/database/database_helper.dart';
+import 'package:invoiso/database/invoice_attachment_service.dart';
+import 'package:archive/archive_io.dart';
 import 'package:invoiso/utils/fs_utils.dart';
 import 'package:path/path.dart';
 import 'package:sqflite/sqflite.dart';
@@ -18,6 +20,9 @@ import 'package:invoiso/models/backup_results.dart';
 class BackupManager {
   static const String _backupExtension = '.invoicedb';
   static const String _jsonExtension = '.json';
+  // Inside a zip .invoicedb: the database, plus attachments/<invoice>/<file>.
+  static const String _zipDbName = 'invoice.db';
+  static const String _zipAttachmentsDir = 'attachments';
 
   // Tables excluded from JSON exports (contain sensitive data).
   static const Set<String> _excludedFromJsonExport = {'users'};
@@ -32,6 +37,7 @@ class BackupManager {
     'invoices',
     'invoice_items',
     'invoice_payments',
+    'invoice_attachments',
     'customer_credits',
     'refunds',
     'suppliers',
@@ -90,9 +96,73 @@ class BackupManager {
         : await _getBackupDirectory(companyId);
     final backupPath = join(backupDir, '$backupName$_backupExtension');
 
-    await File(dbPath).copy(backupPath);
+    final photos = await _attachmentFiles();
+    if (photos.isEmpty) {
+      // No photos: a bare SQLite file, exactly as before — older app
+      // versions can still restore it.
+      await File(dbPath).copy(backupPath);
+      return backupPath;
+    }
 
+    // With photos: a zip (same .invoicedb extension) holding the database and
+    // this company's attachments folder. Told apart from a bare SQLite file
+    // by its first bytes (_isZip).
+    final encoder = ZipFileEncoder();
+    encoder.create(backupPath);
+    await encoder.addFile(File(dbPath), _zipDbName);
+    final root = InvoiceAttachmentService.companyDir;
+    for (final f in photos) {
+      await encoder.addFile(
+          f, posix.joinAll([_zipAttachmentsDir, ...split(relative(f.path, from: root))]));
+    }
+    await encoder.close();
     return backupPath;
+  }
+
+  // Every file in the active company's attachments folder.
+  Future<List<File>> _attachmentFiles() async {
+    final dir = Directory(InvoiceAttachmentService.companyDir);
+    if (!await dir.exists()) return [];
+    return dir.list(recursive: true).where((e) => e is File).cast<File>().toList();
+  }
+
+  // A zip starts with "PK"; a bare SQLite backup with "SQLite format 3".
+  Future<bool> _isZip(String path) async {
+    final raf = await File(path).open();
+    try {
+      final header = await raf.read(2);
+      return header.length == 2 && header[0] == 0x50 && header[1] == 0x4B;
+    } finally {
+      await raf.close();
+    }
+  }
+
+  // Extracts a zip backup into [outDir]: only the database and files under
+  // attachments/ — anything else, or any path escaping [outDir] ("zip
+  // slip"), is ignored. Returns the extracted database file.
+  Future<File> _extractZip(String zipPath, String outDir) async {
+    final input = InputFileStream(zipPath);
+    try {
+      final archive = ZipDecoder().decodeStream(input);
+      for (final entry in archive.files) {
+        if (!entry.isFile) continue;
+        final name = entry.name;
+        if (name != _zipDbName && !name.startsWith('$_zipAttachmentsDir/')) continue;
+        final target = normalize(join(outDir, joinAll(posix.split(name))));
+        if (!isWithin(outDir, target)) continue;
+        await Directory(dirname(target)).create(recursive: true);
+        final out = OutputFileStream(target);
+        entry.writeContent(out);
+        await out.close();
+      }
+    } finally {
+      await input.close();
+    }
+    final db = File(join(outDir, _zipDbName));
+    if (!await db.exists()) {
+      throw const FormatException('Backup archive has no database');
+    }
+    return db;
   }
 
   // Create JSON export backup (excludes sensitive tables such as 'users')
@@ -191,6 +261,29 @@ class BackupManager {
   // Takes a safety copy first, then replaces the file and re-initializes the
   // singleton so all subsequent DB calls get a live connection.
   Future<void> _restoreFromDatabaseBackup(String backupPath) async {
+    final dbPath = DatabaseHelper.path!;
+    // A zip backup is unpacked next to the database (same disk, so its
+    // attachments folder can simply be renamed into place).
+    final stamp = DateTime.now().millisecondsSinceEpoch;
+    final unpackDir = join(dirname(dbPath), '.restore_$stamp');
+    try {
+      final isZip = await _isZip(backupPath);
+      final sourceDb =
+          isZip ? (await _extractZip(backupPath, unpackDir)).path : backupPath;
+      await _restoreDatabaseFile(sourceDb,
+          attachmentsFrom: isZip ? join(unpackDir, _zipAttachmentsDir) : null);
+    } finally {
+      final unpacked = Directory(unpackDir);
+      if (await unpacked.exists()) await unpacked.delete(recursive: true);
+    }
+  }
+
+  // Swaps in [backupPath] as the live database and the photos in
+  // [attachmentsFrom] (none for an old / photo-less backup) as this
+  // company's attachments folder. Both current copies are kept aside until
+  // the new database opens, and put back if anything fails.
+  Future<void> _restoreDatabaseFile(String backupPath,
+      {String? attachmentsFrom}) async {
     // Reopening a newer file would silently stamp it down to our version
     // (no onDowngrade) and run the app on a schema it doesn't know.
     final backupDb =
@@ -206,11 +299,15 @@ class BackupManager {
 
     final dbPath = DatabaseHelper.path!;
     // Timestamped so a copy kept by an earlier failed restore isn't overwritten.
-    final safetyPath =
-        '$dbPath.pre_restore_backup_${DateTime.now().millisecondsSinceEpoch}';
+    final stamp = DateTime.now().millisecondsSinceEpoch;
+    final safetyPath = '$dbPath.pre_restore_backup_$stamp';
 
     // Safety copy of current database
     await File(dbPath).copy(safetyPath);
+    // Current photos belong to the database being replaced: set them aside.
+    final photosDir = Directory(InvoiceAttachmentService.companyDir);
+    final photosSafety = Directory('${photosDir.path}.pre_restore_$stamp');
+    if (await photosDir.exists()) await photosDir.rename(photosSafety.path);
 
     var keepSafetyCopy = false;
     try {
@@ -219,6 +316,10 @@ class BackupManager {
 
       // Replace the database file on disk
       await File(backupPath).copy(dbPath);
+      if (attachmentsFrom != null && await Directory(attachmentsFrom).exists()) {
+        await photosDir.parent.create(recursive: true);
+        await Directory(attachmentsFrom).rename(photosDir.path);
+      }
 
       // Re-initialize through the singleton — runs migrations if needed
       await DatabaseHelper().reinitialize();
@@ -227,6 +328,8 @@ class BackupManager {
       try {
         await DatabaseHelper().close();
         await File(safetyPath).copy(dbPath);
+        if (await photosDir.exists()) await photosDir.delete(recursive: true);
+        if (await photosSafety.exists()) await photosSafety.rename(photosDir.path);
         await DatabaseHelper().reinitialize();
       } catch (rollbackError) {
         // Rollback failed — the safety copy is now the only good copy of the
@@ -243,6 +346,7 @@ class BackupManager {
       if (!keepSafetyCopy) {
         final safetyFile = File(safetyPath);
         if (await safetyFile.exists()) await safetyFile.delete();
+        if (await photosSafety.exists()) await photosSafety.delete(recursive: true);
       }
     }
   }
@@ -498,6 +602,18 @@ class BackupManager {
       final extension = backupPath.split('.').last;
 
       if (extension == _backupExtension.replaceAll('.', '')) {
+        if (await _isZip(backupPath)) {
+          final tempDir = await Directory.systemTemp.createTemp('invoiso_verify_');
+          try {
+            final db = await _extractZip(backupPath, tempDir.path);
+            final tempDb = await openDatabase(db.path,
+                readOnly: true, singleInstance: false);
+            await tempDb.close();
+          } finally {
+            await tempDir.delete(recursive: true);
+          }
+          return true;
+        }
         final tempDb = await openDatabase(backupPath, readOnly: true);
         await tempDb.close();
         return true;

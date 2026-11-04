@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
+import 'package:invoiso/services/pdf/pdf_attachments_page.dart';
 import 'package:invoiso/common/common.dart';
 import 'package:invoiso/common/constants.dart';
 import 'package:invoiso/models/company_info.dart';
@@ -40,6 +41,7 @@ pw.MultiPage buildMinimalTemplate(
   PdfPageFormat pageFormat = PdfPageFormat.a4,
   Map<String, bool> metadataColumns = const {},
   double fontSizeScale = 1.0,
+  bool attachmentsAsList = false,
   // Per-section scales; each replaces fontSizeScale for its section.
   double companyNameScale = 1.0,
   double docTitleScale = 1.0,
@@ -461,6 +463,11 @@ pw.MultiPage buildMinimalTemplate(
                 fontSize: PdfLayout.thankYouNoteFontSize * fontSizeScale,
                 fontWeight: pw.FontWeight.bold)),
       ),
+      // ── Customer photos (empty when none) ──
+      ...buildAttachmentsSection(invoice,
+          pageFormat: pageFormat,
+          asList: attachmentsAsList,
+          fontSizeScale: fontSizeScale),
     ],
   );
 }
