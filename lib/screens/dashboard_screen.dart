@@ -1827,7 +1827,11 @@ class _DashboardHomeState extends ConsumerState<DashboardHome> {
           _buildLayoutToggle(),
           IconButton(
             icon: const Icon(Icons.refresh),
-            onPressed: _loadDashboardData,
+            onPressed: () async {
+              // Editions that cache dashboard data (cloud) drop it first.
+              await ref.read(appEditionConfigProvider).refreshCaches?.call();
+              _loadDashboardData();
+            },
             tooltip: AppLocalizations.of(context)!.actionRefresh,
           ),
           const SizedBox(width: 8),

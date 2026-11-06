@@ -1,5 +1,4 @@
 import 'dart:convert';
-import 'package:invoiso/database/invoice_attachment_service.dart';
 import 'package:invoiso/models/invoice_attachment.dart';
 import 'package:invoiso/services/backend_services.dart';
 import 'dart:io';
@@ -733,12 +732,10 @@ class PDFService {
   /// PDF. Missing files are skipped. Call next to [attachReturnInfo].
   static Future<void> attachPdfAttachments(Invoice invoice) async {
     final photos = <PdfAttachmentImage>[];
-    for (final a in await InvoiceAttachmentService.listFor(invoice.id)) {
+    for (final a in await BackendServices.attachments.listFor(invoice.id)) {
       if (!a.isPublic) continue;
-      final f = File(InvoiceAttachmentService.filePath(a));
-      if (await f.exists()) {
-        photos.add((bytes: await f.readAsBytes(), caption: a.caption));
-      }
+      final bytes = await BackendServices.attachments.readBytes(a);
+      if (bytes != null) photos.add((bytes: bytes, caption: a.caption));
     }
     invoice.pdfAttachments = photos;
   }

@@ -24,6 +24,10 @@ class AppEditionConfig {
   final WidgetBuilder? extraSettingsTab;
   final IconData? extraSettingsTabIcon;
   final String? extraSettingsTabLabel;
+  /// Optional: drop the edition's cached data so screens re-read it from the
+  /// backend (cloud caches settings / company info). When set, Settings shows
+  /// a refresh button that calls it and reloads the open tab.
+  final Future<void> Function()? refreshCaches;
 
   const AppEditionConfig({
     required this.name,
@@ -40,6 +44,7 @@ class AppEditionConfig {
     this.extraSettingsTab,
     this.extraSettingsTabIcon,
     this.extraSettingsTabLabel,
+    this.refreshCaches,
   });
 }
 

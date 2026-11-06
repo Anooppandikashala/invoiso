@@ -10,6 +10,7 @@ import 'package:invoiso/l10n/app_localizations.dart';
 import 'package:invoiso/models/invoice.dart';
 import 'package:invoiso/models/invoice_attachment.dart';
 import 'package:invoiso/utils/error_handler.dart';
+import 'package:invoiso/services/backend_services.dart';
 
 /// Customer / Private photo tabs for one invoice. Edits a copy of the drafts
 /// it is given and returns them on Done (null on back / discard) — the caller
@@ -32,14 +33,14 @@ class InvoiceAttachmentsScreen extends StatefulWidget {
   /// For an already-saved invoice (invoice list, details dialog): edits and
   /// saves straight away. True when something was saved.
   static Future<bool> editSaved(BuildContext context, Invoice invoice) async {
-    final drafts = await InvoiceAttachmentService.draftsFor(invoice.id);
+    final drafts = await BackendServices.attachments.draftsFor(invoice.id);
     if (!context.mounted) return false;
     final result = await open(context,
         document: '${invoice.type} #${invoice.invoiceNumber ?? invoice.id}',
         initial: drafts);
     if (result == null) return false;
     try {
-      await InvoiceAttachmentService.sync(invoice.id, result);
+      await BackendServices.attachments.sync(invoice.id, result);
       return true;
     } catch (e) {
       if (context.mounted) {

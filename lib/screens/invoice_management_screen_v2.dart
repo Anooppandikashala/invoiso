@@ -15,7 +15,6 @@ import 'package:invoiso/providers/returns_settings_provider.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:invoiso/services/backend_services.dart';
 import 'package:invoiso/services/export_service.dart';
-import 'package:invoiso/database/invoice_attachment_service.dart';
 import 'package:invoiso/screens/invoice_attachments_screen.dart';
 import 'package:invoiso/services/invoice_pdf_services.dart';
 import 'package:invoiso/services/pdf_service.dart';
@@ -218,7 +217,7 @@ class _InvoiceManagementScreenV2State
                   .read(returnRepositoryProvider)
                   .getNotesForInvoices(pageInvoices.map((i) => i.id).toList())
               : <String, List<Invoice>>{};
-      final attachmentCounts = await InvoiceAttachmentService.countsFor(
+      final attachmentCounts = await BackendServices.attachments.countsFor(
           pageInvoices.map((i) => i.id).toList());
       if (mounted) {
         setState(() {
@@ -2104,7 +2103,7 @@ class _InvoiceManagementScreenV2State
 
   Future<void> _editAttachments(Invoice invoice) async {
     if (await InvoiceAttachmentsScreen.editSaved(context, invoice)) {
-      final counts = await InvoiceAttachmentService.countsFor([invoice.id]);
+      final counts = await BackendServices.attachments.countsFor([invoice.id]);
       if (!mounted) return;
       setState(() {
         _attachmentCounts = {..._attachmentCounts}..remove(invoice.id);

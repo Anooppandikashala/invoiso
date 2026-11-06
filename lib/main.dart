@@ -17,6 +17,7 @@ import 'package:invoiso/providers/theme_provider.dart';
 import 'package:invoiso/theme/app_theme.dart';
 import 'package:invoiso/repositories/sqlite/sqlite_company_info_repository.dart';
 import 'package:invoiso/repositories/sqlite/sqlite_installation_repository.dart';
+import 'package:invoiso/repositories/sqlite/sqlite_invoice_attachment_repository.dart';
 import 'package:invoiso/repositories/sqlite/sqlite_invoice_repository.dart';
 import 'package:invoiso/repositories/sqlite/sqlite_payment_repository.dart';
 import 'package:invoiso/repositories/sqlite/sqlite_settings_repository.dart';
@@ -81,7 +82,8 @@ Future<void> main() async {
     companyInfo: SqliteCompanyInfoRepository(),
     invoices: SqliteInvoiceRepository(),
     payments: SqlitePaymentRepository(),
-    installation: SqliteInstallationRepository()
+    installation: SqliteInstallationRepository(),
+    attachments: SqliteInvoiceAttachmentRepository(),
   );
 
   if (Platform.isWindows || Platform.isLinux || Platform.isMacOS) {

@@ -16,7 +16,6 @@ import 'package:invoiso/providers/app_config_provider.dart';
 import 'package:invoiso/providers/repositories.dart';
 import 'package:uuid/uuid.dart';
 import 'package:invoiso/models/customer.dart';
-import 'package:invoiso/database/invoice_attachment_service.dart';
 import 'package:invoiso/models/invoice.dart';
 import 'package:invoiso/models/invoice_attachment.dart';
 import 'package:invoiso/screens/invoice_attachments_screen.dart';
@@ -39,6 +38,7 @@ import 'package:invoiso/widgets/return_l10n.dart';
 import 'package:invoiso/widgets/product_form.dart';
 import 'package:invoiso/models/user.dart';
 import 'package:invoiso/services/refund_receipt_service.dart';
+import 'package:invoiso/services/backend_services.dart';
 
 /// Stamped on a credit note that puts at least one line back into stock.
 const salesReturnTitle = 'Credit Note (Sales Return)';
@@ -485,10 +485,10 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
     final attachments = forceDefault
         ? <AttachmentDraft>[]
         : widget.invoiceToEdit != null
-            ? await InvoiceAttachmentService.draftsFor(widget.invoiceToEdit!.id)
+            ? await BackendServices.attachments.draftsFor(widget.invoiceToEdit!.id)
             : widget.convertFromQuotationId != null
                 ? [
-                    for (final d in await InvoiceAttachmentService.draftsFor(
+                    for (final d in await BackendServices.attachments.draftsFor(
                         widget.convertFromQuotationId!))
                       AttachmentDraft(
                           path: d.path, isPublic: d.isPublic, caption: d.caption),
@@ -6806,8 +6806,8 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
   // failure here leaves the saved invoice alone and just reports it.
   Future<void> _syncAttachments(String invoiceId) async {
     try {
-      await InvoiceAttachmentService.sync(invoiceId, _attachmentDrafts);
-      _attachmentDrafts = await InvoiceAttachmentService.draftsFor(invoiceId);
+      await BackendServices.attachments.sync(invoiceId, _attachmentDrafts);
+      _attachmentDrafts = await BackendServices.attachments.draftsFor(invoiceId);
     } catch (e) {
       if (mounted) {
         AppError.show(context,

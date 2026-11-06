@@ -52,6 +52,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   int _selectedIndex = 0;
   int? _highlightCustomIndex;
   Object? _handledAccessibilityToken;
+  // Bumped by the refresh button: re-keys the open tab so it reloads.
+  int _refreshGeneration = 0;
 
   // Update check state — shared between the NavigationRail badge and
   // AppInfoScreen, so it lives here rather than duplicated in both.
@@ -249,6 +251,17 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           NavigationRail(
             selectedIndex: _selectedIndex,
             labelType: NavigationRailLabelType.all,
+            leading: cfg.refreshCaches == null
+                ? null
+                : IconButton(
+                    icon: const Icon(Icons.refresh),
+                    tooltip: l10n.actionRefresh,
+                    onPressed: () async {
+                      await cfg.refreshCaches!();
+                      if (!mounted) return;
+                      setState(() => _refreshGeneration++);
+                    },
+                  ),
             onDestinationSelected: (int index) {
               setState(() {
                 _selectedIndex = index;
@@ -325,7 +338,12 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             ],
           ),
           const VerticalDivider(thickness: 1, width: 1),
-          Expanded(child: _buildContent(cfg)),
+          Expanded(
+            child: KeyedSubtree(
+              key: ValueKey(_refreshGeneration),
+              child: _buildContent(cfg),
+            ),
+          ),
         ],
       ),
     );
