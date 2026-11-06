@@ -19,6 +19,7 @@ import 'package:invoiso/repositories/sqlite/sqlite_installation_repository.dart'
 import 'package:invoiso/repositories/sqlite/sqlite_invoice_attachment_repository.dart';
 import 'package:invoiso/repositories/sqlite/sqlite_invoice_repository.dart';
 import 'package:invoiso/repositories/sqlite/sqlite_payment_repository.dart';
+import 'package:invoiso/repositories/sqlite/sqlite_company_registry_repository.dart';
 import 'package:invoiso/repositories/sqlite/sqlite_return_repository.dart';
 import 'package:invoiso/repositories/sqlite/sqlite_settings_repository.dart';
 import 'package:invoiso/services/backend_services.dart';
@@ -106,6 +107,7 @@ void main() {
       installation: SqliteInstallationRepository(),
       attachments: SqliteInvoiceAttachmentRepository(),
       returns: SqliteReturnRepository(),
+      companyRegistry: SqliteCompanyRegistryRepository(),
     );
   });
 

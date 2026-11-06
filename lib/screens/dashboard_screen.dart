@@ -23,7 +23,7 @@ import 'package:invoiso/common/invoiso_colors.dart';
 import 'package:invoiso/models/invoice.dart';
 import 'package:invoiso/models/product.dart';
 import 'package:invoiso/common/common.dart';
-import 'package:invoiso/database/company_registry_service.dart';
+import 'package:invoiso/services/backend_services.dart';
 import 'package:invoiso/models/company_profile.dart';
 import 'package:invoiso/screens/settings/company_management_screen.dart';
 import 'package:invoiso/utils/company_switch_navigation.dart';
@@ -137,8 +137,8 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   }
 
   Future<void> _loadCompanies() async {
-    final companies = await CompanyRegistryService.listCompanies();
-    final activeId = await CompanyRegistryService.getActiveCompanyId();
+    final companies = await BackendServices.companyRegistry.listCompanies();
+    final activeId = await BackendServices.companyRegistry.getActiveCompanyId();
     if (!mounted) return;
     setState(() {
       _companies = companies;
@@ -169,14 +169,15 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     if (confirmed != true || !mounted) return;
 
     try {
-      await CompanyRegistryService.switchToCompany(company.id);
+      await BackendServices.companyRegistry.switchToCompany(company.id);
     } catch (e) {
       if (!mounted) return;
       _showErrorDialog(l10n.companyMgmtSwitchErrorMessage(e.toString()));
       return;
     }
     if (!mounted) return;
-    await returnToLoginAfterCompanyChange(context, ref);
+    await returnToLoginAfterCompanyChange(context, ref,
+        currentUser: _currentUser);
   }
 
   void _showErrorDialog(String message) {

@@ -64,8 +64,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   @override
   void initState() {
     super.initState();
-    // Company Info is the default landing tab; Companies (rail position 0
-    // on offline editions) is opened explicitly, not landed on by default.
+    // Company Info is the default landing tab; Companies (rail position 0)
+    // is opened explicitly, not landed on by default.
     _selectedIndex =
         _railOrder(ref.read(appEditionConfigProvider)).indexOf(_idCompanyInfo);
     if (ref.read(appEditionConfigProvider).enableUpdateCheck) {
@@ -89,7 +89,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   List<int> _railOrder(AppEditionConfig cfg) {
     final hasExtraTab = cfg.extraSettingsTab != null;
     return [
-      if (!cfg.isCloud) _idCompanies,
+      _idCompanies,
       _idCompanyInfo,
       if (hasExtraTab) _idExtra,
       if (!cfg.isCloud) _idBackup,
@@ -268,11 +268,10 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               });
             },
             destinations: [
-              if (!cfg.isCloud)
-                NavigationRailDestination(
-                  icon: const Icon(Icons.corporate_fare),
-                  label: Text(l10n.settingsNavCompaniesLabel),
-                ),
+              NavigationRailDestination(
+                icon: const Icon(Icons.corporate_fare),
+                label: Text(l10n.settingsNavCompaniesLabel),
+              ),
               NavigationRailDestination(
                 icon: const Icon(Icons.business),
                 label: Text(l10n.settingsNavCompanyInfoLabel),
