@@ -65,4 +65,8 @@ abstract class ReturnRepository {
   });
 
   Future<List<Refund>> getRefundsForCreditNote(String creditNoteId);
+
+  /// 'Invoice' / 'Receipt' / … for [id], trashed rows included (a note keeps
+  /// its label even if its document was trashed later).
+  Future<String?> getDocumentType(String id);
 }

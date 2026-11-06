@@ -14,6 +14,14 @@ import 'package:invoiso/models/customer.dart';
 import 'package:invoiso/models/invoice.dart';
 import 'package:invoiso/models/invoice_item.dart';
 import 'package:invoiso/models/product.dart';
+import 'package:invoiso/repositories/sqlite/sqlite_company_info_repository.dart';
+import 'package:invoiso/repositories/sqlite/sqlite_installation_repository.dart';
+import 'package:invoiso/repositories/sqlite/sqlite_invoice_attachment_repository.dart';
+import 'package:invoiso/repositories/sqlite/sqlite_invoice_repository.dart';
+import 'package:invoiso/repositories/sqlite/sqlite_payment_repository.dart';
+import 'package:invoiso/repositories/sqlite/sqlite_return_repository.dart';
+import 'package:invoiso/repositories/sqlite/sqlite_settings_repository.dart';
+import 'package:invoiso/services/backend_services.dart';
 import 'package:invoiso/services/pdf/pdf_service.dart';
 import 'package:invoiso/services/pdf/pdf_widgets.dart';
 
@@ -90,6 +98,15 @@ void main() {
   setUpAll(() {
     sqfliteFfiInit();
     databaseFactory = databaseFactoryFfi;
+    BackendServices.configure(
+      settings: SqliteSettingsRepository(),
+      companyInfo: SqliteCompanyInfoRepository(),
+      invoices: SqliteInvoiceRepository(),
+      payments: SqlitePaymentRepository(),
+      installation: SqliteInstallationRepository(),
+      attachments: SqliteInvoiceAttachmentRepository(),
+      returns: SqliteReturnRepository(),
+    );
   });
 
   late Database db;

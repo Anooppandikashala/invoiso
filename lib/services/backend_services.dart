@@ -4,6 +4,7 @@ import 'package:invoiso/repositories/company_info_repository.dart';
 import 'package:invoiso/repositories/invoice_attachment_repository.dart';
 import 'package:invoiso/repositories/invoice_repository.dart';
 import 'package:invoiso/repositories/payment_repository.dart';
+import 'package:invoiso/repositories/return_repository.dart';
 import 'package:invoiso/repositories/settings_repository.dart';
 
 /// Non-widget service classes (PDF generation, thermal printing, exports, update
@@ -18,6 +19,7 @@ class BackendServices {
   static PaymentRepository? _payments;
   static InstallationRepository? _installation;
   static InvoiceAttachmentRepository? _attachments;
+  static ReturnRepository? _returns;
 
   static void configure({
     required SettingsRepository settings,
@@ -26,6 +28,7 @@ class BackendServices {
     required PaymentRepository payments,
     required InstallationRepository installation,
     required InvoiceAttachmentRepository attachments,
+    required ReturnRepository returns,
   }) {
     _settings = settings;
     _companyInfo = companyInfo;
@@ -33,6 +36,7 @@ class BackendServices {
     _payments = payments;
     _installation = installation;
     _attachments = attachments;
+    _returns = returns;
   }
 
   static SettingsRepository get settings => _settings ??
@@ -46,5 +50,7 @@ class BackendServices {
   static InstallationRepository get installation => _installation ??
       (throw StateError('BackendServices.configure() was never called.'));
   static InvoiceAttachmentRepository get attachments => _attachments ??
+      (throw StateError('BackendServices.configure() was never called.'));
+  static ReturnRepository get returns => _returns ??
       (throw StateError('BackendServices.configure() was never called.'));
 }

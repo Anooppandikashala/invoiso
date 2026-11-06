@@ -17,7 +17,6 @@ import 'package:invoiso/common/constants.dart';
 import 'package:invoiso/models/company_info.dart';
 import 'package:invoiso/models/customer_field_settings.dart';
 import 'package:invoiso/models/invoice.dart';
-import 'package:invoiso/database/return_service.dart';
 import 'package:invoiso/services/pdf/pdf_font_service.dart';
 import 'package:invoiso/services/thermal_printer_service_v1.dart';
 import 'pdf_settings.dart';
@@ -746,10 +745,10 @@ class PDFService {
     if (invoice.type != 'Credit Note' && invoice.type != 'Debit Note') return;
     if (invoice.originalInvoiceId != null) {
       invoice.originalInvoiceType =
-          await ReturnService.getDocumentType(invoice.originalInvoiceId!);
+          await BackendServices.returns.getDocumentType(invoice.originalInvoiceId!);
     }
     if (invoice.type != 'Credit Note') return;
-    invoice.refunds = await ReturnService.getRefundsForCreditNote(invoice.id);
+    invoice.refunds = await BackendServices.returns.getRefundsForCreditNote(invoice.id);
   }
 
   static Future<pw.Document> generateInvoicePDF(Invoice invoice,
