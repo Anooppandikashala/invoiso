@@ -341,7 +341,7 @@ class ProductFormState extends ConsumerState<ProductForm> {
             const SizedBox(height: 16),
             _buildFormField(
                 _descriptionController, l10n.productMgmtDescriptionLabel, Icons.description,
-                maxLines: 3, maxLength: 500, required: false,
+                maxLines: 5, maxLength: 500, required: false,
                 suffixIcon: LongTextExpandButton(
                     title: l10n.productMgmtDescriptionLabel,
                     controller: _descriptionController,

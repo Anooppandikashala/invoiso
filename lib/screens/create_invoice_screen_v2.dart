@@ -3746,8 +3746,8 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
         filled: true,
         fillColor: Theme.of(context).colorScheme.surfaceContainerHighest,
       ),
-      minLines: 1,
-      maxLines: 3,
+      minLines: 5,
+      maxLines: 5,
       keyboardType: TextInputType.multiline,
       textCapitalization: TextCapitalization.sentences,
     );
