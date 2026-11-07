@@ -45,8 +45,11 @@ class _FakeRegistry implements CompanyRegistryRepository {
   Future<String?> getActiveCompanyId() async => active;
   @override
   Future<void> switchToCompany(String id) async => active = id;
+  /// Cloud at the plan's company limit refuses with a message.
+  String? createError;
   @override
-  Future<CompanyProfile> createCompany(String name) async => throw UnimplementedError();
+  Future<CompanyProfile> createCompany(String name) async =>
+      throw Exception(createError ?? 'not used');
   @override
   Future<void> renameCompany(String id, String name) async {}
   @override
@@ -183,6 +186,20 @@ void main() {
     await tester.tap(find.text('+ New Company'));
     await tester.pumpAndSettle();
     expect(find.text('Admin Account'), findsNothing);
+  });
+
+  testWidgets('cloud: create past the plan limit shows the reason, no switch',
+      (tester) async {
+    registry.createError = 'Your plan includes 1 company. Contact Invoiso to add more.';
+    await pumpScreen(tester, cloud: true, userType: 'admin');
+    await tester.tap(find.text('+ New Company'));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byType(TextFormField).first, 'Gamma');
+    await tester.tap(find.widgetWithText(FilledButton, 'Create'));
+    await tester.pump();
+    await settle(tester);
+    expect(find.textContaining('Your plan includes 1 company'), findsOneWidget);
+    expect(registry.active, 'a');
   });
 
   testWidgets('cloud: switching keeps the login (no Login screen)',

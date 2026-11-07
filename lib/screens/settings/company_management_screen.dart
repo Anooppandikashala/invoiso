@@ -306,7 +306,14 @@ class _CompanyManagementScreenState
     final username = usernameController.text.trim();
     final password = passwordController.text;
 
-    final profile = await BackendServices.companyRegistry.createCompany(name);
+    // Cloud refuses past the plan's company limit — show its message.
+    final CompanyProfile profile;
+    try {
+      profile = await BackendServices.companyRegistry.createCompany(name);
+    } catch (e) {
+      if (mounted) _showErrorDialog(e.toString());
+      return;
+    }
     await BackendServices.companyRegistry.switchToCompany(profile.id);
 
     // Overwrite the seeded admin/admin login with the credentials just
