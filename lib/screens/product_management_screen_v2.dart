@@ -20,6 +20,7 @@ import 'package:invoiso/models/product_list_stats.dart';
 import 'package:invoiso/models/user.dart';
 import 'package:invoiso/utils/formatters.dart';
 import 'package:invoiso/screens/settings/product_columns_settings_screen.dart';
+import 'package:invoiso/widgets/long_text_expand_button.dart';
 import 'package:invoiso/widgets/product_form.dart';
 
 class ProductManagementScreenV2 extends ConsumerStatefulWidget {
@@ -494,6 +495,7 @@ class _ProductManagementScreenV2State extends ConsumerState<ProductManagementScr
     String? prefixText,
     String? helperText,
     VoidCallback? onSubmitted,
+    Widget? suffixIcon,
   }) {
     final l10n = AppLocalizations.of(context)!;
     return TextFormField(
@@ -514,6 +516,7 @@ class _ProductManagementScreenV2State extends ConsumerState<ProductManagementScr
         labelText: label,
         prefixIcon: prefixText == null ? Icon(icon) : null,
         prefixText: prefixText,
+        suffixIcon: suffixIcon,
         border: OutlineInputBorder(
             borderRadius: BorderRadius.circular(AppBorderRadius.xsmall)),
         filled: readOnly,
@@ -2577,6 +2580,7 @@ class _ProductManagementScreenV2State extends ConsumerState<ProductManagementScr
             bool isRequired = false,
             String? prefixText,
             bool locked = false,
+            Widget? suffixIcon,
           }) {
             return _buildDialogTextField(
               controller,
@@ -2591,6 +2595,7 @@ class _ProductManagementScreenV2State extends ConsumerState<ProductManagementScr
               isTaxRate: isTaxRate,
               isRequired: isRequired,
               prefixText: prefixText,
+              suffixIcon: suffixIcon,
             );
           }
 
@@ -2765,7 +2770,12 @@ class _ProductManagementScreenV2State extends ConsumerState<ProductManagementScr
                             if (_columnsConfig.description) ...[
                               const SizedBox(height: 16),
                               field(descCtrl, l10n.productMgmtDescriptionLabel, Icons.description,
-                                  maxLines: 3, maxLength: 500),
+                                  maxLines: 3, maxLength: 500,
+                                  suffixIcon: LongTextExpandButton(
+                                      title: l10n.productMgmtDescriptionLabel,
+                                      controller: descCtrl,
+                                      maxLength: 500,
+                                      readOnly: !isEdit)),
                             ],
                             if (_columnsConfig.hsncode) ...[
                               const SizedBox(height: 16),

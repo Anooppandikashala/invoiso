@@ -36,6 +36,7 @@ import 'package:invoiso/widgets/apply_payment_dialog.dart';
 import 'package:invoiso/common/constants.dart';
 import 'package:invoiso/widgets/return_l10n.dart';
 import 'package:invoiso/widgets/product_form.dart';
+import 'package:invoiso/widgets/long_text_expand_button.dart';
 import 'package:invoiso/models/user.dart';
 import 'package:invoiso/services/refund_receipt_service.dart';
 import 'package:invoiso/services/backend_services.dart';
@@ -3740,6 +3741,8 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
         border: OutlineInputBorder(
             borderRadius: BorderRadius.circular(AppBorderRadius.xsmall)),
         prefixIcon: const Icon(Icons.notes_outlined, size: 18),
+        suffixIcon: LongTextExpandButton(
+            title: 'Description', controller: controller),
         filled: true,
         fillColor: Theme.of(context).colorScheme.surfaceContainerHighest,
       ),

@@ -10,6 +10,7 @@ import 'package:invoiso/models/product.dart';
 import 'package:invoiso/models/user.dart';
 import 'package:invoiso/providers/repositories.dart';
 import 'package:invoiso/utils/formatters.dart';
+import 'package:invoiso/widgets/long_text_expand_button.dart';
 
 /// The "add product" form, shared by Product Management (side panel) and the
 /// "New product" dialog on the Create Invoice / Purchase Bill pages, so every
@@ -340,7 +341,11 @@ class ProductFormState extends ConsumerState<ProductForm> {
             const SizedBox(height: 16),
             _buildFormField(
                 _descriptionController, l10n.productMgmtDescriptionLabel, Icons.description,
-                maxLines: 3, maxLength: 500, required: false),
+                maxLines: 3, maxLength: 500, required: false,
+                suffixIcon: LongTextExpandButton(
+                    title: l10n.productMgmtDescriptionLabel,
+                    controller: _descriptionController,
+                    maxLength: 500)),
           ],
           if (_columnsConfig.hsncode) ...[
             const SizedBox(height: 16),
@@ -552,6 +557,7 @@ class ProductFormState extends ConsumerState<ProductForm> {
     String? helperText,
     bool enabled = true,
     VoidCallback? onSubmitted,
+    Widget? suffixIcon,
   }) {
     final l10n = AppLocalizations.of(context)!;
     return TextFormField(
@@ -578,6 +584,7 @@ class ProductFormState extends ConsumerState<ProductForm> {
         labelText: label,
         prefixIcon: prefixText == null ? Icon(icon) : null,
         prefixText: prefixText,
+        suffixIcon: suffixIcon,
         border: OutlineInputBorder(
             borderRadius: BorderRadius.circular(AppBorderRadius.xsmall)),
         counterText: '',
