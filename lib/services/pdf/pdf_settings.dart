@@ -80,6 +80,16 @@ class PdfGenerationSettings {
   final double tableHeaderScale;
   final double tableItemsScale;
   final double totalsScale;
+  final bool letterheadEnabled;
+  /// Block-based custom layout document (`{ page, theme, layout }`) that
+  /// replaces the built-in template when present.
+  final Map<String, dynamic>? blockLayout;
+  final double printMarginTopMm;
+  final double printMarginBottomMm;
+  final double printMarginLeftMm;
+  final double printMarginRightMm;
+  final double printContentScale;
+  final bool letterheadHideCompanyHeader;
 
   const PdfGenerationSettings({
     required this.company,
@@ -150,7 +160,18 @@ class PdfGenerationSettings {
     this.tableHeaderScale = 1.0,
     this.tableItemsScale = 1.0,
     this.totalsScale = 1.0,
+    this.letterheadEnabled = false,
+    this.blockLayout,
+    this.printMarginTopMm = 40.0,
+    this.printMarginBottomMm = 25.0,
+    this.printMarginLeftMm = 10.0,
+    this.printMarginRightMm = 10.0,
+    this.printContentScale = 100.0,
+    this.letterheadHideCompanyHeader = true,
   });
+
+  /// Scale multiplier derived from [printContentScale] (clamped 0.5 - 1.5).
+  double get contentScale => (printContentScale / 100.0).clamp(0.5, 1.5);
 
   /// Number prefix for a document [type]; quotation/receipt fall back to the
   /// invoice prefix when not set.

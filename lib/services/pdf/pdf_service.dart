@@ -14,6 +14,7 @@ import 'package:syncfusion_flutter_pdfviewer/pdfviewer.dart';
 import 'package:invoiso/common/common.dart';
 import 'package:invoiso/common/constants.dart';
 import 'package:invoiso/models/company_info.dart';
+import 'package:invoiso/models/custom_invoice_layout.dart';
 import 'package:invoiso/models/customer_field_settings.dart';
 import 'package:invoiso/models/invoice.dart';
 import 'package:invoiso/database/return_service.dart';
@@ -28,7 +29,7 @@ import 'pdf_template_executive.dart';
 import 'pdf_template_compact.dart';
 import 'pdf_template_thermal.dart';
 import 'pdf_template_gridclassic.dart';
-import 'package:invoiso/utils/formatters.dart';
+import 'pdf_template_block_layout.dart';
 
 class PDFService {
   static Uint8List? _logoBytesCache;
@@ -61,7 +62,8 @@ class PDFService {
       _watermarkBase64Cache = null;
       return null;
     }
-    if (base64Watermark == _watermarkBase64Cache && _watermarkBytesCache != null) {
+    if (base64Watermark == _watermarkBase64Cache &&
+        _watermarkBytesCache != null) {
       return _watermarkBytesCache;
     }
     _watermarkBase64Cache = base64Watermark;
@@ -119,10 +121,13 @@ class PDFService {
       BackendServices.settings.getShowWebsite(), // 35
       BackendServices.settings.getShowAddress(), // 36
       BackendServices.settings.getShowLogo(), // 37
-      BackendServices.settings.getSetting(SettingKey.thermalCompanyNameSize), // 38
+      BackendServices.settings
+          .getSetting(SettingKey.thermalCompanyNameSize), // 38
       BackendServices.settings.getSetting(SettingKey.invoiceLeadingZeros), // 39
-      BackendServices.settings.getSetting(SettingKey.showDescriptionInPdf), // 40
-      BackendServices.settings.getSetting(SettingKey.descriptionNewLineInPdf), // 41
+      BackendServices.settings
+          .getSetting(SettingKey.showDescriptionInPdf), // 40
+      BackendServices.settings
+          .getSetting(SettingKey.descriptionNewLineInPdf), // 41
       BackendServices.settings.getShowCustomerBusinessName(), // 42
       BackendServices.settings.getShowCustomerAddress(), // 43
       BackendServices.settings.getShowCustomerPhone(), // 44
@@ -136,16 +141,27 @@ class PDFService {
       BackendServices.settings.getInvoicePdfMetadataColumns(), // 52
       BackendServices.settings.getSetting(SettingKey.showTaxColumn), // 53
       BackendServices.settings.getSetting(SettingKey.pdfFontSize), // 54
-      BackendServices.settings.getSetting(SettingKey.pdfCompanyNameFontSize), // 55
+      BackendServices.settings
+          .getSetting(SettingKey.pdfCompanyNameFontSize), // 55
       BackendServices.settings.getSetting(SettingKey.pdfDocTitleFontSize), // 56
-      BackendServices.settings.getSetting(SettingKey.pdfTableHeaderFontSize), // 57
-      BackendServices.settings.getSetting(SettingKey.pdfTableItemsFontSize), // 58
+      BackendServices.settings
+          .getSetting(SettingKey.pdfTableHeaderFontSize), // 57
+      BackendServices.settings
+          .getSetting(SettingKey.pdfTableItemsFontSize), // 58
       BackendServices.settings.getSetting(SettingKey.pdfTotalsFontSize), // 59
       CustomerFieldSettings.load(BackendServices.settings), // 60
       BackendServices.settings.getSetting(SettingKey.creditNotePrefix), // 61
       BackendServices.settings.getSetting(SettingKey.debitNotePrefix), // 62
       BackendServices.settings.getSetting(SettingKey.quotationPrefix), // 63
       BackendServices.settings.getSetting(SettingKey.receiptPrefix), // 64
+      BackendServices.settings.getLetterheadEnabled(), // 65
+      BackendServices.settings.getPrintMarginTopMm(), // 66
+      BackendServices.settings.getPrintMarginBottomMm(), // 67
+      BackendServices.settings.getPrintMarginLeftMm(), // 68
+      BackendServices.settings.getPrintMarginRightMm(), // 69
+      BackendServices.settings.getPrintContentScale(), // 70
+      BackendServices.settings.getLetterheadHideCompanyHeader(), // 71
+      BackendServices.settings.getSetting(SettingKey.activeCustomLayout), // 72
     ]);
 
     final rawPrefix = (results[2] as String?) ?? 'INV';
@@ -153,6 +169,7 @@ class PDFService {
       final p = raw.replaceFirst(RegExp(r'-+$'), '');
       return p.isNotEmpty ? '$p-' : '';
     }
+
     // Quotation/receipt prefix: empty or unset → null → invoice prefix.
     String? optionalDashed(String? raw) =>
         (raw == null || raw.trim().isEmpty) ? null : dashed(raw.trim());
@@ -169,6 +186,9 @@ class PDFService {
         : null;
     final pdfTheme = await PdfFontService.loadTheme();
     final fontSizeScale = pdfFontSizeFromKey(results[54] as String?).scale;
+    final activeCustomLayout = _activeCustomLayoutFromJson(
+      results[72] as String?,
+    );
 
     return PdfGenerationSettings(
       company: results[0] as CompanyInfo?,
@@ -240,7 +260,33 @@ class PDFService {
       tableItemsScale: pdfSectionScale(results[58] as String?, fontSizeScale),
       totalsScale: pdfSectionScale(results[59] as String?, fontSizeScale),
       customerFields: results[60] as CustomerFieldSettings,
+      letterheadEnabled: results[65] as bool,
+      printMarginTopMm: results[66] as double,
+      printMarginBottomMm: results[67] as double,
+      printMarginLeftMm: results[68] as double,
+      printMarginRightMm: results[69] as double,
+      printContentScale: results[70] as double,
+      letterheadHideCompanyHeader: results[71] as bool,
+      blockLayout: activeCustomLayout?.blockLayout,
     );
+  }
+
+  /// Reads the persisted "currently active custom layout" JSON.
+  ///
+  /// Imported layouts that describe the invoice as blocks (`page` + `theme` +
+  /// `layout`) render through [buildBlockLayoutTemplate]. Stored layouts must
+  /// never break normal PDF generation, so malformed data is ignored here.
+  static CustomInvoiceLayout? _activeCustomLayoutFromJson(String? raw) {
+    if (raw == null || raw.trim().isEmpty) return null;
+    try {
+      final decoded = jsonDecode(raw);
+      if (decoded is! Map) return null;
+      return CustomInvoiceLayout.fromMap(
+        decoded.map((key, value) => MapEntry(key.toString(), value)),
+      );
+    } catch (_) {
+      return null;
+    }
   }
 
   /// Build a PDF document using pre-fetched settings — no DB reads.
@@ -283,6 +329,57 @@ class PDFService {
       }
       effectiveBank ??= s.bankAccounts.where((e) => e.isDefault).firstOrNull ??
           s.bankAccounts.firstOrNull;
+    }
+
+    pw.EdgeInsets? customMargin;
+    if (s.letterheadEnabled) {
+      customMargin = pw.EdgeInsets.fromLTRB(
+        s.printMarginLeftMm * PdfPageFormat.mm,
+        s.printMarginTopMm * PdfPageFormat.mm,
+        s.printMarginRightMm * PdfPageFormat.mm,
+        s.printMarginBottomMm * PdfPageFormat.mm,
+      );
+    }
+    final contentScale = s.contentScale;
+
+    // Imported block layouts replace the built-in templates entirely. Without
+    // this branch the layout was saved but the PDF always fell back to Classic.
+    final blockLayout = s.blockLayout;
+    if (blockLayout != null) {
+      final blocks = blockLayout['layout'];
+      if (blocks is List && blocks.isNotEmpty) {
+        pdf.addPage(buildBlockLayoutTemplate(
+          invoice,
+          s.company,
+          currencySymbol,
+          s.prefixFor(invoice.type),
+          blockLayout,
+          upiId: effectiveUpiId,
+          showUpiQr: showUpiQr,
+          showGst: s.showGst,
+          showSlNo: s.showSlNo,
+          showQuantity: s.showQuantity,
+          showDiscount: s.showDiscount,
+          showTypeTag: s.showTypeTag,
+          showAliasName: s.showAliasName,
+          showDescription: s.showDescription,
+          showTaxColumn: s.showTaxColumn,
+          showCgstSgst: effectiveShowCgstSgst,
+          showIgst: showIgst,
+          showLeadingZeros: s.showLeadingZeros,
+          datePattern: s.datePattern,
+          bankAccount: effectiveBank,
+          logoBytes: s.logoBytes,
+          signatureBytes: s.signatureBytes,
+          signaturePosition: s.signaturePosition,
+          signatureSizePx: s.signatureSizePx,
+          showFooterBranding: s.showFooterBranding,
+          thankYouNote: s.thankYouNote,
+          pageFormat: s.pageFormat,
+          themeColor: s.themeColor,
+        ));
+        return pdf;
+      }
     }
 
     switch (s.template) {
@@ -348,6 +445,10 @@ class PDFService {
           showWebsite: s.showWebsite,
           showAddress: s.showAddress,
           showLogo: s.showLogo,
+          letterheadMode: s.letterheadEnabled,
+          letterheadHideCompanyHeader: s.letterheadHideCompanyHeader,
+          contentScale: contentScale,
+          customMargin: customMargin,
         ));
       case InvoiceTemplate.modern:
         pdf.addPage(buildModernTemplate(
@@ -411,6 +512,10 @@ class PDFService {
           showWebsite: s.showWebsite,
           showAddress: s.showAddress,
           showLogo: s.showLogo,
+          letterheadMode: s.letterheadEnabled,
+          letterheadHideCompanyHeader: s.letterheadHideCompanyHeader,
+          contentScale: contentScale,
+          customMargin: customMargin,
         ));
       case InvoiceTemplate.minimal:
         pdf.addPage(buildMinimalTemplate(
@@ -474,6 +579,10 @@ class PDFService {
           showWebsite: s.showWebsite,
           showAddress: s.showAddress,
           showLogo: s.showLogo,
+          letterheadMode: s.letterheadEnabled,
+          letterheadHideCompanyHeader: s.letterheadHideCompanyHeader,
+          contentScale: contentScale,
+          customMargin: customMargin,
         ));
       case InvoiceTemplate.executive:
         pdf.addPage(buildExecutiveTemplate(
@@ -537,6 +646,10 @@ class PDFService {
           showWebsite: s.showWebsite,
           showAddress: s.showAddress,
           showLogo: s.showLogo,
+          letterheadMode: s.letterheadEnabled,
+          letterheadHideCompanyHeader: s.letterheadHideCompanyHeader,
+          contentScale: contentScale,
+          customMargin: customMargin,
         ));
       case InvoiceTemplate.compact:
         pdf.addPage(buildCompactTemplate(
@@ -597,6 +710,10 @@ class PDFService {
           showFssai: s.showFssai,
           showAddress: s.showAddress,
           showLogo: s.showLogo,
+          letterheadMode: s.letterheadEnabled,
+          letterheadHideCompanyHeader: s.letterheadHideCompanyHeader,
+          contentScale: contentScale,
+          customMargin: customMargin,
         ));
       case InvoiceTemplate.thermal:
         pdf.addPage(buildThermalTemplate(
@@ -621,7 +738,7 @@ class PDFService {
           themeColor: s.themeColor,
           previousBalanceDue: effectivePreviousBalance,
           pageFormat: s.pageFormat,
-          pageSize:s.pageSize,
+          pageSize: s.pageSize,
           pdfTheme: pdfTheme,
           itemLayout: s.thermalItemLayout,
           companyNameSize: s.thermalCompanyNameSize,
@@ -644,68 +761,72 @@ class PDFService {
       case InvoiceTemplate.gridClassic:
         pw.MultiPage gridPage({required bool brandingInFrame}) =>
             buildGridClassicTemplate(
-          invoice,
-          s.company,
-          currencySymbol,
-          s.prefixFor(invoice.type),
-          showCustomerBusinessName: s.showCustomerBusinessName,
-          showCustomerAddress: s.showCustomerAddress,
-          showCustomerPhone: s.showCustomerPhone,
-          showCustomerEmail: s.showCustomerEmail,
-          showCustomerGstin: s.showCustomerGstin,
-          customerFields: s.customerFields,
-          showTimeInPdf: s.showTimeInPdf,
-          pdfTimeFormat: s.pdfTimeFormat,
-          upiId: effectiveUpiId,
-          showUpiQr: showUpiQr,
-          showGst: s.showGst,
-          showSlNo: s.showSlNo,
-          showQuantity: s.showQuantity,
-          showDiscount: s.showDiscount,
-          showTypeTag: s.showTypeTag,
-          showAliasName: s.showAliasName,
-          showDescription: s.showDescription,
-          descriptionNewLine: s.descriptionNewLine,
-          showTotalQuantity: s.showTotalQuantity,
-          businessType: s.businessType,
-          bankAccount: effectiveBank,
-          datePattern: s.datePattern,
-          logoBytes: s.logoBytes,
-          logoSizePx: s.logoSizePx,
-          thankYouNote: s.thankYouNote,
-          showFooterBranding: s.showFooterBranding,
-          themeColor: s.themeColor,
-          signatureBytes: s.signatureBytes,
-          signaturePosition: s.signaturePosition,
-          signatureSizePx: s.signatureSizePx,
-          previousBalanceDue: effectivePreviousBalance,
-          pageFormat: s.pageFormat,
-          landscape: s.landscape,
-          metadataColumns: s.metadataColumns,
-          fontSizeScale: s.fontSizeScale,
-          companyNameScale: s.companyNameScale,
-          docTitleScale: s.docTitleScale,
-          tableHeaderScale: s.tableHeaderScale,
-          tableItemsScale: s.tableItemsScale,
-          totalsScale: s.totalsScale,
-          pdfTheme: pdfTheme,
-          logoPosition: s.logoPosition,
-          watermarkBytes: s.watermarkBytes,
-          watermarkOpacity: s.watermarkOpacity,
-          watermarkFullPage: s.watermarkFullPage,
-          showCgstSgst: effectiveShowCgstSgst,
-          showIgst: showIgst,
-          showTaxColumn: s.showTaxColumn,
-          showRoundOff: s.showRoundOff,
-          showLeadingZeros: s.showLeadingZeros,
-          showPhone: s.showPhone,
-          showCompanyName: s.showCompanyName,
-          showPan: s.showPan,
-          showFssai: s.showFssai,
-          showAddress: s.showAddress,
-          showLogo: s.showLogo,
-          brandingInFrame: brandingInFrame,
-        );
+              invoice,
+              s.company,
+              currencySymbol,
+              s.prefixFor(invoice.type),
+              showCustomerBusinessName: s.showCustomerBusinessName,
+              showCustomerAddress: s.showCustomerAddress,
+              showCustomerPhone: s.showCustomerPhone,
+              showCustomerEmail: s.showCustomerEmail,
+              showCustomerGstin: s.showCustomerGstin,
+              customerFields: s.customerFields,
+              showTimeInPdf: s.showTimeInPdf,
+              pdfTimeFormat: s.pdfTimeFormat,
+              upiId: effectiveUpiId,
+              showUpiQr: showUpiQr,
+              showGst: s.showGst,
+              showSlNo: s.showSlNo,
+              showQuantity: s.showQuantity,
+              showDiscount: s.showDiscount,
+              showTypeTag: s.showTypeTag,
+              showAliasName: s.showAliasName,
+              showDescription: s.showDescription,
+              descriptionNewLine: s.descriptionNewLine,
+              showTotalQuantity: s.showTotalQuantity,
+              businessType: s.businessType,
+              bankAccount: effectiveBank,
+              datePattern: s.datePattern,
+              logoBytes: s.logoBytes,
+              logoSizePx: s.logoSizePx,
+              thankYouNote: s.thankYouNote,
+              showFooterBranding: s.showFooterBranding,
+              themeColor: s.themeColor,
+              signatureBytes: s.signatureBytes,
+              signaturePosition: s.signaturePosition,
+              signatureSizePx: s.signatureSizePx,
+              previousBalanceDue: effectivePreviousBalance,
+              pageFormat: s.pageFormat,
+              landscape: s.landscape,
+              metadataColumns: s.metadataColumns,
+              fontSizeScale: s.fontSizeScale,
+              companyNameScale: s.companyNameScale,
+              docTitleScale: s.docTitleScale,
+              tableHeaderScale: s.tableHeaderScale,
+              tableItemsScale: s.tableItemsScale,
+              totalsScale: s.totalsScale,
+              pdfTheme: pdfTheme,
+              logoPosition: s.logoPosition,
+              watermarkBytes: s.watermarkBytes,
+              watermarkOpacity: s.watermarkOpacity,
+              watermarkFullPage: s.watermarkFullPage,
+              showCgstSgst: effectiveShowCgstSgst,
+              showIgst: showIgst,
+              showTaxColumn: s.showTaxColumn,
+              showRoundOff: s.showRoundOff,
+              showLeadingZeros: s.showLeadingZeros,
+              showPhone: s.showPhone,
+              showCompanyName: s.showCompanyName,
+              showPan: s.showPan,
+              showFssai: s.showFssai,
+              showAddress: s.showAddress,
+              showLogo: s.showLogo,
+              brandingInFrame: brandingInFrame,
+              letterheadMode: s.letterheadEnabled,
+              letterheadHideCompanyHeader: s.letterheadHideCompanyHeader,
+              contentScale: contentScale,
+              customMargin: customMargin,
+            );
         // Single page: branding inside the frame (can't be cropped off).
         // Multi-page: re-render with branding in the page footer only, so the
         // in-frame branding line can never push a near-empty extra page.
@@ -736,7 +857,8 @@ class PDFService {
     final settings = await fetchPdfSettings(datePattern: datePattern);
     await attachReturnInfo(invoice);
     final previousBalanceDue = settings.showPreviousBalance
-        ? await BackendServices.invoices.getPreviousBalanceDueForInvoice(invoice)
+        ? await BackendServices.invoices
+            .getPreviousBalanceDueForInvoice(invoice)
         : 0.0;
     return generateInvoicePDFWithSettings(
       invoice,
@@ -851,7 +973,8 @@ class PDFService {
                     icon: const Icon(Icons.print_outlined),
                     tooltip: 'Print',
                     onPressed: () async {
-                      final template = await BackendServices.settings.getInvoiceTemplate();
+                      final template =
+                          await BackendServices.settings.getInvoiceTemplate();
                       if (template == InvoiceTemplate.thermal) {
                         if (!dialogContext.mounted) return;
                         await ThermalPrinterService.printInvoice(

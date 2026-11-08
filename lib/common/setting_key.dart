@@ -115,7 +115,15 @@ enum SettingKey {
   pdfTotalsFontSize, // PdfFontSize key for the totals block; empty/absent = same as pdfFontSize
   purchaseBillsBannerDismissed, // '1' once user dismisses the purchase-bills/suppliers discovery banner
   returnsBannerDismissed, // '1' once user dismisses the product-returns notice on the Invoices list
-  amountSeparator, // AmountSeparator.key: 'none' | 'international' | 'indian'
+  letterheadEnabled, // 'letterhead_enabled': whether to print in pre-printed letterhead mode (default false)
+  printMarginTopMm, // 'print_margin_top_mm': top margin in mm (default '40.0')
+  printMarginBottomMm, // 'print_margin_bottom_mm': bottom margin in mm (default '25.0')
+  printMarginLeftMm, // 'print_margin_left_mm': left margin in mm (default '10.0')
+  printMarginRightMm, // 'print_margin_right_mm': right margin in mm (default '10.0')
+  printContentScale, // 'print_content_scale': percentage content scale e.g. '100' or '85' (default '100')
+  letterheadHideCompanyHeader, // 'letterhead_hide_company_header': whether to omit duplicate digital company header in letterhead mode (default 'true')
+  customInvoiceLayouts, // JSON list of user-inserted CustomInvoiceLayout definitions
+  activeCustomLayout, // JSON of the custom layout currently active for PDF rendering (empty = built-in template)
 }
 
 extension SettingKeyExtension on SettingKey {
@@ -353,9 +361,24 @@ extension SettingKeyExtension on SettingKey {
         return 'purchase_bills_banner_dismissed';
       case SettingKey.returnsBannerDismissed:
         return 'returns_banner_dismissed';
-      case SettingKey.amountSeparator:
-        return 'amount_separator';
-
+      case SettingKey.letterheadEnabled:
+        return 'letterhead_enabled';
+      case SettingKey.printMarginTopMm:
+        return 'print_margin_top_mm';
+      case SettingKey.printMarginBottomMm:
+        return 'print_margin_bottom_mm';
+      case SettingKey.printMarginLeftMm:
+        return 'print_margin_left_mm';
+      case SettingKey.printMarginRightMm:
+        return 'print_margin_right_mm';
+      case SettingKey.printContentScale:
+        return 'print_content_scale';
+      case SettingKey.letterheadHideCompanyHeader:
+        return 'letterhead_hide_company_header';
+      case SettingKey.customInvoiceLayouts:
+        return 'custom_invoice_layouts';
+      case SettingKey.activeCustomLayout:
+        return 'active_custom_layout';
     }
   }
 }

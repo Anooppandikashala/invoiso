@@ -1,5 +1,6 @@
 import 'package:invoiso/common/common.dart';
 import 'package:invoiso/models/custom_field_def.dart';
+import 'package:invoiso/models/custom_invoice_layout.dart';
 
 abstract class SettingsRepository {
   Future<void> setSetting(SettingKey key, String value);
@@ -68,6 +69,21 @@ abstract class SettingsRepository {
   Future<void> setPdfLandscape(bool landscape);
   Future<bool> getShowGstFields();
   Future<bool> getShowInvoiceFooterBranding();
+  Future<void> setShowInvoiceFooterBranding(bool show);
+  Future<bool> getLetterheadEnabled();
+  Future<void> setLetterheadEnabled(bool enabled);
+  Future<double> getPrintMarginTopMm();
+  Future<void> setPrintMarginTopMm(double mm);
+  Future<double> getPrintMarginBottomMm();
+  Future<void> setPrintMarginBottomMm(double mm);
+  Future<double> getPrintMarginLeftMm();
+  Future<void> setPrintMarginLeftMm(double mm);
+  Future<double> getPrintMarginRightMm();
+  Future<void> setPrintMarginRightMm(double mm);
+  Future<double> getPrintContentScale();
+  Future<void> setPrintContentScale(double percent);
+  Future<bool> getLetterheadHideCompanyHeader();
+  Future<void> setLetterheadHideCompanyHeader(bool hide);
   Future<bool> getFractionalQuantity();
   Future<String> getQuantityLabel();
   Future<bool> getShowQuantity();
@@ -110,4 +126,6 @@ abstract class SettingsRepository {
   Future<void> setAppLocale(String? languageCode);
   Future<bool> getAllowDuplicateInvoiceItems();
   Future<void> setAllowDuplicateInvoiceItems(bool allow);
+  Future<List<CustomInvoiceLayout>> getCustomInvoiceLayouts();
+  Future<void> saveCustomInvoiceLayouts(List<CustomInvoiceLayout> layouts);
 }

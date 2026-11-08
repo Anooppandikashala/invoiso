@@ -3,7 +3,14 @@ import 'package:invoiso/services/pdf/pdf_font_assets.dart';
 import 'package:pdf/widgets.dart' as pw;
 
 class PdfFontService {
+  static pw.ThemeData? _cachedTheme;
+
+  static void clearThemeCache() {
+    _cachedTheme = null;
+  }
+
   static Future<pw.ThemeData> loadTheme() async {
+    if (_cachedTheme != null) return _cachedTheme!;
     final fonts = await Future.wait([
       // 0-3: Primary fonts
       rootBundle.load(PdfFontAssets.regular),
@@ -121,7 +128,7 @@ class PdfFontService {
 
     final inter = pw.Font.ttf(fonts[32]);
 
-    return pw.ThemeData.withFont(
+    _cachedTheme = pw.ThemeData.withFont(
       base: regular,
       bold: bold,
       italic: italic,
@@ -167,5 +174,6 @@ class PdfFontService {
         tibetanBold,
       ],
     );
+    return _cachedTheme!;
   }
 }

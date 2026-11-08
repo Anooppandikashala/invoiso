@@ -74,17 +74,13 @@ enum PageSize { a4, a5, a6, thermal80, thermal58 }
 extension InvoiceTemplatePageSizeExtension on InvoiceTemplate {
   bool supportsPageSize(PageSize pageSize) {
     switch (pageSize) {
-      case PageSize.a6:
-        return this == InvoiceTemplate.compact ||
-            this == InvoiceTemplate.gridClassic;
-      case PageSize.a5:
-        return this == InvoiceTemplate.gridClassic;
       case PageSize.thermal80:
       case PageSize.thermal58:
         return this == InvoiceTemplate.thermal;
       case PageSize.a4:
-        return this != InvoiceTemplate.compact &&
-            this != InvoiceTemplate.thermal;
+      case PageSize.a5:
+      case PageSize.a6:
+        return this != InvoiceTemplate.thermal;
     }
   }
 }

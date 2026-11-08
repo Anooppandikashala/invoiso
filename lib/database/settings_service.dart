@@ -5,6 +5,7 @@ import 'package:sqflite/sqflite.dart';
 import 'package:invoiso/common/common.dart';
 import '../common/supported_currencies.dart';
 import '../models/custom_field_def.dart';
+import '../models/custom_invoice_layout.dart';
 import 'database_helper.dart';
 
 class SettingsService {
@@ -206,6 +207,76 @@ class SettingsService {
   static Future<bool> getShowInvoiceFooterBranding() async {
     final val = await getSetting(SettingKey.showInvoiceFooterBranding);
     return val != 'false'; // default ON
+  }
+
+  static Future<void> setShowInvoiceFooterBranding(bool show) async {
+    await setSetting(
+        SettingKey.showInvoiceFooterBranding, show ? 'true' : 'false');
+  }
+
+  static Future<bool> getLetterheadEnabled() async {
+    final val = await getSetting(SettingKey.letterheadEnabled);
+    return val == 'true'; // off by default
+  }
+
+  static Future<void> setLetterheadEnabled(bool enabled) async {
+    await setSetting(SettingKey.letterheadEnabled, enabled ? 'true' : 'false');
+  }
+
+  static Future<double> getPrintMarginTopMm() async {
+    final val = await getSetting(SettingKey.printMarginTopMm);
+    return double.tryParse(val ?? '') ?? 40.0;
+  }
+
+  static Future<void> setPrintMarginTopMm(double mm) async {
+    await setSetting(SettingKey.printMarginTopMm, mm.toStringAsFixed(1));
+  }
+
+  static Future<double> getPrintMarginBottomMm() async {
+    final val = await getSetting(SettingKey.printMarginBottomMm);
+    return double.tryParse(val ?? '') ?? 25.0;
+  }
+
+  static Future<void> setPrintMarginBottomMm(double mm) async {
+    await setSetting(SettingKey.printMarginBottomMm, mm.toStringAsFixed(1));
+  }
+
+  static Future<double> getPrintMarginLeftMm() async {
+    final val = await getSetting(SettingKey.printMarginLeftMm);
+    return double.tryParse(val ?? '') ?? 10.0;
+  }
+
+  static Future<void> setPrintMarginLeftMm(double mm) async {
+    await setSetting(SettingKey.printMarginLeftMm, mm.toStringAsFixed(1));
+  }
+
+  static Future<double> getPrintMarginRightMm() async {
+    final val = await getSetting(SettingKey.printMarginRightMm);
+    return double.tryParse(val ?? '') ?? 10.0;
+  }
+
+  static Future<void> setPrintMarginRightMm(double mm) async {
+    await setSetting(SettingKey.printMarginRightMm, mm.toStringAsFixed(1));
+  }
+
+  static Future<double> getPrintContentScale() async {
+    final val = await getSetting(SettingKey.printContentScale);
+    return (double.tryParse(val ?? '') ?? 100.0).clamp(50.0, 150.0);
+  }
+
+  static Future<void> setPrintContentScale(double percent) async {
+    await setSetting(SettingKey.printContentScale,
+        percent.clamp(50.0, 150.0).toStringAsFixed(0));
+  }
+
+  static Future<bool> getLetterheadHideCompanyHeader() async {
+    final val = await getSetting(SettingKey.letterheadHideCompanyHeader);
+    return val != 'false'; // default true when letterhead is on
+  }
+
+  static Future<void> setLetterheadHideCompanyHeader(bool hide) async {
+    await setSetting(
+        SettingKey.letterheadHideCompanyHeader, hide ? 'true' : 'false');
   }
 
   static Future<bool> getFractionalQuantity() async {
@@ -636,5 +707,37 @@ class SettingsService {
 
   static Future<void> setAllowDuplicateInvoiceItems(bool allow) async {
     await setSetting(SettingKey.allowDuplicateInvoiceItems, allow.toString());
+  }
+
+  static Future<List<CustomInvoiceLayout>> getCustomInvoiceLayouts() async {
+    final raw = await getSetting(SettingKey.customInvoiceLayouts);
+    if (raw == null || raw.trim().isEmpty) return [];
+    try {
+      final decoded = jsonDecode(raw);
+      if (decoded is! List) return [];
+      final layouts = <CustomInvoiceLayout>[];
+      for (final entry in decoded) {
+        if (entry is! Map) continue;
+        try {
+          layouts.add(
+            CustomInvoiceLayout.fromMap(
+              entry.map((key, value) => MapEntry(key.toString(), value)),
+            ),
+          );
+        } catch (_) {
+          // Keep every valid layout even if one legacy/corrupt entry can't be
+          // parsed. Loading never overwrites the stored value.
+        }
+      }
+      return layouts;
+    } catch (_) {
+      return [];
+    }
+  }
+
+  static Future<void> saveCustomInvoiceLayouts(
+      List<CustomInvoiceLayout> layouts) async {
+    final raw = jsonEncode(layouts.map((l) => l.toMap()).toList());
+    await setSetting(SettingKey.customInvoiceLayouts, raw);
   }
 }
