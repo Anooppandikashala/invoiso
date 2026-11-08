@@ -8,6 +8,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
+import 'package:invoiso/common/common.dart';
 import 'package:invoiso/database/database_helper.dart';
 import 'package:invoiso/database/invoice_service.dart';
 import 'package:invoiso/database/payment_service.dart';
@@ -15,6 +16,7 @@ import 'package:invoiso/database/product_service.dart';
 import 'package:invoiso/l10n/app_localizations.dart';
 import 'package:invoiso/models/customer.dart';
 import 'package:invoiso/models/invoice.dart';
+import 'package:invoiso/utils/formatters.dart';
 import 'package:invoiso/models/invoice_item.dart';
 import 'package:invoiso/models/invoice_list_filter.dart';
 import 'package:invoiso/models/product.dart';
@@ -126,6 +128,33 @@ void main() {
     expect(fin.outstanding, 0.0);
   });
 
+  test('declining a receipt returns its stock; restock: false keeps it out',
+      () async {
+    final p = await addProduct();
+    await InvoiceService.insertInvoice(doc('r1', 'Receipt', p));
+    await InvoiceService.insertInvoice(doc('r2', 'Receipt', p));
+    expect(await stockOf('p1'), 4);
+
+    await InvoiceService.declineInvoice('r1');
+    expect(await stockOf('p1'), 7);
+    expect((await InvoiceService.getInvoiceById('r1'))!.status, 'declined');
+
+    // Goods never came back: void the sale, leave stock as is.
+    await InvoiceService.declineInvoice('r2', restock: false);
+    expect(await stockOf('p1'), 7);
+    expect((await InvoiceService.getInvoiceById('r2'))!.status, 'declined');
+  });
+
+  test('a declined invoice or receipt cannot be edited', () async {
+    final p = await addProduct();
+    await InvoiceService.insertInvoice(doc('r1', 'Receipt', p));
+    await InvoiceService.declineInvoice('r1');
+    await expectLater(
+        InvoiceService.updateInvoice(doc('r1', 'Receipt', p, qty: 5)),
+        throwsA(isA<StateError>()));
+    expect(await stockOf('p1'), 10);
+  });
+
   test('declineInvoice refuses an invoice with payments', () async {
     final p = await addProduct();
     await InvoiceService.insertInvoice(doc('i1', 'Invoice', p));
@@ -137,6 +166,70 @@ void main() {
     await InvoiceService.declineInvoice('i1');
     expect((await InvoiceService.getInvoiceById('i1'))!.status, isNull);
     expect(await stockOf('p1'), 7);
+  });
+
+  test('editing an invoice moves stock by the qty difference', () async {
+    final p = await addProduct(stock: 20);
+    await InvoiceService.insertInvoice(doc('i1', 'Invoice', p, qty: 10));
+    expect((await ProductService.getProductById('p1'))!.stock, 10);
+
+    // 10 → 5: the 5 not sold any more go back.
+    await InvoiceService.updateInvoice(doc('i1', 'Invoice', p, qty: 5));
+    expect((await ProductService.getProductById('p1'))!.stock, 15);
+
+    // 5 → 12: 7 more taken.
+    await InvoiceService.updateInvoice(doc('i1', 'Invoice', p, qty: 12));
+    expect((await ProductService.getProductById('p1'))!.stock, 8);
+  });
+
+  test('draft: no stock until finalized; finalize deducts once', () async {
+    final p = await addProduct(stock: 10);
+    await InvoiceService.insertInvoice(doc('d1', 'Invoice', p)..isDraft = true);
+    expect((await ProductService.getProductById('p1'))!.stock, 10);
+
+    // Re-saving the draft still leaves stock alone.
+    await InvoiceService.updateInvoice(doc('d1', 'Invoice', p, qty: 4)..isDraft = true);
+    expect((await ProductService.getProductById('p1'))!.stock, 10);
+
+    // Finalize: number assigned, stock taken for the final qty only.
+    await InvoiceService.updateInvoice(doc('d1', 'Invoice', p, qty: 4)
+      ..invoiceNumber = '00000001');
+    expect((await ProductService.getProductById('p1'))!.stock, 6);
+    expect((await InvoiceService.getInvoiceById('d1'))!.isDraft, isFalse);
+  });
+
+  test('draft: no decline, no payments, not in due / open lists', () async {
+    final p = await addProduct(stock: 10);
+    final draft = doc('d1', 'Invoice', p)..isDraft = true;
+    await InvoiceService.insertInvoice(draft);
+
+    await InvoiceService.declineInvoice('d1');
+    expect((await InvoiceService.getInvoiceById('d1'))!.status, isNot('declined'));
+    expect((await ProductService.getProductById('p1'))!.stock, 10);
+
+    final loaded = (await InvoiceService.getInvoiceById('d1'))!;
+    await expectLater(
+        PaymentService.addPayment(
+            invoice: loaded, amountPaid: 100, datePaid: DateTime(2026, 1, 2)),
+        throwsA(isA<StateError>()));
+    expect(
+        await PaymentService.addPaymentBatch(
+            invoices: [loaded], datePaid: DateTime(2026, 1, 2)),
+        0);
+
+    expect(await InvoiceService.getOverdueInvoices(), isEmpty);
+    expect(await InvoiceService.getOpenInvoicesForCustomer('c1'), isEmpty);
+    expect((await InvoiceService.getDashboardFinancials()).count, 0);
+  });
+
+  test('export skips drafts', () async {
+    final p = await addProduct(stock: 10);
+    await InvoiceService.insertInvoice(doc('i1', 'Invoice', p));
+    await InvoiceService.insertInvoice(doc('d1', 'Invoice', p)..isDraft = true);
+
+    expect((await InvoiceService.getInvoicesForExport()).map((i) => i.id),
+        ['i1']);
+    expect(await InvoiceService.countInvoicesForExport(), 1);
   });
 
   test('declineInvoice ignores quotations', () async {
@@ -317,6 +410,23 @@ void main() {
     expect((await ids(const InvoiceListFilter())).toSet(), {'i1', 'i2'});
   });
 
+  test('unpaid / overdue list filters skip drafts; "all" keeps them',
+      () async {
+    final p = await addProduct();
+    await InvoiceService.insertInvoice(doc('i1', 'Invoice', p));
+    await InvoiceService.insertInvoice(doc('d1', 'Invoice', p)..isDraft = true);
+    Future<List<String>> ids(InvoiceListFilter f) async =>
+        (await InvoiceService.getInvoicesPaginated(
+                filterType: 'Invoice', filter: f))
+            .map((i) => i.id)
+            .toList();
+
+    expect(await ids(const InvoiceListFilter(paymentStatus: 'unpaid')),
+        ['i1']);
+    expect(await ids(const InvoiceListFilter(dueDate: 'overdue')), ['i1']);
+    expect((await ids(const InvoiceListFilter())).toSet(), {'i1', 'd1'});
+  });
+
   test('"Declined" chip shows only declined; "Hide declined" drops them',
       () async {
     await seedActiveAndDeclined();
@@ -357,7 +467,7 @@ void main() {
   // Invoice list screen (wide layout); seeds the active + declined pair
   // unless [seed] is given.
   Future<void> pumpInvoiceList(WidgetTester tester,
-      {Future<void> Function()? seed}) async {
+      {Future<void> Function()? seed, String filterType = 'Invoice'}) async {
     await tester.runAsync(seed ?? seedActiveAndDeclined);
     tester.view.physicalSize = const Size(1800, 1200);
     tester.view.devicePixelRatio = 1.0;
@@ -370,6 +480,7 @@ void main() {
         supportedLocales: AppLocalizations.supportedLocales,
         home: Scaffold(
           body: InvoiceManagementScreenV2(
+            filterType: filterType,
             onEditInvoice: (_) {},
             onCloneInvoice: (_, __) {},
             user: User(
@@ -450,7 +561,7 @@ void main() {
     await pumpInvoiceList(tester, seed: seedPaidInvoice);
     await tester.tap(find.byIcon(Icons.more_vert));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Mark as declined'));
+    await tester.tap(find.text('Cancel / Void'));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 500));
 
@@ -459,6 +570,49 @@ void main() {
     await tester.runAsync(() async {
       expect((await InvoiceService.getInvoiceById('i1'))!.status, isNull);
     });
+  });
+
+  testWidgets('Cancel / Void a receipt without returning stock',
+      (tester) async {
+    await pumpInvoiceList(tester, filterType: 'Receipt', seed: () async {
+      final p = await addProduct();
+      await InvoiceService.insertInvoice(doc('r1', 'Receipt', p));
+    });
+    await tester.tap(find.byIcon(Icons.more_vert));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Cancel / Void'));
+    await tester.pump();
+    await settle(tester); // notes lookup is real I/O
+    expect(find.text('Return all items to stock'), findsOneWidget);
+    await tester.tap(find.text('Return all items to stock')); // untick
+    await tester.pump();
+    await tester.tap(find.widgetWithText(ElevatedButton, 'Cancel / Void'));
+    await tester.pump();
+    await settle(tester);
+
+    await tester.runAsync(() async {
+      expect((await InvoiceService.getInvoiceById('r1'))!.status, 'declined');
+      expect(await stockOf('p1'), 7);
+    });
+    expect(find.text('Declined'), findsOneWidget); // receipt row pill
+  });
+
+  testWidgets('invoice list shows amounts in the Number format', (tester) async {
+    AmountFormat.style = AmountSeparator.indian;
+    addTearDown(() => AmountFormat.style = AmountSeparator.none);
+    await pumpInvoiceList(tester, seed: () async {
+      final p = await addProduct();
+      await InvoiceService.insertInvoice(Invoice(
+        id: 'big',
+        customer: customer,
+        items: [InvoiceItem(product: p, quantity: 12345, unitPrice: 100)],
+        date: DateTime(2026, 1, 1),
+        type: 'Invoice',
+      ));
+    });
+    // 12345 × 100 = 12,34,500.00 (total and outstanding).
+    expect(find.textContaining('12,34,500.00'), findsWidgets);
+    expect(find.textContaining('1234500.00'), findsNothing);
   });
 
   testWidgets('declined invoice with payments opens read-only history',

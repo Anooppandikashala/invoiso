@@ -172,9 +172,16 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   Future<void> _saveInvoiceStep() async {
     final settingsRepo = ref.read(settingsRepositoryProvider);
     final taxRate = double.tryParse(_taxRateController.text.trim()) ?? 18.0;
+    // New setups get grouped amounts (lakh for INR); a choice already made
+    // in Invoice Settings is kept. Existing installs stay ungrouped.
+    final hasSeparator =
+        await settingsRepo.getSetting(SettingKey.amountSeparator) != null;
     await Future.wait([
       settingsRepo.setCurrency(_selectedCurrencyCode),
       settingsRepo.setDateFormat(_selectedDateFormat),
+      if (!hasSeparator)
+        settingsRepo.setAmountSeparator(
+            AmountSeparatorExtension.defaultFor(_selectedCurrencyCode)),
       settingsRepo.setSetting(
           SettingKey.invoiceStartingNumber,
           (int.tryParse(_startingNumberController.text.trim()) ?? 1)

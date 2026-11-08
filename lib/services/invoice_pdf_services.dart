@@ -83,8 +83,9 @@ class InvoicePdfServices {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text(
-            '${invoice.invoiceTitle ?? invoice.type} #${invoice.invoiceNumber ?? invoice.id}'),
+        title: Text(invoice.isDraft
+            ? '${invoice.invoiceTitle ?? invoice.type} · ${AppLocalizations.of(context)!.invoiceDraftBadge}'
+            : '${invoice.invoiceTitle ?? invoice.type} #${invoice.invoiceNumber ?? invoice.id}'),
         content: SizedBox(
           width: 600,
           child: Column(
@@ -123,13 +124,27 @@ class InvoicePdfServices {
                   style: TextStyle(fontWeight: FontWeight.bold)),
               ...invoice.items.map((item) => Padding(
                     padding: EdgeInsets.symmetric(vertical: 4),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
-                            '${item.product.name} x${item.quantity == item.quantity.roundToDouble() ? item.quantity.toInt() : item.quantity}'),
-                        Text(
-                            '${invoice.currencySymbol} ${item.total.toStringAsFixed(2)}'),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                                '${item.product.name} x${item.quantity == item.quantity.roundToDouble() ? item.quantity.toInt() : item.quantity}'),
+                            Text(
+                                '${invoice.currencySymbol} ${AmountFormat.money(item.total)}'),
+                          ],
+                        ),
+                        if (item.totalDiscount > 0)
+                          Text(
+                              'Discount: -${invoice.currencySymbol} ${AmountFormat.money(item.totalDiscount)}'
+                              '${item.discountIsPercent ? ' (${item.discount == item.discount.roundToDouble() ? item.discount.toInt() : item.discount}%)' : ''}',
+                              style: TextStyle(
+                                  fontSize: 12,
+                                  color: Theme.of(context)
+                                      .colorScheme
+                                      .onSurfaceVariant)),
                       ],
                     ),
                   )),
@@ -140,25 +155,58 @@ class InvoicePdfServices {
                   const Text('Subtotal:',
                       style: TextStyle(fontWeight: FontWeight.bold)),
                   Text(
-                      '${invoice.currencySymbol} ${invoice.subtotal.toStringAsFixed(2)}'),
+                      '${invoice.currencySymbol} ${AmountFormat.money(invoice.totalDiscount > 0 ? invoice.grossSubtotal : invoice.subtotal)}'),
                 ],
               ),
+              if (invoice.totalDiscount > 0)
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Text('Discount:',
+                        style: TextStyle(fontWeight: FontWeight.bold)),
+                    Text(
+                        '-${invoice.currencySymbol} ${AmountFormat.money(invoice.taxableDiscount)}'),
+                  ],
+                ),
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Text(_taxLabel(invoice),
                       style: const TextStyle(fontWeight: FontWeight.bold)),
                   Text(
-                      '${invoice.currencySymbol} ${invoice.tax.toStringAsFixed(2)}'),
+                      '${invoice.currencySymbol} ${AmountFormat.money(invoice.tax)}'),
                 ],
               ),
+              ...invoice.additionalCosts.map((c) => Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text('${c.label.isEmpty ? 'Extra Cost' : c.label}:',
+                          style: const TextStyle(fontWeight: FontWeight.bold)),
+                      Text(c.amount < 0
+                          ? '-${invoice.currencySymbol} ${AmountFormat.money(-c.amount)}'
+                          : '${invoice.currencySymbol} ${AmountFormat.money(c.amount)}'),
+                    ],
+                  )),
+              if (invoice.invoiceDiscountAmount > 0)
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                        invoice.invoiceDiscountType == InvoiceDiscountType.percent
+                            ? 'Extra Discount (${invoice.invoiceDiscountValue.toStringAsFixed(1)}%):'
+                            : 'Extra Discount:',
+                        style: const TextStyle(fontWeight: FontWeight.bold)),
+                    Text(
+                        '-${invoice.currencySymbol} ${AmountFormat.money(invoice.invoiceDiscountAmount)}'),
+                  ],
+                ),
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   const Text('Total:',
                       style: TextStyle(fontWeight: FontWeight.bold)),
                   Text(
-                      '${invoice.currencySymbol} ${invoice.total.toStringAsFixed(2)}',
+                      '${invoice.currencySymbol} ${AmountFormat.money(invoice.total)}',
                       style: const TextStyle(fontWeight: FontWeight.bold)),
                 ],
               ),
@@ -223,7 +271,7 @@ class InvoicePdfServices {
             ),
           ),
           Text(
-              '${isCredit ? '−' : '+'}${note.currencySymbol} ${note.total.toStringAsFixed(2)}',
+              '${isCredit ? '−' : '+'}${note.currencySymbol} ${AmountFormat.money(note.total)}',
               style: TextStyle(
                   fontWeight: FontWeight.w600,
                   color: isCredit ? Colors.brown : Colors.indigo)),
@@ -261,7 +309,7 @@ class InvoicePdfServices {
                     PopupMenuItem(
                       enabled: false,
                       child: Text(
-                          '${r.receiptNumber}  ·  ${note.currencySymbol}${r.amount.toStringAsFixed(2)}'),
+                          '${r.receiptNumber}  ·  ${note.currencySymbol}${AmountFormat.money(r.amount)}'),
                     ),
                   PopupMenuItem(
                       value: (r, 'preview'), child: Text(l10n.actionPdfPreview)),

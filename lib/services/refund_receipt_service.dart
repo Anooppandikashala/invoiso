@@ -13,6 +13,7 @@ import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
 import 'package:syncfusion_flutter_pdfviewer/pdfviewer.dart';
+import 'package:invoiso/utils/formatters.dart';
 
 /// Single-page "REFUND VOUCHER" — the money-out mirror of a payment receipt.
 /// [creditNote] is the `Invoice` row with `type == 'Credit Note'`.
@@ -128,6 +129,7 @@ class RefundReceiptService {
     Refund refund,
     double remainingCredit,
   ) async {
+    await AmountFormat.load(); // Number format setting
     await PDFService.attachReturnInfo(cn);
     final pdfTheme = await PdfFontService.loadTheme();
     final pdf = pw.Document(theme: pdfTheme);
@@ -372,5 +374,5 @@ class RefundReceiptService {
         ),
       );
 
-  static String _f(double v) => v.toStringAsFixed(2);
+  static String _f(double v) => AmountFormat.money(v);
 }

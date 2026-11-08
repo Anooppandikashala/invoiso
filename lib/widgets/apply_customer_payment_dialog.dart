@@ -6,6 +6,7 @@ import 'package:invoiso/models/invoice.dart';
 import 'package:invoiso/providers/repositories.dart';
 import 'package:invoiso/utils/app_date.dart';
 import 'package:invoiso/widgets/apply_payment_dialog.dart' show PaymentSummaryCard;
+import 'package:invoiso/utils/formatters.dart';
 
 /// Applies one payment across several of a customer's open invoices —
 /// smallest outstanding balance first by default, editable per invoice
@@ -145,7 +146,7 @@ class _ApplyCustomerPaymentDialogState extends ConsumerState<ApplyCustomerPaymen
       Navigator.pop(context);
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
         content: Text(
-            'Applied $sym ${total.toStringAsFixed(2)} across ${saved.length} invoice${saved.length == 1 ? '' : 's'}.'),
+            'Applied $sym ${AmountFormat.money(total)} across ${saved.length} invoice${saved.length == 1 ? '' : 's'}.'),
         backgroundColor: Colors.green,
       ));
     } catch (e) {
@@ -244,14 +245,14 @@ class _ApplyCustomerPaymentDialogState extends ConsumerState<ApplyCustomerPaymen
                                   PaymentSummaryCard(
                                     label: 'Total Outstanding',
                                     value:
-                                        '${_invoicesForCurrency.first.currencySymbol} ${_totalOutstanding.toStringAsFixed(2)}',
+                                        '${_invoicesForCurrency.first.currencySymbol} ${AmountFormat.money(_totalOutstanding)}',
                                     color: Colors.orange,
                                   ),
                                   const SizedBox(width: 12),
                                   PaymentSummaryCard(
                                     label: 'Total Allocated',
                                     value:
-                                        '${_invoicesForCurrency.first.currencySymbol} ${_totalAllocated.toStringAsFixed(2)}',
+                                        '${_invoicesForCurrency.first.currencySymbol} ${AmountFormat.money(_totalAllocated)}',
                                     color: Colors.green,
                                   ),
                                 ],
@@ -421,7 +422,7 @@ class _ApplyCustomerPaymentDialogState extends ConsumerState<ApplyCustomerPaymen
           ),
           Expanded(
             flex: 2,
-            child: Text('${inv.currencySymbol} ${inv.outstandingBalance.toStringAsFixed(2)}',
+            child: Text('${inv.currencySymbol} ${AmountFormat.money(inv.outstandingBalance)}',
                 style: const TextStyle(fontSize: 13, color: Colors.orange)),
           ),
           Expanded(

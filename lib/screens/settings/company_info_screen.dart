@@ -49,6 +49,7 @@ class _CompanyInfoScreenState extends ConsumerState<CompanyInfoScreen> {
         TextEditingController bankName,
         TextEditingController accountNumber,
         TextEditingController ifscCode,
+        ValueNotifier<String> codeLabel,
         TextEditingController iban,
       })> _bankControllers = [];
   int? _defaultBankIndex;
@@ -176,6 +177,7 @@ class _CompanyInfoScreenState extends ConsumerState<CompanyInfoScreen> {
         row.bankName.dispose();
         row.accountNumber.dispose();
         row.ifscCode.dispose();
+        row.codeLabel.dispose();
         row.iban.dispose();
       }
 
@@ -190,6 +192,7 @@ class _CompanyInfoScreenState extends ConsumerState<CompanyInfoScreen> {
           bankName: TextEditingController(text: entry.bankName),
           accountNumber: TextEditingController(text: entry.accountNumber),
           ifscCode: TextEditingController(text: entry.ifscCode),
+          codeLabel: ValueNotifier(entry.codeLabel),
           iban: TextEditingController(text: entry.iban),
         ));
 
@@ -237,6 +240,7 @@ class _CompanyInfoScreenState extends ConsumerState<CompanyInfoScreen> {
           bankName: _bankControllers[i].bankName.text.trim(),
           accountNumber: accountNum,
           ifscCode: _bankControllers[i].ifscCode.text.trim(),
+          codeLabel: _bankControllers[i].codeLabel.value,
           iban: _bankControllers[i].iban.text.trim(),
           isDefault: i == _defaultBankIndex,
         ));
@@ -308,6 +312,7 @@ class _CompanyInfoScreenState extends ConsumerState<CompanyInfoScreen> {
       row.bankName.dispose();
       row.accountNumber.dispose();
       row.ifscCode.dispose();
+      row.codeLabel.dispose();
       row.iban.dispose();
     }
     super.dispose();
@@ -1008,11 +1013,12 @@ class _CompanyInfoScreenState extends ConsumerState<CompanyInfoScreen> {
                           final isDefault = index == _defaultBankIndex;
                           return Padding(
                             padding: const EdgeInsets.only(bottom: 10),
-                            child: SingleChildScrollView(
-                              scrollDirection: Axis.horizontal,
-                              child: Row(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
+                            // Fields flex to the available width so the row
+                            // fits on one line (IBAN adds a field outside India).
+                            child: Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              spacing: 8,
+                              children: [
                                   // Default star
                                   Tooltip(
                                     message: isDefault
@@ -1033,8 +1039,8 @@ class _CompanyInfoScreenState extends ConsumerState<CompanyInfoScreen> {
                                           () => _defaultBankIndex = index),
                                     ),
                                   ),
-                                  SizedBox(
-                                    width: 130,
+                                  Expanded(
+                                    flex: 13,
                                     child: _buildField(
                                       controller: row.label,
                                       label: l10n.fieldBankAccountNameLabel,
@@ -1044,9 +1050,8 @@ class _CompanyInfoScreenState extends ConsumerState<CompanyInfoScreen> {
                                       maxLength: 40,
                                     ),
                                   ),
-                                  const SizedBox(width: 8),
-                                  SizedBox(
-                                    width: 140,
+                                  Expanded(
+                                    flex: 14,
                                     child: _buildField(
                                       controller: row.bankName,
                                       label: l10n.fieldBankNameLabel,
@@ -1055,9 +1060,8 @@ class _CompanyInfoScreenState extends ConsumerState<CompanyInfoScreen> {
                                       maxLength: 60,
                                     ),
                                   ),
-                                  const SizedBox(width: 8),
-                                  SizedBox(
-                                    width: 180,
+                                  Expanded(
+                                    flex: 18,
                                     child: _buildField(
                                       controller: row.accountNumber,
                                       label: l10n.fieldAccountNumberLabel,
@@ -1066,24 +1070,25 @@ class _CompanyInfoScreenState extends ConsumerState<CompanyInfoScreen> {
                                       maxLength: 20,
                                     ),
                                   ),
-                                  const SizedBox(width: 8),
-                                  // IFSC only exists in India; everywhere else
-                                  // this slot takes the IBAN instead.
-                                  if (_selectedCountry == 'India' ||
-                                      _selectedCountry.isEmpty)
-                                    SizedBox(
-                                      width: 130,
-                                      child: _buildField(
-                                        controller: row.ifscCode,
-                                        label: l10n.fieldIfscCodeLabel,
-                                        icon: Icons.code_outlined,
-                                        hint: 'HDFC0001234',
-                                        maxLength: 11,
-                                      ),
-                                    )
-                                  else
-                                    SizedBox(
-                                      width: 200,
+                                  // Bank code (IFSC / Sort Code / …) for every
+                                  // country; IBAN is added outside India.
+                                  Expanded(
+                                    flex: 19,
+                                    child: _buildField(
+                                      controller: row.ifscCode,
+                                      label: row.codeLabel.value,
+                                      icon: Icons.code_outlined,
+                                      maxLength: 11,
+                                      trailing: _bankCodeLabelMenu(
+                                          row.codeLabel.value,
+                                          (v) => setState(
+                                              () => row.codeLabel.value = v)),
+                                    ),
+                                  ),
+                                  if (_selectedCountry != 'India' &&
+                                      _selectedCountry.isNotEmpty) ...[
+                                    Expanded(
+                                      flex: 20,
                                       child: _buildField(
                                         controller: row.iban,
                                         label: l10n.fieldIbanLabel,
@@ -1092,13 +1097,12 @@ class _CompanyInfoScreenState extends ConsumerState<CompanyInfoScreen> {
                                         maxLength: 34,
                                       ),
                                     ),
-                                  const SizedBox(width: 8),
+                                  ],
                                   IconButton(
                                     icon: const Icon(Icons.open_in_full, size: 18),
                                     tooltip: l10n.tooltipEditInLargerView,
                                     onPressed: () => _editBankAccountDialog(index),
                                   ),
-                                  const SizedBox(width: 8),
                                   IconButton(
                                     tooltip: l10n.tooltipRemove,
                                     icon: const Icon(
@@ -1116,6 +1120,9 @@ class _CompanyInfoScreenState extends ConsumerState<CompanyInfoScreen> {
                                         _bankControllers[index]
                                             .ifscCode
                                             .dispose();
+                                        _bankControllers[index]
+                                            .codeLabel
+                                            .dispose();
                                         _bankControllers[index].iban.dispose();
                                         _bankControllers.removeAt(index);
                                         if (_defaultBankIndex == index) {
@@ -1128,8 +1135,7 @@ class _CompanyInfoScreenState extends ConsumerState<CompanyInfoScreen> {
                                       });
                                     },
                                   ),
-                                ],
-                              ),
+                              ],
                             ),
                           );
                         }),
@@ -1144,6 +1150,7 @@ class _CompanyInfoScreenState extends ConsumerState<CompanyInfoScreen> {
                                   bankName: TextEditingController(),
                                   accountNumber: TextEditingController(),
                                   ifscCode: TextEditingController(),
+                                  codeLabel: ValueNotifier('IFSC Code'),
                                   iban: TextEditingController(),
                                 ));
                               });
@@ -1386,12 +1393,14 @@ class _CompanyInfoScreenState extends ConsumerState<CompanyInfoScreen> {
     final bankNameCtrl = TextEditingController(text: row.bankName.text);
     final accountNumberCtrl = TextEditingController(text: row.accountNumber.text);
     final ifscCtrl = TextEditingController(text: row.ifscCode.text);
+    var codeLabel = row.codeLabel.value;
     final ibanCtrl = TextEditingController(text: row.iban.text);
     final isIndia = _selectedCountry == 'India' || _selectedCountry.isEmpty;
 
     final saved = await showDialog<bool>(
       context: context,
-      builder: (context) => AlertDialog(
+      builder: (context) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
         title: Text(l10n.companyInfoEditBankAccountTitle),
         content: SizedBox(
           width: 420,
@@ -1424,15 +1433,16 @@ class _CompanyInfoScreenState extends ConsumerState<CompanyInfoScreen> {
                   maxLength: 20,
                 ),
                 const SizedBox(height: 12),
-                if (isIndia)
-                  _buildField(
-                    controller: ifscCtrl,
-                    label: l10n.fieldIfscCodeLabel,
-                    icon: Icons.code_outlined,
-                    hint: 'HDFC0001234',
-                    maxLength: 11,
-                  )
-                else
+                _buildField(
+                  controller: ifscCtrl,
+                  label: codeLabel,
+                  icon: Icons.code_outlined,
+                  maxLength: 11,
+                  trailing: _bankCodeLabelMenu(
+                      codeLabel, (v) => setDialogState(() => codeLabel = v)),
+                ),
+                if (!isIndia) ...[
+                  const SizedBox(height: 12),
                   _buildField(
                     controller: ibanCtrl,
                     label: l10n.fieldIbanLabel,
@@ -1440,6 +1450,7 @@ class _CompanyInfoScreenState extends ConsumerState<CompanyInfoScreen> {
                     hint: 'DE89370400440532013000',
                     maxLength: 34,
                   ),
+                ],
               ],
             ),
           ),
@@ -1455,6 +1466,7 @@ class _CompanyInfoScreenState extends ConsumerState<CompanyInfoScreen> {
           ),
         ],
       ),
+      ),
     );
 
     if (saved == true && mounted) {
@@ -1463,6 +1475,7 @@ class _CompanyInfoScreenState extends ConsumerState<CompanyInfoScreen> {
         row.bankName.text = bankNameCtrl.text;
         row.accountNumber.text = accountNumberCtrl.text;
         row.ifscCode.text = ifscCtrl.text;
+        row.codeLabel.value = codeLabel;
         row.iban.text = ibanCtrl.text;
       });
     }
@@ -1471,6 +1484,19 @@ class _CompanyInfoScreenState extends ConsumerState<CompanyInfoScreen> {
     accountNumberCtrl.dispose();
     ifscCtrl.dispose();
     ibanCtrl.dispose();
+  }
+
+  /// Trailing menu on the bank code field to pick its label (IFSC / Sort Code / …).
+  Widget _bankCodeLabelMenu(String current, ValueChanged<String> onSelected) {
+    return PopupMenuButton<String>(
+      icon: const Icon(Icons.arrow_drop_down),
+      initialValue: current,
+      onSelected: onSelected,
+      itemBuilder: (_) => [
+        for (final l in BankAccount.codeLabels)
+          PopupMenuItem(value: l, child: Text(l)),
+      ],
+    );
   }
 
   /// Compact "show on invoice PDF" toggle used as a field's trailing icon.

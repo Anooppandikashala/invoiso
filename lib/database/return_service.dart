@@ -35,10 +35,14 @@ class ReturnService {
   // ─────────────────────────────────────────────────────────────────────
   // Credit note (sales return)
   // ─────────────────────────────────────────────────────────────────────
+  ///
+  /// [replaceDraft]: finalizing a saved draft note — its draft row + lines
+  /// (same id) are swapped for the final ones in the same transaction.
   static Future<void> createCreditNote({
     required Invoice creditNote,
     Invoice? originalInvoice,
     RefundInput? immediateRefund,
+    bool replaceDraft = false,
   }) async {
     assert(creditNote.type == 'Credit Note');
     final db = await _dbHelper.database;
@@ -46,6 +50,7 @@ class ReturnService {
     final total = creditNote.total;
 
     await db.transaction((txn) async {
+      if (replaceDraft) await _deleteDraftRow(txn, creditNote.id);
       await txn.insert('invoices', _invoiceRow(creditNote));
       for (final item in creditNote.items) {
         await txn.insert('invoice_items', _itemRow(item, creditNote.id));
@@ -103,10 +108,12 @@ class ReturnService {
   static Future<void> createDebitNote({
     required Invoice debitNote,
     Invoice? originalInvoice,
+    bool replaceDraft = false,
   }) async {
     assert(debitNote.type == 'Debit Note');
     final db = await _dbHelper.database;
     await db.transaction((txn) async {
+      if (replaceDraft) await _deleteDraftRow(txn, debitNote.id);
       await txn.insert('invoices', _invoiceRow(debitNote));
       for (final item in debitNote.items) {
         await txn.insert('invoice_items', _itemRow(item, debitNote.id));
@@ -243,6 +250,12 @@ class ReturnService {
     final db = await _dbHelper.database;
     final cn = await InvoiceService.getInvoiceById(creditNoteId);
     if (cn == null) throw StateError('Credit note $creditNoteId not found');
+    // A draft never settled or restocked — nothing to reverse.
+    if (cn.isDraft) {
+      await db.update('invoices', {'deleted_at': DateTime.now().toIso8601String()},
+          where: 'id = ?', whereArgs: [creditNoteId]);
+      return;
+    }
 
     final credits = await db.query('customer_credits',
         where: 'source_id = ?', whereArgs: [creditNoteId]);
@@ -323,7 +336,8 @@ class ReturnService {
       'invoices',
       columns: ['id', 'original_invoice_id'],
       where: "original_invoice_id IN (${List.filled(invoiceIds.length, '?').join(',')}) "
-          "AND type IN ('Credit Note', 'Debit Note') AND deleted_at IS NULL",
+          "AND type IN ('Credit Note', 'Debit Note') AND deleted_at IS NULL "
+          "AND is_draft = 0",
       whereArgs: invoiceIds,
       orderBy: 'date ASC, rowid ASC',
     );
@@ -349,6 +363,7 @@ class ReturnService {
       WHERE i.original_invoice_id = ?
         AND i.type = 'Credit Note'
         AND i.deleted_at IS NULL
+        AND i.is_draft = 0
       GROUP BY ii.product_id
     ''', [originalInvoiceId]);
     return {
@@ -434,6 +449,11 @@ class ReturnService {
   // Credit from a trashed (voided) note is never spendable.
   static const _liveSource =
       'source_id NOT IN (SELECT id FROM invoices WHERE deleted_at IS NOT NULL)';
+
+  static Future<void> _deleteDraftRow(DatabaseExecutor txn, String id) async {
+    await txn.delete('invoice_items', where: 'invoice_id = ?', whereArgs: [id]);
+    await txn.delete('invoices', where: 'id = ? AND is_draft = 1', whereArgs: [id]);
+  }
 
   static String _creditNoteRef(Invoice cn) =>
       'Credit Note ${cn.invoiceNumber ?? cn.id}';

@@ -239,4 +239,78 @@ void main() {
           stockBefore + 1);
     });
   });
+
+  testWidgets('credit note Save Draft is inert; Finalize settles and restocks',
+      (tester) async {
+    final buyer = Customer(
+      id: 'c7',
+      name: 'Draft Buyer',
+      email: '',
+      phone: '',
+      address: '',
+      gstin: '',
+    );
+    final inv = (await tester.runAsync(() async {
+      await CustomerService.insertCustomer(buyer);
+      await InvoiceService.insertInvoice(Invoice(
+        id: 'i7',
+        invoiceNumber: '00000007',
+        customer: buyer,
+        items: [InvoiceItem(product: product, quantity: 2)],
+        date: DateTime(2026, 1, 7),
+        type: 'Invoice',
+      ));
+      return InvoiceService.getInvoiceById('i7');
+    }))!;
+    final stockBefore = (await tester
+        .runAsync(() => ProductService.getProductById('p1')))!
+        .stock;
+
+    tester.view.physicalSize = const Size(1800, 1400);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.reset);
+    await tester.pumpWidget(ProviderScope(
+      overrides: sqliteRepositoryOverrides,
+      child: MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: Scaffold(
+            body: CreateInvoiceScreenV2(
+                cloneFrom: inv, cloneType: 'Credit Note')),
+      ),
+    ));
+    await settle(tester);
+
+    await tester.tap(find.text('Save Draft'));
+    await tester.pump();
+    await settle(tester);
+    await tester.runAsync(() async {
+      final draft = (await InvoiceService.getInvoicesPaginated(
+              filterType: 'Credit Note', customerId: 'c7'))
+          .single;
+      expect(draft.isDraft, isTrue);
+      expect(draft.invoiceNumber, isNull);
+      expect(draft.originalInvoiceId, 'i7');
+      expect((await ProductService.getProductById('p1'))!.stock, stockBefore);
+      expect(await ReturnService.getNotesForInvoices(['i7']), isEmpty);
+    });
+
+    await tester.tap(find.byIcon(Icons.task_alt));
+    await tester.pump();
+    await settle(tester);
+    await tester.runAsync(() async {
+      final cn = (await ReturnService.getNotesForInvoice('i7')).single;
+      expect(cn.isDraft, isFalse);
+      expect(cn.invoiceNumber, isNotNull);
+      expect(cn.items.single.quantity, 2);
+      expect((await ProductService.getProductById('p1'))!.stock,
+          stockBefore + 2);
+      expect(
+          (await InvoiceService.getInvoiceById('i7'))!
+              .payments
+              .single
+              .paymentMethod,
+          'Credit Note');
+    });
+  });
 }

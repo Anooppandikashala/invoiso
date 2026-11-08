@@ -1769,7 +1769,7 @@ class _CustomerManagementScreenV2State extends ConsumerState<CustomerManagementS
               flex: 2,
               child: Text(
                 hasOutstanding
-                    ? '$_outstandingCurrencySymbol ${outstanding.toStringAsFixed(2)}'
+                    ? '$_outstandingCurrencySymbol ${AmountFormat.money(outstanding)}'
                     : '—',
                 overflow: TextOverflow.ellipsis,
                 style: TextStyle(

@@ -411,7 +411,7 @@
   "quotationStatusDeclined": "ཁས་མ་བླངས།",
   "quotationStatusConverted": "བསྒྱུར་ཟིན།",
   "invoiceMgmtDeclineInvoiceTitle": "ཁྲལ་ཤོག་ཁས་མི་ལེན་ནམ།",
-  "invoiceMgmtDeclineInvoiceBody": "འདིས་ཁྲལ་ཤོག་ #{number} ཁས་མི་ལེན་པར་རྟགས་རྒྱོབ་ནས་དེའི་ནང་དོན་ཚང་མ་ཅ་དངོས་ལ་སློག་ཡོང་། འདི་ལོག་སྟེ་བཟོ་མི་ཐུབ།",
+  "invoiceMgmtDeclineInvoiceBody": "འདིས་ #{number} ཁས་མི་ལེན་པར་རྟགས་རྒྱོབ་ཡོང་། འདི་ལོག་སྟེ་བཟོ་མི་ཐུབ།",
   "@invoiceMgmtDeclineInvoiceBody": {
     "placeholders": {
       "number": {

@@ -24,6 +24,10 @@ class PaymentService {
     String? paymentMethod,
     String? notes,
   }) async {
+    // A draft isn't a committed sale — it takes money once finalized.
+    if (invoice.isDraft) {
+      throw StateError('Draft ${invoice.id} cannot take payments; finalize it first');
+    }
     final db = await _dbHelper.database;
     late InvoicePayment saved;
 
@@ -91,6 +95,7 @@ class PaymentService {
     int count = 0;
     await db.transaction((txn) async {
       for (final invoice in invoices) {
+        if (invoice.isDraft) continue;
         final amountPaid = invoice.outstandingBalance;
         if (amountPaid <= InvoiceCalculator.moneyEpsilon) continue;
 

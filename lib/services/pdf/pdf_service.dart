@@ -81,6 +81,7 @@ class PDFService {
   static Future<PdfGenerationSettings> fetchPdfSettings({
     String datePattern = 'dd/MM/yyyy',
   }) async {
+    await AmountFormat.load(); // Number format setting
     final results = await Future.wait<dynamic>([
       BackendServices.companyInfo.getCompanyInfo(), // 0
       BackendServices.settings.getInvoiceTemplate(), // 1
@@ -740,9 +741,20 @@ class PDFService {
           pageSize: s.pageSize,
           pdfTheme: pdfTheme,
           itemLayout: s.thermalItemLayout,
+          companyNameSize: s.thermalCompanyNameSize,
+          showTotalQuantity: s.showTotalQuantity,
+          showSlNo: s.showSlNo,
+          showTaxColumn: s.showTaxColumn,
+          showCgstSgst: s.showCgstSgst,
+          showCustomerAddress: s.showCustomerAddress,
+          showCustomerEmail: s.showCustomerEmail,
+          showPan: s.showPan,
+          showFssai: s.showFssai,
           showRoundOff: s.showRoundOff,
           showLeadingZeros: s.showLeadingZeros,
           showPhone: s.showPhone,
+          showEmail: s.showEmail,
+          showWebsite: s.showWebsite,
           showCompanyName: s.showCompanyName,
           showAddress: s.showAddress,
         ));
@@ -955,6 +967,8 @@ class PDFService {
                     ? '${invoice.invoiceTitle ?? invoice.type} #${invoice.pdfNumberText('')}'
                     : invoice.invoiceTitle ?? invoice.type),
                 actions: [
+                  // Drafts: preview only — Print / Download after Finalize.
+                  if (!invoice.isDraft) ...[
                   IconButton(
                     icon: const Icon(Icons.print_outlined),
                     tooltip: 'Print',
@@ -980,6 +994,7 @@ class PDFService {
                     onPressed: () =>
                         _downloadWithPicker(context, pdfBytes, invoice),
                   ),
+                  ],
                   IconButton(
                     icon: const Icon(Icons.close),
                     tooltip: 'Close',

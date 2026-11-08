@@ -113,7 +113,7 @@ class ReportService {
     final db = await _db.database;
 
     final sb = StringBuffer(
-        "type = ? AND deleted_at IS NULL AND (status IS NULL OR status != 'declined')");
+        "type = ? AND deleted_at IS NULL AND is_draft = 0 AND (status IS NULL OR status != 'declined')");
     final args = <dynamic>[type];
     if (from != null) {
       sb.write(' AND date >= ?');
@@ -388,6 +388,7 @@ class ReportService {
       "FROM invoice_items ii "
       "JOIN invoices i ON i.id = ii.invoice_id "
       "WHERE i.deleted_at IS NULL AND i.type = 'Invoice' "
+      "AND i.is_draft = 0 "
       "AND (i.status IS NULL OR i.status != 'declined') "
       "AND (ii.product_purchase_price IS NULL OR ii.product_purchase_price = 0) "
       "$ccFilter"
@@ -425,6 +426,7 @@ class ReportService {
       "FROM invoice_payments ip "
       "JOIN invoices i ON ip.invoice_id = i.id "
       "WHERE i.deleted_at IS NULL AND i.type = 'Invoice' "
+      "AND i.is_draft = 0 "
       "AND (ip.payment_method IS NULL "
       "OR ip.payment_method NOT IN ('Credit Note', 'Customer Credit')) "
       "AND (i.status IS NULL OR i.status != 'declined') "
@@ -724,7 +726,7 @@ class ReportService {
     final db = await _db.database;
     final rows = await db.rawQuery(
       "SELECT DISTINCT currency_code FROM invoices "
-      "WHERE deleted_at IS NULL AND type = 'Invoice' AND currency_code IS NOT NULL",
+      "WHERE deleted_at IS NULL AND type = 'Invoice' AND is_draft = 0 AND currency_code IS NOT NULL",
     );
     final codes = rows.map((r) => r['currency_code'] as String).toList();
     codes.sort();
@@ -767,6 +769,7 @@ class ReportService {
       "FROM invoice_items ii "
       "JOIN invoices i ON i.id = ii.invoice_id "
       "WHERE i.deleted_at IS NULL AND $salesDocTypes "
+      "AND i.is_draft = 0 "
       "AND (i.status IS NULL OR i.status != 'declined') "
       "AND i.tax_mode = 'per_item' "
       "$ccFilter"
@@ -788,6 +791,7 @@ class ReportService {
       "SELECT i.id, i.type, i.tax_rate, i.additional_costs "
       "FROM invoices i "
       "WHERE i.deleted_at IS NULL AND $salesDocTypes "
+      "AND i.is_draft = 0 "
       "AND (i.status IS NULL OR i.status != 'declined') "
       "AND i.tax_mode = 'global' AND i.tax_rate > 0 "
       "$ccFilter"
@@ -803,6 +807,7 @@ class ReportService {
         "FROM invoice_items WHERE invoice_id IN ("
         "SELECT i.id FROM invoices i "
         "WHERE i.deleted_at IS NULL AND $salesDocTypes "
+        "AND i.is_draft = 0 "
         "AND (i.status IS NULL OR i.status != 'declined') "
         "AND i.tax_mode = 'global' AND i.tax_rate > 0 "
         "$ccFilter"
@@ -907,7 +912,7 @@ class ReportService {
   }) async {
     final db = await _db.database;
     final sb = StringBuffer(
-      "type = 'Invoice' AND deleted_at IS NULL "
+      "type = 'Invoice' AND deleted_at IS NULL AND is_draft = 0 "
       "AND COALESCE(NULLIF(customer_id, ''), customer_name) IS NOT NULL",
     );
     final args = <Object?>[];
@@ -1187,6 +1192,7 @@ class ReportService {
       "FROM invoice_items ii "
       "JOIN invoices i ON i.id = ii.invoice_id "
       "WHERE i.deleted_at IS NULL "
+      "AND i.is_draft = 0 "
       "AND i.type IN ('Invoice', 'Credit Note', 'Debit Note') "
       "AND (i.status IS NULL OR i.status != 'declined') "
       "$ccFilter"
@@ -1406,7 +1412,7 @@ class ReportService {
 
     final qr = await db.rawQuery(
       "SELECT COUNT(*) AS cnt FROM invoices "
-      "WHERE type = 'Quotation' AND deleted_at IS NULL "
+      "WHERE type = 'Quotation' AND deleted_at IS NULL AND is_draft = 0 "
       "$currencyFilter"
       "AND date >= ? AND date <= ?",
       args,
@@ -1415,7 +1421,7 @@ class ReportService {
 
     final ir = await db.rawQuery(
       "SELECT COUNT(*) AS cnt FROM invoices "
-      "WHERE type = 'Invoice' AND deleted_at IS NULL "
+      "WHERE type = 'Invoice' AND deleted_at IS NULL AND is_draft = 0 "
       "$currencyFilter"
       "AND date >= ? AND date <= ?",
       args,

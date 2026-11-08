@@ -1,4 +1,6 @@
 import 'package:intl/intl.dart';
+import 'package:invoiso/common/common.dart';
+import 'package:invoiso/services/backend_services.dart';
 
 /// Leading characters that make Excel/LibreOffice treat a cell as a formula.
 const _csvFormulaTriggers = ['=', '+', '-', '@', '\t', '\r'];
@@ -43,6 +45,32 @@ class AppFormatters {
 
   static String formatAmount(double amount, String symbol) =>
       '$symbol ${_numberFormat.format(amount)}';
+}
+
+/// Displayed amounts per the Number format setting (Settings → Invoice
+/// Settings). Display only — inputs, CSV exports, the UPI QR amount and the
+/// DB keep plain `toStringAsFixed(2)`.
+class AmountFormat {
+  /// Process-wide cache; [load] refreshes it before a PDF is built.
+  static AmountSeparator style = AmountSeparator.none;
+
+  static final _formats = {
+    AmountSeparator.none: NumberFormat('0.00', 'en_US'),
+    AmountSeparator.international: NumberFormat('#,##0.00', 'en_US'),
+    AmountSeparator.indian: NumberFormat('#,##,##0.00', 'en_US'),
+  };
+
+  static Future<void> load() async =>
+      style = await BackendServices.settings.getAmountSeparator();
+
+  /// 2 decimals, grouped per [style]: 1234567.89 / 1,234,567.89 / 12,34,567.89.
+  static String money(double v) => _formats[style]!.format(v);
+
+  /// Like [money], but None falls back to International — for Reports and
+  /// Cash Exchange, which always grouped thousands before this setting.
+  static String moneyGrouped(double v) => _formats[
+          style == AmountSeparator.none ? AmountSeparator.international : style]!
+      .format(v);
 }
 
 extension StringLimit on String {

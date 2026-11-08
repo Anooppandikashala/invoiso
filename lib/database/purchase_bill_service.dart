@@ -354,12 +354,15 @@ class PurchaseBillService {
   // any applied).
   static Future<void> restorePurchaseBill(String id) async {
     final db = await dbHelper.database;
-    await db.update(
+    // Only a bill still in trash restores — a repeat call (double-tap) is a
+    // no-op instead of applying the stock again.
+    final changed = await db.update(
       'purchase_bills',
       {'deleted_at': null},
-      where: 'id = ?',
+      where: 'id = ? AND deleted_at IS NOT NULL',
       whereArgs: [id],
     );
+    if (changed == 0) return;
 
     final bill = await getPurchaseBillById(id);
     if (bill == null || bill.isDraft) return;

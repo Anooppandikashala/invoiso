@@ -623,6 +623,133 @@ void main() {
     expect(await InvoiceService.getInvoiceById('dn1'), isNull);
   });
 
+  test('draft credit note is inert; finalizing settles and restocks once',
+      () async {
+    final original = await seedPaidInvoice(stock: 50, qty: 10); // stock 40
+    final product = original.items.first.product;
+    await InvoiceService.insertInvoice(_creditNote(
+      id: 'cn1',
+      original: original,
+      items: [_item(product, 3)],
+      settlement: CreditSettlement.customerCredit,
+    )
+      ..invoiceNumber = null
+      ..isDraft = true);
+
+    Future<double> credit() => ReturnService.getRemainingCustomerCredit(
+        customerId: 'c1', currencyCode: 'INR');
+    expect((await ProductService.getProductById('p1'))!.stock, 40);
+    expect(await credit(), 0);
+    expect(await ReturnService.getReturnedQtyByLine('i1'), isEmpty);
+    expect(await ReturnService.getNotesForInvoices(['i1']), isEmpty);
+
+    // Finalize: same id, draft row swapped for the final note.
+    await ReturnService.createCreditNote(
+      creditNote: _creditNote(
+        id: 'cn1',
+        original: original,
+        items: [_item(product, 3)],
+        settlement: CreditSettlement.customerCredit,
+      ),
+      originalInvoice: original,
+      replaceDraft: true,
+    );
+    expect((await ProductService.getProductById('p1'))!.stock, 43);
+    expect(await credit(), 300);
+    final finalNote = (await InvoiceService.getInvoiceById('cn1'))!;
+    expect(finalNote.isDraft, isFalse);
+    expect(finalNote.items.single.quantity, 3);
+    expect(await db.query('invoices', where: "id = 'cn1'"), hasLength(1));
+  });
+
+  test('draft credit note: void / trash only trash it; restore brings it back',
+      () async {
+    final original = await seedPaidInvoice(stock: 50, qty: 10); // stock 40
+    await InvoiceService.insertInvoice(_creditNote(
+      id: 'cn1',
+      original: original,
+      items: [_item(original.items.first.product, 2)],
+      settlement: CreditSettlement.customerCredit,
+    )
+      ..invoiceNumber = null
+      ..isDraft = true);
+
+    await ReturnService.voidCreditNote('cn1');
+    expect(await InvoiceService.getInvoiceById('cn1'), isNull);
+    expect((await ProductService.getProductById('p1'))!.stock, 40);
+
+    await InvoiceService.restoreInvoice('cn1');
+    expect((await InvoiceService.getInvoiceById('cn1'))!.isDraft, isTrue);
+    await InvoiceService.softDeleteInvoice('cn1');
+    expect(await InvoiceService.getInvoiceById('cn1'), isNull);
+  });
+
+  test('draft credit note stays in trash while its invoice is declined or '
+      'trashed', () async {
+    final p = _prod(stock: 50);
+    await ProductService.insertProduct(p);
+    final inv = _invoice(
+        id: 'i1', number: '00000001', customer: _cust(), items: [_item(p, 5)]);
+    await InvoiceService.insertInvoice(inv);
+    await InvoiceService.insertInvoice(_creditNote(
+      id: 'cn1',
+      original: inv,
+      items: [_item(p, 2)],
+      settlement: CreditSettlement.customerCredit,
+    )
+      ..invoiceNumber = null
+      ..isDraft = true);
+
+    await InvoiceService.softDeleteInvoice('cn1');
+    await InvoiceService.softDeleteInvoice('i1');
+    await InvoiceService.restoreInvoice('cn1');
+    expect(await InvoiceService.getInvoiceById('cn1'), isNull);
+
+    await InvoiceService.restoreInvoice('i1');
+    await InvoiceService.declineInvoice('i1');
+    await InvoiceService.restoreInvoice('cn1');
+    expect(await InvoiceService.getInvoiceById('cn1'), isNull);
+  });
+
+  test('a final credit / debit note cannot be edited', () async {
+    final original = await seedPaidInvoice(stock: 50, qty: 10); // stock 40
+    final product = original.items.first.product;
+    await ReturnService.createCreditNote(
+      creditNote: _creditNote(
+        id: 'cn1',
+        original: original,
+        items: [_item(product, 2)],
+        settlement: CreditSettlement.customerCredit,
+      ),
+      originalInvoice: original,
+    );
+    expect((await ProductService.getProductById('p1'))!.stock, 42);
+
+    final edited = (await InvoiceService.getInvoiceById('cn1'))!
+      ..items = [_item(product, 3)];
+    await expectLater(
+        InvoiceService.updateInvoice(edited), throwsA(isA<StateError>()));
+    expect((await ProductService.getProductById('p1'))!.stock, 42);
+    expect((await InvoiceService.getInvoiceById('cn1'))!.items.single.quantity, 2);
+  });
+
+  test('a draft credit note does not lock editing its invoice', () async {
+    final original = await seedPaidInvoice(stock: 50, qty: 10);
+    await InvoiceService.insertInvoice(_creditNote(
+      id: 'cn1',
+      original: original,
+      items: [_item(original.items.first.product, 2)],
+      settlement: CreditSettlement.customerCredit,
+    )
+      ..invoiceNumber = null
+      ..isDraft = true);
+
+    final edited = (await InvoiceService.getInvoiceById('i1'))!
+      ..items = [_item(original.items.first.product, 12)];
+    await InvoiceService.updateInvoice(edited);
+    expect((await InvoiceService.getInvoiceById('i1'))!.items.single.quantity, 12);
+  });
+
   test('updateInvoice locks customer / lines / total once credit notes exist',
       () async {
     final original = await seedPaidInvoice(stock: 50, qty: 10);

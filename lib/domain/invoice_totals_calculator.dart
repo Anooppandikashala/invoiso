@@ -72,6 +72,10 @@ class InvoiceTotals {
 
   double get preDiscountTotal => subtotal + tax + additionalCostsTotal;
 
+  /// Line discounts on the same tax-excluded basis as [grossSubtotal], so
+  /// Subtotal − Discount = [subtotal] on printed totals.
+  double get taxableDiscount => grossSubtotal - subtotal;
+
   double get total =>
       (preDiscountTotal - invoiceDiscountAmount).clamp(0.0, double.infinity);
 }

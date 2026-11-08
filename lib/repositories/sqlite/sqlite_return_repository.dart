@@ -10,21 +10,25 @@ class SqliteReturnRepository implements ReturnRepository {
     required Invoice creditNote,
     Invoice? originalInvoice,
     RefundInput? immediateRefund,
+    bool replaceDraft = false,
   }) =>
       ReturnService.createCreditNote(
         creditNote: creditNote,
         originalInvoice: originalInvoice,
         immediateRefund: immediateRefund,
+        replaceDraft: replaceDraft,
       );
 
   @override
   Future<void> createDebitNote({
     required Invoice debitNote,
     Invoice? originalInvoice,
+    bool replaceDraft = false,
   }) =>
       ReturnService.createDebitNote(
         debitNote: debitNote,
         originalInvoice: originalInvoice,
+        replaceDraft: replaceDraft,
       );
 
   @override

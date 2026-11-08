@@ -9,6 +9,7 @@ import 'package:invoiso/models/refund.dart';
 import 'package:invoiso/providers/repositories.dart';
 import 'package:invoiso/services/refund_receipt_service.dart';
 import 'package:invoiso/widgets/return_l10n.dart';
+import 'package:invoiso/utils/formatters.dart';
 
 const _methods = <String>['Cash', 'Bank Transfer', 'Check', 'Online', 'Other'];
 
@@ -76,7 +77,7 @@ class _RecordRefundDialogState extends ConsumerState<RecordRefundDialog> {
         amount > _remaining + InvoiceCalculator.moneyEpsilon) {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
           content: Text(l10n.refundValidationRange(
-              '$_sym${_remaining.toStringAsFixed(2)}'))));
+              '$_sym${AmountFormat.money(_remaining)}'))));
       return;
     }
     setState(() => _saving = true);
@@ -101,7 +102,7 @@ class _RecordRefundDialogState extends ConsumerState<RecordRefundDialog> {
       Navigator.of(context).pop();
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
         content: Text(l10n
-            .refundRecordedMessage('$_sym${amount.toStringAsFixed(2)}')),
+            .refundRecordedMessage('$_sym${AmountFormat.money(amount)}')),
         action: SnackBarAction(
           label: l10n.returnPrintVoucher,
           onPressed: () => RefundReceiptService.preview(
@@ -134,7 +135,7 @@ class _RecordRefundDialogState extends ConsumerState<RecordRefundDialog> {
                 children: [
                   Text(
                       l10n.refundAvailableCredit(
-                          '$_sym${_remaining.toStringAsFixed(2)}'),
+                          '$_sym${AmountFormat.money(_remaining)}'),
                       style: const TextStyle(fontWeight: FontWeight.w600)),
                   const SizedBox(height: 12),
                   TextField(

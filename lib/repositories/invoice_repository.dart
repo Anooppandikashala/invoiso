@@ -49,7 +49,7 @@ abstract class InvoiceRepository {
   /// 'converted') on a quotation.
   Future<void> setInvoiceStatus(String id, String status);
   /// Voids invoice [id], returning its stock. One-way — no undo.
-  Future<void> declineInvoice(String id);
+  Future<void> declineInvoice(String id, {bool restock = true});
   Future<void> permanentDeleteInvoice(String id);
   Future<List<Invoice>> getDeletedInvoices();
   Future<void> deleteInvoice(String id);
