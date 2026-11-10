@@ -22,7 +22,8 @@ class LongTextExpandButton extends StatelessWidget {
     final l10n = AppLocalizations.of(context)!;
     final dialogController = TextEditingController(text: controller.text);
     double width = 480;
-    double height = 320;
+    final maxHeight = MediaQuery.sizeOf(context).height * 0.7;
+    double height = (maxHeight * 0.8).clamp(200, 640);
     final result = await showDialog<String>(
       context: context,
       builder: (ctx) => StatefulBuilder(
@@ -48,8 +49,9 @@ class LongTextExpandButton extends StatelessWidget {
                   ),
                 ),
                 Positioned(
-                  right: 0,
-                  bottom: 0,
+                  right: 4,
+                  // Sit inside the box corner, above the 0/N counter row.
+                  bottom: maxLength == null ? 4 : 28,
                   child: MouseRegion(
                     cursor: SystemMouseCursors.resizeDownRight,
                     child: GestureDetector(
@@ -57,12 +59,18 @@ class LongTextExpandButton extends StatelessWidget {
                       onPanUpdate: (details) {
                         setDialogState(() {
                           width = (width + details.delta.dx).clamp(320, 800);
-                          height = (height + details.delta.dy).clamp(200, 600);
+                          height = (height + details.delta.dy).clamp(200, maxHeight);
                         });
                       },
-                      child: const Padding(
-                        padding: EdgeInsets.all(4),
-                        child: Icon(Icons.south_east, size: 16),
+                      child: Container(
+                        padding: const EdgeInsets.all(2),
+                        decoration: BoxDecoration(
+                          color: Theme.of(ctx).colorScheme.primaryContainer,
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                        child: Icon(Icons.south_east,
+                            size: 20,
+                            color: Theme.of(ctx).colorScheme.onPrimaryContainer),
                       ),
                     ),
                   ),

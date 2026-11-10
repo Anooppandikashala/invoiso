@@ -3742,10 +3742,12 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
             borderRadius: BorderRadius.circular(AppBorderRadius.xsmall)),
         prefixIcon: const Icon(Icons.notes_outlined, size: 18),
         suffixIcon: LongTextExpandButton(
-            title: 'Description', controller: controller),
+            title: 'Description', controller: controller,
+            maxLength: DefaultValues.productDescriptionLength),
         filled: true,
         fillColor: Theme.of(context).colorScheme.surfaceContainerHighest,
       ),
+      maxLength: DefaultValues.productDescriptionLength,
       minLines: 5,
       maxLines: 5,
       keyboardType: TextInputType.multiline,
@@ -6787,7 +6789,7 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
     final l10n = AppLocalizations.of(context)!;
     return TextField(
       controller: privateNotesController,
-      maxLength: DefaultValues.additionalNotesLength,
+      maxLength: DefaultValues.privateNotesLength,
       maxLines: 3,
       decoration: _flatFieldDecorationV2(l10n.createInvoicePrivateNotesLabel,
           hint: l10n.createInvoicePrivateNotesHint,
@@ -6798,7 +6800,7 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
             onPressed: () => _editLongTextDialogV2(
               title: l10n.invoiceDetailsPrivateNotesTitle,
               controller: privateNotesController,
-              maxLength: DefaultValues.additionalNotesLength,
+              maxLength: DefaultValues.privateNotesLength,
             ),
           )),
     );
@@ -6895,8 +6897,9 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
                   ),
                 ),
                 Positioned(
-                  right: 0,
-                  bottom: 0,
+                  right: 4,
+                  // Sit inside the box corner, above the 0/N counter row.
+                  bottom: 28,
                   child: MouseRegion(
                     cursor: SystemMouseCursors.resizeDownRight,
                     child: GestureDetector(
@@ -6909,9 +6912,15 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
                               .clamp(_notesDialogMinHeight, _notesDialogMaxHeight);
                         });
                       },
-                      child: const Padding(
-                        padding: EdgeInsets.all(4),
-                        child: Icon(Icons.south_east, size: 16),
+                      child: Container(
+                        padding: const EdgeInsets.all(2),
+                        decoration: BoxDecoration(
+                          color: Theme.of(ctx).colorScheme.primaryContainer,
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                        child: Icon(Icons.south_east,
+                            size: 20,
+                            color: Theme.of(ctx).colorScheme.onPrimaryContainer),
                       ),
                     ),
                   ),
@@ -6973,8 +6982,9 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
                   ),
                 ),
                 Positioned(
-                  right: 0,
-                  bottom: 0,
+                  right: 4,
+                  // Sit inside the box corner, above the 0/N counter row.
+                  bottom: maxLength == null ? 4 : 28,
                   child: MouseRegion(
                     cursor: SystemMouseCursors.resizeDownRight,
                     child: GestureDetector(
@@ -6987,9 +6997,15 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
                               .clamp(_notesDialogMinHeight, _notesDialogMaxHeight);
                         });
                       },
-                      child: const Padding(
-                        padding: EdgeInsets.all(4),
-                        child: Icon(Icons.south_east, size: 16),
+                      child: Container(
+                        padding: const EdgeInsets.all(2),
+                        decoration: BoxDecoration(
+                          color: Theme.of(ctx).colorScheme.primaryContainer,
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                        child: Icon(Icons.south_east,
+                            size: 20,
+                            color: Theme.of(ctx).colorScheme.onPrimaryContainer),
                       ),
                     ),
                   ),

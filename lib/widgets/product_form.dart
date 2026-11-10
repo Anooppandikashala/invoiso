@@ -341,11 +341,11 @@ class ProductFormState extends ConsumerState<ProductForm> {
             const SizedBox(height: 16),
             _buildFormField(
                 _descriptionController, l10n.productMgmtDescriptionLabel, Icons.description,
-                maxLines: 5, maxLength: 500, required: false,
+                maxLines: 5, maxLength: DefaultValues.productDescriptionLength, required: false,
                 suffixIcon: LongTextExpandButton(
                     title: l10n.productMgmtDescriptionLabel,
                     controller: _descriptionController,
-                    maxLength: 500)),
+                    maxLength: DefaultValues.productDescriptionLength)),
           ],
           if (_columnsConfig.hsncode) ...[
             const SizedBox(height: 16),
@@ -667,7 +667,7 @@ Future<Product?> showNewProductDialog(
           ],
         ),
         content: SizedBox(
-          width: 480,
+          width: 550,
           child: SingleChildScrollView(
             child: Padding(
               padding: const EdgeInsets.only(top: 8),

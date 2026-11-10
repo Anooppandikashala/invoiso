@@ -98,6 +98,9 @@ class DefaultValues {
   static const String thankYouNote = "";
   static const LogoPosition logoPosition = LogoPosition.left;
   static const int additionalNotesLength = 1000;
+  static const int privateNotesLength = 2500;
+  // Higher limits risk PDF failure: a table row can't split across pages.
+  static const int productDescriptionLength = 1000;
 }
 
 class AppShortcuts {

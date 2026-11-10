@@ -2770,11 +2770,11 @@ class _ProductManagementScreenV2State extends ConsumerState<ProductManagementScr
                             if (_columnsConfig.description) ...[
                               const SizedBox(height: 16),
                               field(descCtrl, l10n.productMgmtDescriptionLabel, Icons.description,
-                                  maxLines: 5, maxLength: 500,
+                                  maxLines: 5, maxLength: DefaultValues.productDescriptionLength,
                                   suffixIcon: LongTextExpandButton(
                                       title: l10n.productMgmtDescriptionLabel,
                                       controller: descCtrl,
-                                      maxLength: 500,
+                                      maxLength: DefaultValues.productDescriptionLength,
                                       readOnly: !isEdit)),
                             ],
                             if (_columnsConfig.hsncode) ...[
