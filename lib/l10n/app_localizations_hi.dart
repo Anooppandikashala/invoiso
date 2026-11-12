@@ -4189,11 +4189,40 @@ class AppLocalizationsHi extends AppLocalizations {
   String get companyInfoAddUpiAccountButton => 'UPI खाता जोड़ें';
 
   @override
+  String get paymentQrSourceUpi => 'UPI ID से बनाएँ';
+
+  @override
+  String get paymentQrSourceImage => 'QR इमेज अपलोड करें';
+
+  @override
+  String get paymentQrSourceHelp =>
+      'UPI QR के बजाय अपने QR कोड (PayPal, Wise, बैंक QR...) इस्तेमाल करें। हर इनवॉइस के लिए एक चुनें।';
+
+  @override
+  String get paymentQrSourceUpiHelp =>
+      'आपकी UPI ID से इनवॉइस राशि भरा हुआ UPI QR बनाता है। हर इनवॉइस के लिए एक चुनें।';
+
+  @override
+  String get companyInfoPaymentQrSectionLabel => 'भुगतान QR इमेज';
+
+  @override
+  String get companyInfoAddPaymentQrButton => 'QR इमेज जोड़ें';
+
+  @override
+  String get companyInfoPaymentQrLabelHint => 'जैसे PayPal से भुगतान करें';
+
+  @override
+  String get createInvoicePaymentQrLabel => 'भुगतान QR';
+
+  @override
+  String get paymentQrDefaultTitle => 'भुगतान के लिए स्कैन करें';
+
+  @override
   String get companyInfoShowQrToggleTitle => 'इनवॉइस पर QR कोड दिखाएं';
 
   @override
   String get companyInfoShowQrToggleSubtitle =>
-      'जनरेट किए गए PDF में स्कैन करने योग्य UPI भुगतान QR कोड जोड़ता है';
+      'जनरेट किए गए PDF में स्कैन करने योग्य भुगतान QR कोड जोड़ता है';
 
   @override
   String get companyInfoShowBankDetailsToggleTitle =>

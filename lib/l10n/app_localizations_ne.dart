@@ -4216,11 +4216,40 @@ class AppLocalizationsNe extends AppLocalizations {
   String get companyInfoAddUpiAccountButton => 'UPI खाता थप्नुहोस्';
 
   @override
+  String get paymentQrSourceUpi => 'UPI ID बाट बनाउनुहोस्';
+
+  @override
+  String get paymentQrSourceImage => 'QR तस्बिर अपलोड गर्नुहोस्';
+
+  @override
+  String get paymentQrSourceHelp =>
+      'UPI QR को सट्टा आफ्नै QR कोड (PayPal, Wise, बैंक QR...) प्रयोग गर्नुहोस्। हरेक बीजकका लागि एउटा छान्नुहोस्।';
+
+  @override
+  String get paymentQrSourceUpiHelp =>
+      'तपाईंको UPI ID बाट बीजक रकम भरिएको UPI QR बनाउँछ। हरेक बीजकका लागि एउटा छान्नुहोस्।';
+
+  @override
+  String get companyInfoPaymentQrSectionLabel => 'भुक्तानी QR तस्बिरहरू';
+
+  @override
+  String get companyInfoAddPaymentQrButton => 'QR तस्बिर थप्नुहोस्';
+
+  @override
+  String get companyInfoPaymentQrLabelHint => 'जस्तै PayPal मार्फत भुक्तानी';
+
+  @override
+  String get createInvoicePaymentQrLabel => 'भुक्तानी QR';
+
+  @override
+  String get paymentQrDefaultTitle => 'भुक्तानीका लागि स्क्यान गर्नुहोस्';
+
+  @override
   String get companyInfoShowQrToggleTitle => 'बीजकमा QR कोड देखाउनुहोस्';
 
   @override
   String get companyInfoShowQrToggleSubtitle =>
-      'उत्पन्न PDF मा स्क्यान गर्न मिल्ने UPI भुक्तानी QR कोड थप्छ';
+      'उत्पन्न PDF मा स्क्यान गर्न मिल्ने भुक्तानी QR कोड थप्छ';
 
   @override
   String get companyInfoShowBankDetailsToggleTitle =>

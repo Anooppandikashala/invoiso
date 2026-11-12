@@ -18,6 +18,7 @@ import 'package:invoiso/models/company_info.dart';
 import 'package:invoiso/utils/window_title.dart';
 
 import 'package:invoiso/common/app_countries.dart';
+import 'package:uuid/uuid.dart';
 
 class CompanyInfoScreen extends ConsumerStatefulWidget {
   const CompanyInfoScreen({super.key});
@@ -42,6 +43,11 @@ class _CompanyInfoScreenState extends ConsumerState<CompanyInfoScreen> {
   final List<({TextEditingController label, TextEditingController id})>
       _upiControllers = [];
   int? _defaultUpiIndex;
+  // 'upi' = QR generated from UPI ID, 'image' = uploaded QR images below.
+  String _paymentQrSource = 'upi';
+  final List<({String id, TextEditingController label, String imageBase64})>
+      _qrRows = [];
+  int? _defaultQrIndex;
 
   final List<
       ({
@@ -96,6 +102,8 @@ class _CompanyInfoScreenState extends ConsumerState<CompanyInfoScreen> {
       settingsRepo.getShowWebsite(),
       settingsRepo.getShowAddress(),
       settingsRepo.getShowLogo(),
+      settingsRepo.getSetting(SettingKey.paymentQrSource),
+      settingsRepo.getSetting(SettingKey.paymentQrEntries),
     ]);
 
     if (!mounted) return;
@@ -115,6 +123,8 @@ class _CompanyInfoScreenState extends ConsumerState<CompanyInfoScreen> {
     final showWebsite = results[12] as bool;
     final showAddress = results[13] as bool;
     final showLogo = results[14] as bool;
+    final paymentQrSource = results[15] as String?;
+    final qrEntries = PaymentQrEntry.listFromJson(results[16] as String?);
 
     if (info == null) return;
 
@@ -169,6 +179,22 @@ class _CompanyInfoScreenState extends ConsumerState<CompanyInfoScreen> {
         if (entry.isDefault) {
           _defaultUpiIndex = i;
         }
+      }
+
+      _paymentQrSource = paymentQrSource == 'image' ? 'image' : 'upi';
+      for (final row in _qrRows) {
+        row.label.dispose();
+      }
+      _qrRows.clear();
+      _defaultQrIndex = null;
+      for (int i = 0; i < qrEntries.length; i++) {
+        final entry = qrEntries[i];
+        _qrRows.add((
+          id: entry.id,
+          label: TextEditingController(text: entry.label),
+          imageBase64: entry.imageBase64,
+        ));
+        if (entry.isDefault) _defaultQrIndex = i;
       }
 
       // Dispose existing Bank controllers
@@ -246,6 +272,16 @@ class _CompanyInfoScreenState extends ConsumerState<CompanyInfoScreen> {
         ));
       }
 
+      final qrEntries = [
+        for (int i = 0; i < _qrRows.length; i++)
+          PaymentQrEntry(
+            id: _qrRows[i].id,
+            label: _qrRows[i].label.text.trim(),
+            imageBase64: _qrRows[i].imageBase64,
+            isDefault: i == _defaultQrIndex,
+          ),
+      ];
+
       final companyInfoRepo = ref.read(companyInfoRepositoryProvider);
       final settingsRepo = ref.read(settingsRepositoryProvider);
       await Future.wait([
@@ -255,6 +291,9 @@ class _CompanyInfoScreenState extends ConsumerState<CompanyInfoScreen> {
         if (_base64Logo != null) settingsRepo.setCompanyLogo(_base64Logo!),
         settingsRepo.setUpiIds(upiEntries),
         settingsRepo.setSetting(SettingKey.showUpiQr, _showUpiQr.toString()),
+        settingsRepo.setSetting(SettingKey.paymentQrSource, _paymentQrSource),
+        settingsRepo.setSetting(
+            SettingKey.paymentQrEntries, PaymentQrEntry.listToJson(qrEntries)),
         settingsRepo.setBankAccounts(bankAccounts),
         settingsRepo.setShowBankDetails(_showBankDetails),
         settingsRepo.setBusinessType(_businessType),
@@ -307,6 +346,9 @@ class _CompanyInfoScreenState extends ConsumerState<CompanyInfoScreen> {
       row.label.dispose();
       row.id.dispose();
     }
+    for (final row in _qrRows) {
+      row.label.dispose();
+    }
     for (final row in _bankControllers) {
       row.label.dispose();
       row.bankName.dispose();
@@ -323,6 +365,41 @@ class _CompanyInfoScreenState extends ConsumerState<CompanyInfoScreen> {
     setState(() {
       _selectedLogoFile = null;
       _base64Logo = null;
+    });
+  }
+
+  // Payment QR image: any size accepted, downscaled to max 600 px and
+  // re-encoded as PNG so the settings row stays small.
+  Future<void> _addPaymentQr() async {
+    final l10n = AppLocalizations.of(context)!;
+    final result = await FilePicker.platform.pickFiles(
+      type: FileType.custom,
+      allowedExtensions: ['png', 'jpg', 'jpeg'],
+    );
+    if (result == null || result.files.single.path == null) return;
+
+    final bytes = await File(result.files.single.path!).readAsBytes();
+    var decoded = img.decodeImage(bytes);
+    if (decoded == null) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(l10n.companyInfoInvalidImageMessage)),
+      );
+      return;
+    }
+    if (decoded.width > 600 || decoded.height > 600) {
+      decoded = decoded.width >= decoded.height
+          ? img.copyResize(decoded, width: 600)
+          : img.copyResize(decoded, height: 600);
+    }
+    if (!mounted) return;
+    setState(() {
+      _qrRows.add((
+        id: const Uuid().v4(),
+        label: TextEditingController(),
+        imageBase64: base64Encode(img.encodePng(decoded!)),
+      ));
+      _defaultQrIndex ??= 0; // first QR becomes the default
     });
   }
 
@@ -875,9 +952,41 @@ class _CompanyInfoScreenState extends ConsumerState<CompanyInfoScreen> {
                             ),
                           ),
                         ),
+                        const SizedBox(height: 12),
+                        SegmentedButton<String>(
+                          segments: [
+                            ButtonSegment(
+                              value: 'upi',
+                              label: Text(l10n.paymentQrSourceUpi),
+                              icon: const Icon(Icons.qr_code_rounded, size: 16),
+                            ),
+                            ButtonSegment(
+                              value: 'image',
+                              label: Text(l10n.paymentQrSourceImage),
+                              icon: const Icon(Icons.image_outlined, size: 16),
+                            ),
+                          ],
+                          selected: {_paymentQrSource},
+                          onSelectionChanged: (val) =>
+                              setState(() => _paymentQrSource = val.first),
+                        ),
+                        const SizedBox(height: 6),
+                        Text(
+                          _paymentQrSource == 'upi'
+                              ? l10n.paymentQrSourceUpiHelp
+                              : l10n.paymentQrSourceHelp,
+                          style: TextStyle(
+                              fontSize: 12,
+                              color: Theme.of(context)
+                                  .colorScheme
+                                  .onSurfaceVariant),
+                        ),
                         const SizedBox(height: 20),
+                        if (_paymentQrSource == 'upi')
                         _sectionLabel(l10n.companyInfoUpiAccountsSectionLabel),
+                        if (_paymentQrSource == 'upi')
                         const SizedBox(height: 10),
+                        if (_paymentQrSource == 'upi')
                         ..._upiControllers.asMap().entries.map((entry) {
                           final index = entry.key;
                           final row = entry.value;
@@ -950,7 +1059,9 @@ class _CompanyInfoScreenState extends ConsumerState<CompanyInfoScreen> {
                             ),
                           );
                         }),
+                        if (_paymentQrSource == 'upi')
                         const SizedBox(height: 4),
+                        if (_paymentQrSource == 'upi')
                         Align(
                           alignment: Alignment.centerLeft,
                           child: TextButton.icon(
@@ -968,6 +1079,93 @@ class _CompanyInfoScreenState extends ConsumerState<CompanyInfoScreen> {
                                 style: TextStyle(color: primaryColor)),
                           ),
                         ),
+                        if (_paymentQrSource == 'image') ...[
+                          _sectionLabel(l10n.companyInfoPaymentQrSectionLabel),
+                          const SizedBox(height: 10),
+                          ..._qrRows.asMap().entries.map((entry) {
+                            final index = entry.key;
+                            final row = entry.value;
+                            final isDefault = index == _defaultQrIndex;
+                            return Padding(
+                              padding: const EdgeInsets.only(bottom: 10),
+                              child: Row(
+                                children: [
+                                  Tooltip(
+                                    message: isDefault
+                                        ? l10n.dashboardLayoutDefaultTitle
+                                        : l10n.companyInfoSetAsDefaultTooltip,
+                                    child: IconButton(
+                                      icon: Icon(
+                                        isDefault
+                                            ? Icons.star_rounded
+                                            : Icons.star_outline_rounded,
+                                        color: isDefault
+                                            ? Colors.amber[700]
+                                            : Theme.of(context)
+                                                .colorScheme
+                                                .onSurfaceVariant,
+                                      ),
+                                      onPressed: () => setState(
+                                          () => _defaultQrIndex = index),
+                                    ),
+                                  ),
+                                  ClipRRect(
+                                    borderRadius: BorderRadius.circular(
+                                        AppBorderRadius.xsmall),
+                                    child: Image.memory(
+                                      base64Decode(row.imageBase64),
+                                      width: 64,
+                                      height: 64,
+                                      fit: BoxFit.contain,
+                                      gaplessPlayback: true,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 12),
+                                  Expanded(
+                                    child: _buildField(
+                                      controller: row.label,
+                                      label: l10n.fieldLabelLabel,
+                                      icon: Icons.label_outline_rounded,
+                                      hint: l10n.companyInfoPaymentQrLabelHint,
+                                      maxLength: 40,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  IconButton(
+                                    tooltip: l10n.tooltipRemove,
+                                    icon: const Icon(
+                                        Icons.remove_circle_outline,
+                                        color: Colors.redAccent),
+                                    onPressed: () {
+                                      setState(() {
+                                        _qrRows[index].label.dispose();
+                                        _qrRows.removeAt(index);
+                                        if (_defaultQrIndex == index) {
+                                          _defaultQrIndex = null;
+                                        } else if (_defaultQrIndex != null &&
+                                            _defaultQrIndex! > index) {
+                                          _defaultQrIndex =
+                                              _defaultQrIndex! - 1;
+                                        }
+                                      });
+                                    },
+                                  ),
+                                ],
+                              ),
+                            );
+                          }),
+                          const SizedBox(height: 4),
+                          Align(
+                            alignment: Alignment.centerLeft,
+                            child: TextButton.icon(
+                              onPressed: _addPaymentQr,
+                              icon: Icon(Icons.add_circle_outline,
+                                  color: primaryColor, size: 18),
+                              label: Text(l10n.companyInfoAddPaymentQrButton,
+                                  style: TextStyle(color: primaryColor)),
+                            ),
+                          ),
+                        ],
                         const SizedBox(height: 32),
 
                         // ── Bank Details ─────────────────────────────────────────

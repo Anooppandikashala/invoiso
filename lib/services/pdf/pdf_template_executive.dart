@@ -17,6 +17,8 @@ pw.MultiPage buildExecutiveTemplate(
   String invoicePrefix, {
   String? upiId,
   bool showUpiQr = false,
+  Uint8List? qrImageBytes, // uploaded payment QR (replaces the UPI QR)
+  String? qrLabel,
   bool showGst = true,
   bool showSlNo = true,
   bool showQuantity = true,
@@ -340,7 +342,7 @@ pw.MultiPage buildExecutiveTemplate(
           ),
         ],
       ),
-      if (signatureImage != null || (showUpiQr && upiId != null) || bankAccount != null) ...[
+      if (signatureImage != null || (showUpiQr && (upiId != null || qrImageBytes != null)) || bankAccount != null) ...[
         pw.SizedBox(height: 5),
         pw.Row(
           crossAxisAlignment: pw.CrossAxisAlignment.start,
@@ -351,6 +353,8 @@ pw.MultiPage buildExecutiveTemplate(
                     bankAccount: bankAccount,
                     showUpiQr: showUpiQr,
                     upiId: upiId,
+                    qrImageBytes: qrImageBytes,
+                    qrLabel: qrLabel,
                     companyName: company?.name ?? '',
                     amount: invoice.outstandingBalance,
                     currencyCode: invoice.currencyCode,
@@ -377,6 +381,8 @@ pw.MultiPage buildExecutiveTemplate(
                     bankAccount: bankAccount,
                     showUpiQr: showUpiQr,
                     upiId: upiId,
+                    qrImageBytes: qrImageBytes,
+                    qrLabel: qrLabel,
                     companyName: company?.name ?? '',
                     amount: invoice.outstandingBalance,
                     currencyCode: invoice.currencyCode,

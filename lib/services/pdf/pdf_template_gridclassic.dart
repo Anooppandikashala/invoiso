@@ -26,6 +26,8 @@ pw.MultiPage buildGridClassicTemplate(
   String invoicePrefix, {
   String? upiId,
   bool showUpiQr = false,
+  Uint8List? qrImageBytes, // uploaded payment QR (replaces the UPI QR)
+  String? qrLabel,
   bool showGst = true,
   bool showSlNo = true,
   bool showQuantity = true,
@@ -113,7 +115,14 @@ pw.MultiPage buildGridClassicTemplate(
   final double textScale = fontScale * fontSizeScale;
   // Bank/UPI boxes share a row with the signature: grow with textScale but
   // never below today's size, so A5/A6 don't push the signature off-page.
-  final double bankUpiScale = textScale < 1 ? 1.0 : textScale;
+  // A6 is the exception: A4-sized boxes + QR overflow its width and cut the
+  // signature off, so their text follows the page like the rest of A6.
+  final double bankUpiScale =
+      isA6 ? textScale : (textScale < 1 ? 1.0 : textScale);
+  // QR size / box padding: A4 + A5 keep their fixed size; A6 shrinks with a
+  // 0.7 floor so the QR stays ~22 mm wide, still scannable when printed.
+  final double bankUpiBoxScale =
+      isA6 ? (textScale < 0.7 ? 0.7 : textScale) : 1.0;
   final double totalsBoxWidth =
       landscape ? (contentWidth * 0.32).clamp(180.0, 340.0) : 200 * fontScale * totalsScale;
   final double innerPad = gridClassicPdfStyle.sectionPadding * fontScale;
@@ -584,7 +593,7 @@ pw.MultiPage buildGridClassicTemplate(
                 style: pw.TextStyle(
                     fontSize: labelFont - 1 , fontWeight: pw.FontWeight.normal, fontStyle: pw.FontStyle.italic)),
 
-          if (signatureImage != null || (showUpiQr && upiId != null) || bankAccount != null) ...[
+          if (signatureImage != null || (showUpiQr && (upiId != null || qrImageBytes != null)) || bankAccount != null) ...[
             pw.SizedBox(height: 16 * fontScale),
             pw.Row(
               crossAxisAlignment: pw.CrossAxisAlignment.start,
@@ -595,6 +604,8 @@ pw.MultiPage buildGridClassicTemplate(
                         bankAccount: bankAccount,
                         showUpiQr: showUpiQr,
                         upiId: upiId,
+                        qrImageBytes: qrImageBytes,
+                        qrLabel: qrLabel,
                         companyName: company?.name ?? '',
                         amount: invoice.outstandingBalance,
                         currencyCode: invoice.currencyCode,
@@ -605,6 +616,8 @@ pw.MultiPage buildGridClassicTemplate(
                         sectionTitleFontSize: 8 * bankUpiScale,
                         upiIdFontSize: 7 * bankUpiScale,
                         upiAmountFontSize: 7 * bankUpiScale,
+                        qrSize: 90 * bankUpiBoxScale,
+                        sectionPadding: 8 * bankUpiBoxScale,
                       ),
                       signatureImage != null
                           ? buildSignatureWidget(signatureImage, signaturePosition,
@@ -622,6 +635,8 @@ pw.MultiPage buildGridClassicTemplate(
                         bankAccount: bankAccount,
                         showUpiQr: showUpiQr,
                         upiId: upiId,
+                        qrImageBytes: qrImageBytes,
+                        qrLabel: qrLabel,
                         companyName: company?.name ?? '',
                         amount: invoice.outstandingBalance,
                         currencyCode: invoice.currencyCode,
@@ -632,6 +647,8 @@ pw.MultiPage buildGridClassicTemplate(
                         sectionTitleFontSize: 8 * bankUpiScale,
                         upiIdFontSize: 7 * bankUpiScale,
                         upiAmountFontSize: 7 * bankUpiScale,
+                        qrSize: 90 * bankUpiBoxScale,
+                        sectionPadding: 8 * bankUpiBoxScale,
                       ),
                     ],
             ),

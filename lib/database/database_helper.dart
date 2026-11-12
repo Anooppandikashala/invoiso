@@ -19,7 +19,7 @@ class DatabaseHelper {
   static String? get path => _path;
   static Database? _database;
   static String _dbFileName = 'invoice_manager.db';
-  final dbVersion = 59;
+  final dbVersion = 60;
 
   /// Startup only, before anything has opened a connection yet — just points
   /// at the right file for the first `_initDB()` call. No close/reopen, so
@@ -173,7 +173,8 @@ class DatabaseHelper {
         return_reason TEXT,
         credit_settlement TEXT,
         is_draft INTEGER DEFAULT 0,
-        private_notes TEXT
+        private_notes TEXT,
+        payment_qr_id TEXT
       )
     ''');
 
@@ -1353,6 +1354,12 @@ class DatabaseHelper {
       await _runMigrationStep(db, 59, 'create_invoice_attachments_table', () async {
         await db.execute(_invoiceAttachmentsTableSql);
         await db.execute(_invoiceAttachmentsIndexSql);
+      });
+    }
+
+    if (oldVersion < 60) {
+      await _runMigrationStep(db, 60, 'add_payment_qr_id_to_invoices', () async {
+        await db.execute('ALTER TABLE invoices ADD COLUMN payment_qr_id TEXT');
       });
     }
   }

@@ -4012,10 +4012,39 @@ class AppLocalizationsZh extends AppLocalizations {
   String get companyInfoAddUpiAccountButton => '添加UPI账户';
 
   @override
+  String get paymentQrSourceUpi => '根据 UPI ID 生成';
+
+  @override
+  String get paymentQrSourceImage => '上传二维码图片';
+
+  @override
+  String get paymentQrSourceHelp =>
+      '使用您自己的二维码（PayPal、Wise、银行二维码等）代替 UPI 二维码。每张发票选择一个。';
+
+  @override
+  String get paymentQrSourceUpiHelp =>
+      '根据您的 UPI ID 生成已填入发票金额的 UPI 二维码。每张发票选择一个。';
+
+  @override
+  String get companyInfoPaymentQrSectionLabel => '付款二维码图片';
+
+  @override
+  String get companyInfoAddPaymentQrButton => '添加二维码图片';
+
+  @override
+  String get companyInfoPaymentQrLabelHint => '例如：通过 PayPal 付款';
+
+  @override
+  String get createInvoicePaymentQrLabel => '付款二维码';
+
+  @override
+  String get paymentQrDefaultTitle => '扫码付款';
+
+  @override
   String get companyInfoShowQrToggleTitle => '在发票上显示二维码';
 
   @override
-  String get companyInfoShowQrToggleSubtitle => '在生成的PDF中添加可扫描的UPI支付二维码';
+  String get companyInfoShowQrToggleSubtitle => '在生成的PDF中添加可扫描的付款二维码';
 
   @override
   String get companyInfoShowBankDetailsToggleTitle => '在发票上显示银行信息';

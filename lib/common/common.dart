@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:flutter/widgets.dart';
 import 'package:invoiso/l10n/app_localizations.dart';
 
@@ -300,6 +302,45 @@ class UpiEntry {
 
   /// Returns the label if set, otherwise falls back to the UPI ID itself.
   String get displayLabel => label.trim().isNotEmpty ? label.trim() : id;
+}
+
+/// An uploaded payment QR image (PayPal, Wise, bank QR...) for users who
+/// can't use a UPI-generated QR. Picked per invoice like [UpiEntry].
+class PaymentQrEntry {
+  final String id; // stable key saved on invoices.payment_qr_id
+  final String label; // PDF box title, e.g. "Pay via PayPal" (may be empty)
+  final String imageBase64; // PNG, downscaled on upload
+  final bool isDefault;
+
+  const PaymentQrEntry(
+      {required this.id,
+      required this.label,
+      required this.imageBase64,
+      this.isDefault = false});
+
+  Map<String, dynamic> toJson() => {
+        'id': id,
+        'label': label,
+        'imageBase64': imageBase64,
+        'isDefault': isDefault
+      };
+
+  factory PaymentQrEntry.fromJson(Map<String, dynamic> json) => PaymentQrEntry(
+        id: json['id'] as String? ?? '',
+        label: json['label'] as String? ?? '',
+        imageBase64: json['imageBase64'] as String? ?? '',
+        isDefault: json['isDefault'] as bool? ?? false,
+      );
+
+  static List<PaymentQrEntry> listFromJson(String? json) {
+    if (json == null || json.isEmpty) return [];
+    return (jsonDecode(json) as List<dynamic>)
+        .map((e) => PaymentQrEntry.fromJson(e as Map<String, dynamic>))
+        .toList();
+  }
+
+  static String listToJson(List<PaymentQrEntry> entries) =>
+      jsonEncode(entries.map((e) => e.toJson()).toList());
 }
 
 /// A single bank account entry.

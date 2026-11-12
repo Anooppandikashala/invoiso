@@ -22,18 +22,23 @@ List<pw.Widget> buildAttachmentsSection(
   final small = pageFormat.width < PdfPageFormat.a5.width + 1; // A6
   final landscape = pageFormat.width > pageFormat.height;
   final usable = pageFormat.height - 2 * PdfLayout.defaultHMargin;
-  final captionFs = 9 * fontSizeScale;
+  // A6 text follows the smaller page like the templates' own A6 text
+  // (A4-sized heading/captions dwarf it).
+  final pageScale = small ? 0.6 : 1.0;
+  final captionFs = 9 * fontSizeScale * pageScale;
+  // A6 grid columns are narrow: allow one more caption line.
+  final captionLines = asList ? 8 : (small ? 3 : 2);
 
   // Grid: columns × rows per page from the page size (A4 2×3, landscape 3×2,
-  // A5 2×2, A6 1×2). List: rows per page; the photo takes ~40% of the width.
-  final cols = asList ? 1 : (small ? 1 : (landscape ? 3 : 2));
+  // A5 2×2, A6 2×2). List: rows per page; the photo takes ~40% of the width.
+  final cols = asList ? 1 : (landscape ? 3 : 2);
   final rowsPerPage = asList
       ? (small ? 2 : (landscape ? 2 : 3))
       : (small ? 2 : (landscape || pageFormat.height < PdfPageFormat.a4.height ? 2 : 3));
   // Leave room for the heading and footer; each row = photo + caption + gap.
   final rowHeight = (usable - 90) / rowsPerPage;
   final imageHeight =
-      rowHeight - 10 - (asList ? 0 : 3 + 2 * captionFs * 1.4);
+      rowHeight - 10 - (asList ? 0 : 3 + captionLines * captionFs * 1.4);
 
   // Photo at its own aspect ratio, capped at imageHeight — no frame, so the
   // caption sits right under the picture.
@@ -45,7 +50,7 @@ List<pw.Widget> buildAttachmentsSection(
   pw.Widget caption(String? text) => (text == null || text.trim().isEmpty)
       ? pw.SizedBox()
       : pw.Text(text.trim(),
-          maxLines: asList ? 8 : 2,
+          maxLines: captionLines,
           textAlign: asList ? pw.TextAlign.left : pw.TextAlign.center,
           style: pw.TextStyle(
               fontSize: captionFs,
@@ -108,18 +113,22 @@ List<pw.Widget> buildAttachmentsSection(
   }
 
   // Heading travels with the first row so it's never left alone at the
-  // bottom of a page.
+  // bottom of a page. Inseparable: MultiPage would otherwise split the
+  // Column (and any Container around it) across pages.
   return [
-    pw.Column(
-      crossAxisAlignment: pw.CrossAxisAlignment.start,
-      children: [
-        pw.SizedBox(height: 14),
-        pw.Text('Attachments',
-            style: pw.TextStyle(
-                fontSize: 12 * fontSizeScale, fontWeight: pw.FontWeight.bold)),
-        pw.Divider(thickness: 0.5, color: PdfColors.grey400, height: 12),
-        rows.first,
-      ],
+    pw.Inseparable(
+      child: pw.Column(
+        crossAxisAlignment: pw.CrossAxisAlignment.start,
+        children: [
+          pw.SizedBox(height: 14 * pageScale),
+          pw.Text('Attachments',
+              style: pw.TextStyle(
+                  fontSize: 12 * fontSizeScale * pageScale,
+                  fontWeight: pw.FontWeight.bold)),
+          pw.Divider(thickness: 0.5, color: PdfColors.grey400, height: 12 * pageScale),
+          rows.first,
+        ],
+      ),
     ),
     ...rows.skip(1),
   ];
