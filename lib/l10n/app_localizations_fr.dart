@@ -1063,6 +1063,154 @@ class AppLocalizationsFr extends AppLocalizations {
   String get createInvoiceNotesTitle => 'Notes';
 
   @override
+  String get createInvoicePrivateNotesLabel =>
+      'Notes privées (visibles uniquement par vous)';
+
+  @override
+  String get createInvoicePrivateNotesHint =>
+      'Jamais imprimées sur la facture ou le reçu';
+
+  @override
+  String get invoiceDetailsPrivateNotesTitle => 'Notes privées';
+
+  @override
+  String get invoiceCsvColumnsDialogTitle => 'Choisir les colonnes du CSV';
+
+  @override
+  String get invoiceCsvColumnsSelectAll => 'Tout sélectionner';
+
+  @override
+  String get invoiceCsvColumnsPrivateHint =>
+      'Visibles uniquement par vous — décochez-les avant de partager le fichier';
+
+  @override
+  String get attachmentsTitle => 'Pièces jointes';
+
+  @override
+  String get backupPhotosNote =>
+      'Les sauvegardes de la base de données incluent les photos des factures. Les exports JSON ne contiennent que les données — pas de photos.';
+
+  @override
+  String get pdfSettingsAttachmentLayoutLabel =>
+      'Mise en page des photos jointes';
+
+  @override
+  String get pdfSettingsAttachmentLayoutGrid => 'Grille';
+
+  @override
+  String get pdfSettingsAttachmentLayoutList => 'Liste';
+
+  @override
+  String get pdfSettingsAttachmentLayoutHelpText =>
+      'Comment les photos client s\'impriment dans la section Pièces jointes. Liste affiche une photo par ligne avec sa légende.';
+
+  @override
+  String attachmentsTabCustomer(int count, int limit) {
+    return 'Client ($count/$limit)';
+  }
+
+  @override
+  String attachmentsTabPrivate(int count) {
+    return 'Privé ($count)';
+  }
+
+  @override
+  String get attachmentsCustomerSubtitle =>
+      'Affichées sur le PDF de la facture';
+
+  @override
+  String get attachmentsPrivateSubtitle =>
+      'Visibles uniquement par vous — jamais sur la facture';
+
+  @override
+  String get attachmentsEmptyHint =>
+      'Aucune photo — appuyez sur + pour en ajouter';
+
+  @override
+  String get attachmentsAddTitle => 'Ajouter des photos';
+
+  @override
+  String get attachmentsAddAsLabel => 'Ajouter comme';
+
+  @override
+  String get attachmentsAddAsCustomer => 'Visible par le client';
+
+  @override
+  String get attachmentsAddAsPrivate => 'Privé';
+
+  @override
+  String attachmentsCustomerFullHint(int limit) {
+    return '$limit/$limit atteint';
+  }
+
+  @override
+  String get attachmentsTakePhoto => 'Prendre une photo';
+
+  @override
+  String get attachmentsChooseGallery => 'Choisir dans la galerie';
+
+  @override
+  String get attachmentsChooseFiles => 'Choisir des fichiers';
+
+  @override
+  String get attachmentsCaptionHint => 'Ajouter une légende';
+
+  @override
+  String get attachmentsMoveToPrivate => 'Déplacer vers Privé';
+
+  @override
+  String get attachmentsMoveToCustomer => 'Déplacer vers Client';
+
+  @override
+  String get attachmentsMoveLeft => 'Déplacer à gauche';
+
+  @override
+  String get attachmentsMoveRight => 'Déplacer à droite';
+
+  @override
+  String get attachmentsDeleteTitle => 'Supprimer cette photo ?';
+
+  @override
+  String attachmentsLimitReachedMessage(int limit, int skipped) {
+    return 'Seulement $limit photos client autorisées — $skipped non ajoutées';
+  }
+
+  @override
+  String get attachmentsDiscardTitle =>
+      'Abandonner les modifications des pièces jointes ?';
+
+  @override
+  String get attachmentsDiscardBody =>
+      'Les photos ajoutées, supprimées ou modifiées ici seront perdues.';
+
+  @override
+  String get attachmentsMissingFile => 'Fichier introuvable';
+
+  @override
+  String attachmentsSaveFailedMessage(String error) {
+    return 'Impossible d\'enregistrer les pièces jointes : $error';
+  }
+
+  @override
+  String attachmentsSummary(int publicCount, int privateCount) {
+    return '$publicCount client · $privateCount privées';
+  }
+
+  @override
+  String get attachmentsNone => 'Aucune photo';
+
+  @override
+  String get attachmentsManage => 'Gérer';
+
+  @override
+  String get attachmentsDone => 'Terminé';
+
+  @override
+  String attachmentsMenuLabel(int count) {
+    return 'Pièces jointes ($count)';
+  }
+
+  @override
   String get createInvoiceHideNumberInPdfLabel =>
       'Masquer le numéro de facture dans le PDF';
 

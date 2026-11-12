@@ -1902,6 +1902,252 @@ abstract class AppLocalizations {
   /// **'Notes'**
   String get createInvoiceNotesTitle;
 
+  /// No description provided for @createInvoicePrivateNotesLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Private notes (only visible to you)'**
+  String get createInvoicePrivateNotesLabel;
+
+  /// No description provided for @createInvoicePrivateNotesHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Never printed on the invoice or receipt'**
+  String get createInvoicePrivateNotesHint;
+
+  /// No description provided for @invoiceDetailsPrivateNotesTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Private notes'**
+  String get invoiceDetailsPrivateNotesTitle;
+
+  /// No description provided for @invoiceCsvColumnsDialogTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose CSV columns'**
+  String get invoiceCsvColumnsDialogTitle;
+
+  /// No description provided for @invoiceCsvColumnsSelectAll.
+  ///
+  /// In en, this message translates to:
+  /// **'Select all'**
+  String get invoiceCsvColumnsSelectAll;
+
+  /// No description provided for @invoiceCsvColumnsPrivateHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Only visible to you — leave off when sharing the file'**
+  String get invoiceCsvColumnsPrivateHint;
+
+  /// No description provided for @attachmentsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Attachments'**
+  String get attachmentsTitle;
+
+  /// No description provided for @backupPhotosNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Database backups include invoice photos. JSON exports contain data only — photos are not included.'**
+  String get backupPhotosNote;
+
+  /// No description provided for @pdfSettingsAttachmentLayoutLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Attachment photos layout'**
+  String get pdfSettingsAttachmentLayoutLabel;
+
+  /// No description provided for @pdfSettingsAttachmentLayoutGrid.
+  ///
+  /// In en, this message translates to:
+  /// **'Grid'**
+  String get pdfSettingsAttachmentLayoutGrid;
+
+  /// No description provided for @pdfSettingsAttachmentLayoutList.
+  ///
+  /// In en, this message translates to:
+  /// **'List'**
+  String get pdfSettingsAttachmentLayoutList;
+
+  /// No description provided for @pdfSettingsAttachmentLayoutHelpText.
+  ///
+  /// In en, this message translates to:
+  /// **'How customer photos print on the Attachments page. List shows one photo per row with its caption.'**
+  String get pdfSettingsAttachmentLayoutHelpText;
+
+  /// No description provided for @attachmentsTabCustomer.
+  ///
+  /// In en, this message translates to:
+  /// **'Customer ({count}/{limit})'**
+  String attachmentsTabCustomer(int count, int limit);
+
+  /// No description provided for @attachmentsTabPrivate.
+  ///
+  /// In en, this message translates to:
+  /// **'Private ({count})'**
+  String attachmentsTabPrivate(int count);
+
+  /// No description provided for @attachmentsCustomerSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Shown on the invoice PDF'**
+  String get attachmentsCustomerSubtitle;
+
+  /// No description provided for @attachmentsPrivateSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Only visible to you — never on the invoice'**
+  String get attachmentsPrivateSubtitle;
+
+  /// No description provided for @attachmentsEmptyHint.
+  ///
+  /// In en, this message translates to:
+  /// **'No photos yet — tap + to add'**
+  String get attachmentsEmptyHint;
+
+  /// No description provided for @attachmentsAddTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Add photos'**
+  String get attachmentsAddTitle;
+
+  /// No description provided for @attachmentsAddAsLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Add as'**
+  String get attachmentsAddAsLabel;
+
+  /// No description provided for @attachmentsAddAsCustomer.
+  ///
+  /// In en, this message translates to:
+  /// **'Shown to customer'**
+  String get attachmentsAddAsCustomer;
+
+  /// No description provided for @attachmentsAddAsPrivate.
+  ///
+  /// In en, this message translates to:
+  /// **'Private'**
+  String get attachmentsAddAsPrivate;
+
+  /// No description provided for @attachmentsCustomerFullHint.
+  ///
+  /// In en, this message translates to:
+  /// **'{limit}/{limit} full'**
+  String attachmentsCustomerFullHint(int limit);
+
+  /// No description provided for @attachmentsTakePhoto.
+  ///
+  /// In en, this message translates to:
+  /// **'Take photo'**
+  String get attachmentsTakePhoto;
+
+  /// No description provided for @attachmentsChooseGallery.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose from gallery'**
+  String get attachmentsChooseGallery;
+
+  /// No description provided for @attachmentsChooseFiles.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose files'**
+  String get attachmentsChooseFiles;
+
+  /// No description provided for @attachmentsCaptionHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Add caption'**
+  String get attachmentsCaptionHint;
+
+  /// No description provided for @attachmentsMoveToPrivate.
+  ///
+  /// In en, this message translates to:
+  /// **'Move to Private'**
+  String get attachmentsMoveToPrivate;
+
+  /// No description provided for @attachmentsMoveToCustomer.
+  ///
+  /// In en, this message translates to:
+  /// **'Move to Customer'**
+  String get attachmentsMoveToCustomer;
+
+  /// No description provided for @attachmentsMoveLeft.
+  ///
+  /// In en, this message translates to:
+  /// **'Move left'**
+  String get attachmentsMoveLeft;
+
+  /// No description provided for @attachmentsMoveRight.
+  ///
+  /// In en, this message translates to:
+  /// **'Move right'**
+  String get attachmentsMoveRight;
+
+  /// No description provided for @attachmentsDeleteTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete this photo?'**
+  String get attachmentsDeleteTitle;
+
+  /// No description provided for @attachmentsLimitReachedMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Only {limit} customer photos allowed — {skipped} not added'**
+  String attachmentsLimitReachedMessage(int limit, int skipped);
+
+  /// No description provided for @attachmentsDiscardTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Discard attachment changes?'**
+  String get attachmentsDiscardTitle;
+
+  /// No description provided for @attachmentsDiscardBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Photos added, removed or edited here will be lost.'**
+  String get attachmentsDiscardBody;
+
+  /// No description provided for @attachmentsMissingFile.
+  ///
+  /// In en, this message translates to:
+  /// **'File missing'**
+  String get attachmentsMissingFile;
+
+  /// No description provided for @attachmentsSaveFailedMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t save attachments: {error}'**
+  String attachmentsSaveFailedMessage(String error);
+
+  /// No description provided for @attachmentsSummary.
+  ///
+  /// In en, this message translates to:
+  /// **'{publicCount} customer · {privateCount} private'**
+  String attachmentsSummary(int publicCount, int privateCount);
+
+  /// No description provided for @attachmentsNone.
+  ///
+  /// In en, this message translates to:
+  /// **'No photos'**
+  String get attachmentsNone;
+
+  /// No description provided for @attachmentsManage.
+  ///
+  /// In en, this message translates to:
+  /// **'Manage'**
+  String get attachmentsManage;
+
+  /// No description provided for @attachmentsDone.
+  ///
+  /// In en, this message translates to:
+  /// **'Done'**
+  String get attachmentsDone;
+
+  /// No description provided for @attachmentsMenuLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Attachments ({count})'**
+  String attachmentsMenuLabel(int count);
+
   /// No description provided for @createInvoiceHideNumberInPdfLabel.
   ///
   /// In en, this message translates to:

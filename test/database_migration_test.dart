@@ -219,6 +219,13 @@ void main() {
     expect(invoice['converted_to_invoice_id'], isNull);
     expect(invoice['converted_from_invoice_id'], isNull);
 
+    // v58 added in-app private notes.
+    expect(invoice.containsKey('private_notes'), isTrue);
+    expect(invoice['private_notes'], isNull);
+
+    // v59 added invoice photo attachments.
+    expect(await db.query('invoice_attachments'), isEmpty);
+
     // v53 added purchase bills / suppliers / stock tracking.
     for (final table in [
       'suppliers',

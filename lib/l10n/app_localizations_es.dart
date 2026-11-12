@@ -1062,6 +1062,151 @@ class AppLocalizationsEs extends AppLocalizations {
   String get createInvoiceNotesTitle => 'Notas';
 
   @override
+  String get createInvoicePrivateNotesLabel =>
+      'Notas privadas (solo visibles para ti)';
+
+  @override
+  String get createInvoicePrivateNotesHint =>
+      'Nunca se imprimen en la factura ni en el recibo';
+
+  @override
+  String get invoiceDetailsPrivateNotesTitle => 'Notas privadas';
+
+  @override
+  String get invoiceCsvColumnsDialogTitle => 'Elegir columnas del CSV';
+
+  @override
+  String get invoiceCsvColumnsSelectAll => 'Seleccionar todo';
+
+  @override
+  String get invoiceCsvColumnsPrivateHint =>
+      'Solo visibles para ti — desmárcalas al compartir el archivo';
+
+  @override
+  String get attachmentsTitle => 'Adjuntos';
+
+  @override
+  String get backupPhotosNote =>
+      'Las copias de seguridad de la base de datos incluyen las fotos de las facturas. Las exportaciones JSON solo contienen datos — sin fotos.';
+
+  @override
+  String get pdfSettingsAttachmentLayoutLabel => 'Diseño de fotos adjuntas';
+
+  @override
+  String get pdfSettingsAttachmentLayoutGrid => 'Cuadrícula';
+
+  @override
+  String get pdfSettingsAttachmentLayoutList => 'Lista';
+
+  @override
+  String get pdfSettingsAttachmentLayoutHelpText =>
+      'Cómo se imprimen las fotos del cliente en la sección Adjuntos. Lista muestra una foto por fila con su leyenda.';
+
+  @override
+  String attachmentsTabCustomer(int count, int limit) {
+    return 'Cliente ($count/$limit)';
+  }
+
+  @override
+  String attachmentsTabPrivate(int count) {
+    return 'Privado ($count)';
+  }
+
+  @override
+  String get attachmentsCustomerSubtitle =>
+      'Se muestran en el PDF de la factura';
+
+  @override
+  String get attachmentsPrivateSubtitle =>
+      'Solo visibles para ti — nunca en la factura';
+
+  @override
+  String get attachmentsEmptyHint => 'Aún no hay fotos — toca + para añadir';
+
+  @override
+  String get attachmentsAddTitle => 'Añadir fotos';
+
+  @override
+  String get attachmentsAddAsLabel => 'Añadir como';
+
+  @override
+  String get attachmentsAddAsCustomer => 'Visible para el cliente';
+
+  @override
+  String get attachmentsAddAsPrivate => 'Privado';
+
+  @override
+  String attachmentsCustomerFullHint(int limit) {
+    return '$limit/$limit completo';
+  }
+
+  @override
+  String get attachmentsTakePhoto => 'Tomar foto';
+
+  @override
+  String get attachmentsChooseGallery => 'Elegir de la galería';
+
+  @override
+  String get attachmentsChooseFiles => 'Elegir archivos';
+
+  @override
+  String get attachmentsCaptionHint => 'Añadir leyenda';
+
+  @override
+  String get attachmentsMoveToPrivate => 'Mover a Privado';
+
+  @override
+  String get attachmentsMoveToCustomer => 'Mover a Cliente';
+
+  @override
+  String get attachmentsMoveLeft => 'Mover a la izquierda';
+
+  @override
+  String get attachmentsMoveRight => 'Mover a la derecha';
+
+  @override
+  String get attachmentsDeleteTitle => '¿Eliminar esta foto?';
+
+  @override
+  String attachmentsLimitReachedMessage(int limit, int skipped) {
+    return 'Solo se permiten $limit fotos para el cliente — $skipped no añadidas';
+  }
+
+  @override
+  String get attachmentsDiscardTitle => '¿Descartar los cambios de adjuntos?';
+
+  @override
+  String get attachmentsDiscardBody =>
+      'Se perderán las fotos añadidas, eliminadas o editadas aquí.';
+
+  @override
+  String get attachmentsMissingFile => 'Archivo no encontrado';
+
+  @override
+  String attachmentsSaveFailedMessage(String error) {
+    return 'No se pudieron guardar los adjuntos: $error';
+  }
+
+  @override
+  String attachmentsSummary(int publicCount, int privateCount) {
+    return '$publicCount cliente · $privateCount privadas';
+  }
+
+  @override
+  String get attachmentsNone => 'Sin fotos';
+
+  @override
+  String get attachmentsManage => 'Gestionar';
+
+  @override
+  String get attachmentsDone => 'Listo';
+
+  @override
+  String attachmentsMenuLabel(int count) {
+    return 'Adjuntos ($count)';
+  }
+
+  @override
   String get createInvoiceHideNumberInPdfLabel =>
       'Ocultar número de factura en el PDF';
 

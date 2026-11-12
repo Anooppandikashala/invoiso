@@ -8,7 +8,7 @@ class Product {
   int stock;
   String hsncode;
   // ignore: non_constant_identifier_names
-  int tax_rate;
+  double tax_rate;
   String type; // 'product' or 'service'
   double defaultDiscount;
   double purchasePrice;
@@ -50,7 +50,7 @@ class Product {
           : (map['price'] ?? 0.0).toDouble(),
       stock: map['stock'] ?? 0,
       hsncode: map['hsncode'] ?? '',
-      tax_rate: map['tax_rate'] ?? 0,
+      tax_rate: (map['tax_rate'] as num?)?.toDouble() ?? 0.0,
       type: map['type'] as String? ?? 'product',
       defaultDiscount: (map['default_discount'] as num?)?.toDouble() ?? 0.0,
       purchasePrice: (map['purchase_price'] as num?)?.toDouble() ?? 0.0,
@@ -75,7 +75,7 @@ class Product {
           : (map['product_price'] ?? 0.0).toDouble(),
       stock: map['product_stock'] ?? 0,
       hsncode: map['product_hsn_code'] ?? '',
-      tax_rate: map['product_tax_rate'] ?? 0,
+      tax_rate: (map['product_tax_rate'] as num?)?.toDouble() ?? 0.0,
       type: map['product_type'] as String? ?? 'product',
       defaultDiscount: (map['product_default_discount'] as num?)?.toDouble() ?? 0.0,
       purchasePrice: (map['product_purchase_price'] as num?)?.toDouble() ?? 0.0,

@@ -2,7 +2,7 @@ import 'dart:io';
 
 import 'package:window_manager/window_manager.dart';
 
-import 'package:invoiso/database/company_registry_service.dart';
+import 'package:invoiso/services/backend_services.dart';
 
 /// Keeps the desktop window title showing which company is active — only
 /// meaningful once more than one company is registered (a single-company
@@ -12,10 +12,10 @@ import 'package:invoiso/database/company_registry_service.dart';
 Future<void> refreshWindowTitle() async {
   if (!(Platform.isWindows || Platform.isLinux || Platform.isMacOS)) return;
 
-  final companies = await CompanyRegistryService.listCompanies();
+  final companies = await BackendServices.companyRegistry.listCompanies();
   if (companies.length <= 1) return;
 
-  final activeId = await CompanyRegistryService.getActiveCompanyId();
+  final activeId = await BackendServices.companyRegistry.getActiveCompanyId();
   final active = companies.where((c) => c.id == activeId).firstOrNull;
   if (active == null) return;
 

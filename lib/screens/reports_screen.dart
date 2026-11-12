@@ -13,6 +13,7 @@ import 'package:invoiso/database/report_service.dart';
 import 'package:invoiso/models/cash_ledger_entry.dart';
 import 'package:invoiso/l10n/app_localizations.dart';
 import 'package:invoiso/services/customer_statement_pdf_service.dart';
+import 'package:invoiso/providers/app_config_provider.dart';
 import 'package:invoiso/providers/repositories.dart';
 
 import '../common/supported_currencies.dart';
@@ -283,6 +284,9 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
   }
 
   Future<void> _invalidateAndReload() async {
+    if (!mounted) return;
+    // Editions that cache report data (cloud) drop it, so this really refetches.
+    await ref.read(appEditionConfigProvider).refreshCaches?.call();
     if (!mounted) return;
     setState(() {
       _loadedTabs.clear();

@@ -9,6 +9,7 @@ import 'package:uuid/uuid.dart';
 
 import 'package:invoiso/database/company_info_service.dart';
 import 'package:invoiso/database/database_helper.dart';
+import 'package:invoiso/database/invoice_attachment_service.dart';
 import 'package:invoiso/common/setting_key.dart';
 import 'package:invoiso/models/company_profile.dart';
 
@@ -185,9 +186,13 @@ class CompanyRegistryService {
       for (final c in companies) if (c.id != id) c,
     ]);
 
-    final path = join(await _dbDirPath(), target.dbFileName);
+    final dbDir = await _dbDirPath();
+    final path = join(dbDir, target.dbFileName);
     final file = File(path);
     if (await file.exists()) await file.delete();
+    final attachments = Directory(
+        InvoiceAttachmentService.companyDirFor(dbDir, target.dbFileName));
+    if (await attachments.exists()) await attachments.delete(recursive: true);
   }
 
   /// Points `DatabaseHelper` at the given company's file and marks it

@@ -39,7 +39,7 @@ Invoice _sampleInvoice({
       price: 370,
       stock: 10,
       hsncode: '2523',
-      tax_rate: taxRate.toInt(),
+      tax_rate: taxRate,
     );
     return product;
   }

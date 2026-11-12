@@ -1,6 +1,6 @@
 {
-  "version": 9,
-  "updated_at": "2026-10-31",
+  "version": 10,
+  "updated_at": "2026-11-04",
   "categories": [
     { "id": "general", "label": "General" },
     { "id": "data-privacy", "label": "Data & Privacy" },
@@ -104,7 +104,7 @@
       "id": "faq_csv",
       "category": "features",
       "question": "Can I export invoice data to CSV or Excel?",
-      "answer": "Yes. The **Invoice Management** screen has an **Export CSV** button in the toolbar for all your invoices, plus a **bulk export** option for just the ones you select.\n\nThe CSV opens fine in Excel, Google Sheets, or any spreadsheet app.",
+      "answer": "Yes. The **Invoice Management** screen has an **Export CSV** button in the toolbar for all your invoices, plus a **bulk export** option for just the ones you select.\n\nBefore exporting you can **choose which columns** go in the file — including **Notes** and **Private Notes** (off by default). Your choice is remembered.\n\nThe CSV opens fine in Excel, Google Sheets, or any spreadsheet app.",
       "keywords": ["csv", "excel", "export data", "spreadsheet", "bulk export"]
     },
     {
@@ -309,6 +309,27 @@
       "question": "Why do I get a \"Not enough stock\" message when I save?",
       "answer": "When you save, update or finalize an invoice or receipt, Invoiso checks the current stock again. If any product would go below zero — for example because another sale used the stock after you started — it lists each one with **in stock**, **on invoice** and **short by**.\n\n- **Go back** — change the quantities.\n- **Save anyway** — save it; stock for those products goes below zero.\n\nQuotations, credit/debit notes and drafts aren't checked, because they don't take stock. Services and products with unlimited stock are never short.",
       "keywords": ["not enough stock", "out of stock", "negative stock", "stock warning", "short by"]
+    },
+    {
+      "id": "faq_attachments",
+      "category": "features",
+      "question": "Can I attach photos to an invoice?",
+      "answer": "Yes. In the create/edit form click **Attachments → Manage**, or pick **Attachments** from an invoice's **⋮** menu in the list. Photos go in one of two tabs:\n\n- **Customer** — printed on the invoice PDF under an **Attachments** heading, right after the invoice (up to **10** per invoice), e.g. proof of work done.\n- **Private** — only visible to you, never printed (no limit), e.g. receipts for materials.\n\nClick **Add photos** (on Android you can also **take a photo**), add a caption, move photos between tabs or reorder them from the **⋮** on each photo. Photos are compressed automatically so PDFs and backups stay small.\n\nChoose **Grid** or **List** layout in **PDF Settings → Attachment photos layout**. Converting a quotation to an invoice carries its photos over; cloning or a credit note starts without them. Database backups include the photos; JSON exports don't.",
+      "keywords": ["attachment", "photo", "image", "picture", "proof of work", "attach photo", "camera", "private photo"]
+    },
+    {
+      "id": "faq_private_notes",
+      "category": "features",
+      "question": "Can I keep notes on an invoice that the customer never sees?",
+      "answer": "Yes. Under **Notes** in the create/edit form there's a **Private notes** box (with a lock icon). Private notes show only inside Invoiso — in the invoice details — and are **never printed** on the PDF, thermal receipt or anything sent to the customer.\n\nThey carry over when a quotation is converted to an invoice, but not when you clone an invoice or make a credit note. You can include them in a CSV export by ticking **Private Notes**.",
+      "keywords": ["private notes", "internal notes", "hidden notes", "notes not printed", "my notes"]
+    },
+    {
+      "id": "faq_decimal_tax",
+      "category": "features",
+      "question": "Can I use a tax rate like 8.5% or 10.25%?",
+      "answer": "Yes. Tax rates accept up to **two decimals** everywhere — product tax, the invoice's tax rate and the default tax rate in **Invoice Settings**. PDFs and receipts print them as entered, e.g. **8.5%**, and the CGST/SGST split shows halves like **4.25%**.",
+      "keywords": ["decimal tax", "fractional tax", "8.5%", "sales tax", "tax rate decimal"]
     }
   ]
 }

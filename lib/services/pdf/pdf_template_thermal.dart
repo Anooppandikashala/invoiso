@@ -196,7 +196,7 @@ pw.Page buildThermalTemplate(
                           style: const pw.TextStyle(fontSize: smallFs)),
                     ),
                     if (showItemTax) ...[
-                      pw.Text('${item.product.tax_rate}%',
+                      pw.Text('${AppFormatters.formatTaxRate(item.product.tax_rate)}%',
                           style: const pw.TextStyle(fontSize: smallFs)),
                       pw.SizedBox(width: 4),
                     ],
@@ -266,7 +266,7 @@ pw.Page buildThermalTemplate(
                   if (showItemTax)
                     pw.SizedBox(
                       width: 18,
-                      child: pw.Text('${item.product.tax_rate}%',
+                      child: pw.Text('${AppFormatters.formatTaxRate(item.product.tax_rate)}%',
                           style: const pw.TextStyle(fontSize: smallFs)),
                     ),
                   pw.SizedBox(

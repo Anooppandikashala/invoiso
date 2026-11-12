@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:sqflite/sqflite.dart';
 
 import 'package:invoiso/common/common.dart';
+import 'package:invoiso/database/invoice_attachment_service.dart';
 import 'package:invoiso/database/invoice_item_service.dart';
 import 'package:invoiso/database/settings_service.dart';
 import 'package:invoiso/domain/invoice_calculator.dart';
@@ -53,6 +54,7 @@ class InvoiceService {
             CustomFieldValue.listToJson(invoice.customer.customFields),
         'date': invoice.date.toIso8601String(),
         'notes': invoice.notes,
+        'private_notes': invoice.privateNotes,
         'tax_rate': invoice.taxRate,
         'type': invoice.type,
         'invoice_title': invoice.invoiceTitle,
@@ -224,6 +226,7 @@ class InvoiceService {
               CustomFieldValue.listToJson(invoice.customer.customFields),
           'date': invoice.date.toIso8601String(),
           'notes': invoice.notes,
+          'private_notes': invoice.privateNotes,
           'tax_rate': invoice.taxRate,
           'type': invoice.type,
           'invoice_title': invoice.invoiceTitle,
@@ -544,6 +547,7 @@ class InvoiceService {
       items: items,
       date: DateTime.parse(i['date'] as String),
       notes: i['notes'] as String?,
+      privateNotes: i['private_notes'] as String?,
       taxRate: (i['tax_rate'] is int)
           ? (i['tax_rate'] as int).toDouble()
           : (i['tax_rate'] ?? 0.0) as double,
@@ -1073,6 +1077,8 @@ class InvoiceService {
       await txn.delete('refunds', where: 'credit_note_id = ?', whereArgs: [id]);
       await txn.delete('invoices', where: 'id = ?', whereArgs: [id]);
     });
+    // Its photos go too, once the invoice itself is gone for good.
+    await InvoiceAttachmentService.deleteAll(id);
   }
 
   static Future<List<Invoice>> getDeletedInvoices() async {
@@ -1162,6 +1168,7 @@ class InvoiceService {
               (map['invoice_discount_value'] as num?)?.toDouble() ?? 0.0,
           hideInvoiceNumber: (map['hide_invoice_number'] as int?) == 1,
           customInvoiceNumber: map['custom_invoice_number'] as String?,
+          privateNotes: map['private_notes'] as String?,
           customFields:
               CustomFieldValue.listFromJson(map['custom_fields'] as String?),
           originalInvoiceId: map['original_invoice_id'] as String?,

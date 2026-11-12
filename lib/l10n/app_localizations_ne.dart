@@ -1055,6 +1055,150 @@ class AppLocalizationsNe extends AppLocalizations {
   String get createInvoiceNotesTitle => 'नोटहरू';
 
   @override
+  String get createInvoicePrivateNotesLabel =>
+      'निजी टिप्पणीहरू (तपाईंलाई मात्र देखिने)';
+
+  @override
+  String get createInvoicePrivateNotesHint =>
+      'इनभ्वाइस वा रसिदमा कहिल्यै छापिँदैन';
+
+  @override
+  String get invoiceDetailsPrivateNotesTitle => 'निजी टिप्पणीहरू';
+
+  @override
+  String get invoiceCsvColumnsDialogTitle => 'CSV स्तम्भहरू छान्नुहोस्';
+
+  @override
+  String get invoiceCsvColumnsSelectAll => 'सबै छान्नुहोस्';
+
+  @override
+  String get invoiceCsvColumnsPrivateHint =>
+      'तपाईंलाई मात्र देखिन्छ — फाइल साझा गर्दा नछान्नुहोस्';
+
+  @override
+  String get attachmentsTitle => 'संलग्नकहरू';
+
+  @override
+  String get backupPhotosNote =>
+      'डाटाबेस ब्याकअपमा इनभ्वाइसका फोटोहरू समावेश हुन्छन्। JSON निर्यातमा डाटा मात्र हुन्छ — फोटो हुँदैन।';
+
+  @override
+  String get pdfSettingsAttachmentLayoutLabel => 'संलग्न फोटोको लेआउट';
+
+  @override
+  String get pdfSettingsAttachmentLayoutGrid => 'ग्रिड';
+
+  @override
+  String get pdfSettingsAttachmentLayoutList => 'सूची';
+
+  @override
+  String get pdfSettingsAttachmentLayoutHelpText =>
+      'ग्राहक फोटोहरू संलग्नक खण्डमा कसरी छापिन्छन्। सूचीमा प्रत्येक पङ्क्तिमा एउटा फोटो र त्यसको क्याप्सन देखिन्छ।';
+
+  @override
+  String attachmentsTabCustomer(int count, int limit) {
+    return 'ग्राहक ($count/$limit)';
+  }
+
+  @override
+  String attachmentsTabPrivate(int count) {
+    return 'निजी ($count)';
+  }
+
+  @override
+  String get attachmentsCustomerSubtitle => 'इनभ्वाइस PDF मा देखाइन्छ';
+
+  @override
+  String get attachmentsPrivateSubtitle =>
+      'तपाईंलाई मात्र देखिन्छ — इनभ्वाइसमा कहिल्यै होइन';
+
+  @override
+  String get attachmentsEmptyHint => 'अहिलेसम्म फोटो छैन — थप्न + थिच्नुहोस्';
+
+  @override
+  String get attachmentsAddTitle => 'फोटो थप्नुहोस्';
+
+  @override
+  String get attachmentsAddAsLabel => 'यसरी थप्नुहोस्';
+
+  @override
+  String get attachmentsAddAsCustomer => 'ग्राहकलाई देखाउने';
+
+  @override
+  String get attachmentsAddAsPrivate => 'निजी';
+
+  @override
+  String attachmentsCustomerFullHint(int limit) {
+    return '$limit/$limit भरियो';
+  }
+
+  @override
+  String get attachmentsTakePhoto => 'फोटो खिच्नुहोस्';
+
+  @override
+  String get attachmentsChooseGallery => 'ग्यालरीबाट छान्नुहोस्';
+
+  @override
+  String get attachmentsChooseFiles => 'फाइलहरू छान्नुहोस्';
+
+  @override
+  String get attachmentsCaptionHint => 'क्याप्सन थप्नुहोस्';
+
+  @override
+  String get attachmentsMoveToPrivate => 'निजीमा सार्नुहोस्';
+
+  @override
+  String get attachmentsMoveToCustomer => 'ग्राहकमा सार्नुहोस्';
+
+  @override
+  String get attachmentsMoveLeft => 'बायाँ सार्नुहोस्';
+
+  @override
+  String get attachmentsMoveRight => 'दायाँ सार्नुहोस्';
+
+  @override
+  String get attachmentsDeleteTitle => 'यो फोटो मेटाउने?';
+
+  @override
+  String attachmentsLimitReachedMessage(int limit, int skipped) {
+    return '$limit वटा ग्राहक फोटो मात्र अनुमति छ — $skipped थपिएन';
+  }
+
+  @override
+  String get attachmentsDiscardTitle => 'संलग्नकका परिवर्तनहरू त्याग्ने?';
+
+  @override
+  String get attachmentsDiscardBody =>
+      'यहाँ थपिएका, हटाइएका वा सम्पादन गरिएका फोटोहरू हराउनेछन्।';
+
+  @override
+  String get attachmentsMissingFile => 'फाइल भेटिएन';
+
+  @override
+  String attachmentsSaveFailedMessage(String error) {
+    return 'संलग्नकहरू सुरक्षित गर्न सकिएन: $error';
+  }
+
+  @override
+  String attachmentsSummary(int publicCount, int privateCount) {
+    return '$publicCount ग्राहक · $privateCount निजी';
+  }
+
+  @override
+  String get attachmentsNone => 'फोटो छैन';
+
+  @override
+  String get attachmentsManage => 'व्यवस्थापन';
+
+  @override
+  String get attachmentsDone => 'सम्पन्न';
+
+  @override
+  String attachmentsMenuLabel(int count) {
+    return 'संलग्नकहरू ($count)';
+  }
+
+  @override
   String get createInvoiceHideNumberInPdfLabel =>
       'PDF मा बीजक नम्बर लुकाउनुहोस्';
 

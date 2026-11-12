@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
+import 'package:invoiso/services/pdf/pdf_attachments_page.dart';
 import 'package:invoiso/common/common.dart';
 import 'package:invoiso/common/constants.dart';
 import 'package:invoiso/models/company_info.dart';
@@ -41,6 +42,7 @@ pw.MultiPage buildCompactTemplate(
   PdfPageFormat pageFormat = PdfPageFormat.a6,
   Map<String, bool> metadataColumns = const {},
   double fontSizeScale = 1.0,
+  bool attachmentsAsList = false,
   // Per-section scales; each replaces fontSizeScale for its section.
   double companyNameScale = 1.0,
   double docTitleScale = 1.0,
@@ -431,6 +433,16 @@ pw.MultiPage buildCompactTemplate(
                   color: PdfColors.grey700)),
       ],
 
+      // ── Customer photos pointer (photos print on the Attachments page) ──
+      if (invoice.pdfAttachments.isNotEmpty) ...[
+        pw.SizedBox(height: 4),
+        pw.Text(attachedPhotosNote(invoice.pdfAttachments.length),
+            style: pw.TextStyle(
+                fontSize: tableFontSize,
+                fontWeight: pw.FontWeight.bold,
+                color: accentColor)),
+      ],
+
       // ── Signature + UPI/Bank ──
       if (signatureImage != null || (showUpiQr && upiId != null) || bankAccount != null) ...[
         pw.SizedBox(height: compactPdfLayoutStyle.signatureTopGap),
@@ -509,6 +521,11 @@ pw.MultiPage buildCompactTemplate(
                   fontWeight: pw.FontWeight.bold)),
         ),
       ],
+      // ── Customer photos (empty when none) ──
+      ...buildAttachmentsSection(invoice,
+          pageFormat: pageFormat,
+          asList: attachmentsAsList,
+          fontSizeScale: fontSizeScale),
     ],
   );
 }

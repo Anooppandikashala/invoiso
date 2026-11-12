@@ -15,6 +15,7 @@ import 'package:invoiso/providers/returns_settings_provider.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:invoiso/services/backend_services.dart';
 import 'package:invoiso/services/export_service.dart';
+import 'package:invoiso/screens/invoice_attachments_screen.dart';
 import 'package:invoiso/services/invoice_pdf_services.dart';
 import 'package:invoiso/services/pdf_service.dart';
 import 'package:invoiso/widgets/apply_payment_dialog.dart';
@@ -102,6 +103,8 @@ class _InvoiceManagementScreenV2State
   List<Invoice> _pageInvoices = [];
   // Credit / debit notes raised against this page's invoices, by invoice id.
   Map<String, List<Invoice>> _notesByInvoice = {};
+  // Photo counts for this page's invoices (paperclip badge + menu label).
+  Map<String, ({int public, int private})> _attachmentCounts = {};
   final Set<String> _selectedIds = {};
   final TextEditingController _searchController = TextEditingController();
   final FocusNode _searchFocusNode = FocusNode();
@@ -214,10 +217,13 @@ class _InvoiceManagementScreenV2State
                   .read(returnRepositoryProvider)
                   .getNotesForInvoices(pageInvoices.map((i) => i.id).toList())
               : <String, List<Invoice>>{};
+      final attachmentCounts = await BackendServices.attachments.countsFor(
+          pageInvoices.map((i) => i.id).toList());
       if (mounted) {
         setState(() {
           _pageInvoices = pageInvoices;
           _notesByInvoice = notes;
+          _attachmentCounts = attachmentCounts;
           _totalCount = results[1] as int;
           _isLoadingPage = false;
         });
@@ -598,6 +604,8 @@ class _InvoiceManagementScreenV2State
     );
 
     if (confirmed != true || !mounted) return;
+    final columns = await _pickCsvColumns(widget.filterType);
+    if (columns == null || !mounted) return;
 
     try {
       final invoices = await ref.read(invoiceRepositoryProvider).getInvoicesForExport(
@@ -606,7 +614,7 @@ class _InvoiceManagementScreenV2State
         filterType: widget.filterType,
       );
       final path = await ExportService.exportInvoicesToCsv(invoices,
-          type: widget.filterType);
+          type: widget.filterType, columns: columns);
       if (path == null) return; // user cancelled the save dialog
       if (mounted) {
         AppError.showSuccess(context,
@@ -696,16 +704,100 @@ class _InvoiceManagementScreenV2State
     }
   }
 
+  // Column picker shown before every invoice CSV export; the choice is
+  // remembered. Null = cancelled.
+  Future<List<InvoiceCsvColumn>?> _pickCsvColumns(String docType) async {
+    final showGst =
+        await ref.read(settingsRepositoryProvider).getShowGstFields();
+    final picked = (await ExportService.loadCsvColumns()).toSet();
+    if (!mounted) return null;
+    final l10n = AppLocalizations.of(context)!;
+    final available = InvoiceCsvColumn.values
+        .where((c) => showGst || c != InvoiceCsvColumn.customerGstin)
+        .toList();
+    final result = await showDialog<List<InvoiceCsvColumn>>(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setDialogState) {
+          final chosen = available.where(picked.contains).toList();
+          return AlertDialog(
+            title: Text(l10n.invoiceCsvColumnsDialogTitle),
+            content: SizedBox(
+              width: 360,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Row(
+                    children: [
+                      TextButton(
+                        onPressed: () =>
+                            setDialogState(() => picked.addAll(available)),
+                        child: Text(l10n.invoiceCsvColumnsSelectAll),
+                      ),
+                      TextButton(
+                        onPressed: () => setDialogState(picked.clear),
+                        child: Text(l10n.actionClear),
+                      ),
+                    ],
+                  ),
+                  Flexible(
+                    child: ListView(
+                      shrinkWrap: true,
+                      children: [
+                        for (final c in available)
+                          CheckboxListTile(
+                            dense: true,
+                            controlAffinity: ListTileControlAffinity.leading,
+                            value: picked.contains(c),
+                            title: Text(c.header(docType)),
+                            subtitle: c == InvoiceCsvColumn.privateNotes
+                                ? Text(l10n.invoiceCsvColumnsPrivateHint)
+                                : null,
+                            onChanged: (v) => setDialogState(() =>
+                                v == true ? picked.add(c) : picked.remove(c)),
+                          ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(ctx),
+                child: Text(l10n.actionCancel),
+              ),
+              FilledButton(
+                onPressed:
+                    chosen.isEmpty ? null : () => Navigator.pop(ctx, chosen),
+                child: Text(l10n.actionExport),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+    // Save in file order, keeping a hidden GSTIN pick for when GST is back on.
+    if (result != null) {
+      await ExportService.saveCsvColumns(
+          InvoiceCsvColumn.values.where(picked.contains).toList());
+    }
+    return result;
+  }
+
   Future<void> _bulkExportCsv() async {
     // Drafts have no number yet — skipped, like bulk mark-paid.
     final selected = _pageInvoices
         .where((inv) => _selectedIds.contains(inv.id) && !inv.isDraft)
         .toList();
     if (selected.isEmpty) return;
+    final columns = await _pickCsvColumns('Invoice');
+    if (columns == null || !mounted) return;
 
     setState(() => _isBulkLoading = true);
     try {
-      final path = await ExportService.exportInvoicesToCsv(selected);
+      final path =
+          await ExportService.exportInvoicesToCsv(selected, columns: columns);
       if (path == null) return; // user cancelled the save dialog
       if (mounted) {
         AppError.showSuccess(context,
@@ -1908,6 +2000,12 @@ class _InvoiceManagementScreenV2State
             child: _MenuRow(Icons.history, l10n.paymentDialogHistoryTitle, Colors.blueGrey),
           ),
       ],
+      PopupMenuItem(
+          value: 'attachments',
+          child: _MenuRow(
+              Icons.attach_file,
+              l10n.attachmentsMenuLabel(_attachmentCount(invoice)),
+              Colors.brown)),
       if ((widget.filterType == 'Invoice' || widget.filterType == 'Receipt') &&
           !isDeclined &&
           !isDraft) ...[
@@ -1998,8 +2096,26 @@ class _InvoiceManagementScreenV2State
     ];
   }
 
+  int _attachmentCount(Invoice invoice) {
+    final c = _attachmentCounts[invoice.id];
+    return c == null ? 0 : c.public + c.private;
+  }
+
+  Future<void> _editAttachments(Invoice invoice) async {
+    if (await InvoiceAttachmentsScreen.editSaved(context, invoice)) {
+      final counts = await BackendServices.attachments.countsFor([invoice.id]);
+      if (!mounted) return;
+      setState(() {
+        _attachmentCounts = {..._attachmentCounts}..remove(invoice.id);
+        _attachmentCounts.addAll(counts);
+      });
+    }
+  }
+
   void _handleRowActionV2(String action, Invoice invoice) {
     switch (action) {
+      case 'attachments':
+        _editAttachments(invoice);
       case 'view':
         _viewInvoice(invoice);
       case 'edit':
@@ -2204,6 +2320,21 @@ class _InvoiceManagementScreenV2State
                       : Text('#${invoice.invoiceNumber ?? invoice.id}',
                           overflow: TextOverflow.ellipsis,
                           style: const TextStyle(fontSize: 14.5, fontWeight: FontWeight.w700)),
+                  if (_attachmentCount(invoice) > 0)
+                    InkWell(
+                      onTap: () => _editAttachments(invoice),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.attach_file,
+                              size: 13, color: Theme.of(context).colorScheme.onSurfaceVariant),
+                          Text('${_attachmentCount(invoice)}',
+                              style: TextStyle(
+                                  fontSize: 12,
+                                  color: Theme.of(context).colorScheme.onSurfaceVariant)),
+                        ],
+                      ),
+                    ),
                   const SizedBox(height: 2),
                   Row(
                     mainAxisSize: MainAxisSize.min,
@@ -2946,7 +3077,9 @@ class _InvoiceManagementScreenV2State
         notes: notes,
         onVoidNote: widget.user.isAdmin() ? _voidCreditNote : null,
         refundsByNote: refundsByNote,
-        onVoucherAction: _voucherAction);
+        onVoucherAction: _voucherAction,
+        attachmentCount: _attachmentCount(invoice),
+        onAttachments: () => _editAttachments(invoice));
   }
 
   // Refund voucher PDF for one refund: 'preview' | 'download' | 'print'.

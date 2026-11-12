@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:flutter/foundation.dart' show visibleForTesting;
 import 'package:invoiso/common/common.dart';
 import 'package:invoiso/services/backend_services.dart';
 import 'dart:io';
@@ -14,13 +15,63 @@ import 'package:invoiso/services/pdf_service.dart';
 import 'package:invoiso/utils/formatters.dart';
 import 'package:invoiso/utils/fs_utils.dart';
 
+/// Invoice CSV export columns, in file order.
+enum InvoiceCsvColumn {
+  id,
+  date,
+  dueDate,
+  customer,
+  phone,
+  address,
+  customerGstin, // only exported while GST fields are on
+  type,
+  status,
+  subtotal,
+  tax,
+  total,
+  currency,
+  upi,
+  items,
+  notes,
+  privateNotes;
+
+  /// The fixed columns exported before the picker existed.
+  static const defaults = [
+    id, date, dueDate, customer, phone, address, customerGstin, type,
+    status, subtotal, tax, total, currency, upi, items,
+  ];
+
+  /// CSV header (also the picker label); [docType] names the ID column.
+  String header(String docType) => switch (this) {
+        id => '$docType ID',
+        date => 'Date',
+        dueDate => 'Due Date',
+        customer => 'Customer',
+        phone => 'Phone',
+        address => 'Address',
+        customerGstin => 'Customer GSTIN',
+        type => 'Type',
+        status => 'Status',
+        subtotal => 'Subtotal',
+        tax => 'Tax',
+        total => 'Total',
+        currency => 'Currency',
+        upi => 'UPI',
+        items => 'Items',
+        notes => 'Notes',
+        privateNotes => 'Private Notes',
+      };
+}
+
 class ExportService {
   /// Builds the invoice CSV, prompts the user for a save location (a native
   /// "Save As" dialog on desktop; the platform save flow on Android), writes
   /// the file there and returns its path. Returns null if the user cancels.
+  /// [columns] defaults to the user's saved choice ([loadCsvColumns]).
   static Future<String?> exportInvoicesToCsv(List<Invoice> invoices,
-      {String type = 'Invoice'}) async {
-    final csv = await _buildInvoicesCsv(invoices, type: type);
+      {String type = 'Invoice', List<InvoiceCsvColumn>? columns}) async {
+    final csv = await buildInvoicesCsv(invoices,
+        type: type, columns: columns ?? await loadCsvColumns());
     // Prepend UTF-8 BOM so Excel and other apps render Unicode correctly.
     final bytes = Uint8List.fromList(utf8.encode('\uFEFF$csv'));
     final prefix =
@@ -41,28 +92,36 @@ class ExportService {
     return savePath;
   }
 
-  static Future<String> _buildInvoicesCsv(List<Invoice> invoices,
-      {String type = 'Invoice'}) async {
-    final showGst = await BackendServices.settings.getShowGstFields();
+  /// The user's saved CSV column choice; [InvoiceCsvColumn.defaults] when
+  /// nothing (or nothing usable) is saved.
+  static Future<List<InvoiceCsvColumn>> loadCsvColumns() async {
+    final raw =
+        await BackendServices.settings.getSetting(SettingKey.invoiceCsvColumns);
+    if (raw == null || raw.isEmpty) return InvoiceCsvColumn.defaults;
+    try {
+      final names = (jsonDecode(raw) as List).cast<String>().toSet();
+      final columns =
+          InvoiceCsvColumn.values.where((c) => names.contains(c.name)).toList();
+      return columns.isEmpty ? InvoiceCsvColumn.defaults : columns;
+    } catch (_) {
+      return InvoiceCsvColumn.defaults;
+    }
+  }
 
-    // Build header row
-    final header = <String>[
-      '$type ID',
-      'Date',
-      'Due Date',
-      'Customer',
-      'Phone',
-      'Address',
-      if (showGst) 'Customer GSTIN',
-      'Type',
-      'Status',
-      'Subtotal',
-      'Tax',
-      'Total',
-      'Currency',
-      'UPI',
-      'Items',
-    ];
+  static Future<void> saveCsvColumns(List<InvoiceCsvColumn> columns) =>
+      BackendServices.settings.setSetting(SettingKey.invoiceCsvColumns,
+          jsonEncode(columns.map((c) => c.name).toList()));
+
+  @visibleForTesting
+  static Future<String> buildInvoicesCsv(List<Invoice> invoices,
+      {String type = 'Invoice',
+      List<InvoiceCsvColumn> columns = InvoiceCsvColumn.defaults}) async {
+    final showGst = await BackendServices.settings.getShowGstFields();
+    final cols = columns
+        .where((c) => showGst || c != InvoiceCsvColumn.customerGstin)
+        .toList();
+
+    final header = cols.map((c) => c.header(type)).toList();
 
     // Sort oldest → newest so records append naturally in spreadsheets
     final sorted = List<Invoice>.from(invoices)
@@ -78,21 +137,29 @@ class ExportService {
       }).join('; ');
 
       return <dynamic>[
-        inv.id,
-        AppFormatters.formatShortDate(inv.date),
-        inv.dueDate != null ? AppFormatters.formatShortDate(inv.dueDate!) : '',
-        inv.customer.name,
-        inv.customer.phone,
-        inv.customer.address,
-        if (showGst) inv.customer.gstin,
-        inv.type,
-        inv.status ?? (inv.type == 'Quotation' ? 'draft' : ''),
-        inv.subtotal.toStringAsFixed(2),
-        inv.tax.toStringAsFixed(2),
-        inv.total.toStringAsFixed(2),
-        inv.currencyCode,
-        inv.upiId ?? '',
-        itemsSummary,
+        for (final c in cols)
+          switch (c) {
+            InvoiceCsvColumn.id => inv.id,
+            InvoiceCsvColumn.date => AppFormatters.formatShortDate(inv.date),
+            InvoiceCsvColumn.dueDate => inv.dueDate != null
+                ? AppFormatters.formatShortDate(inv.dueDate!)
+                : '',
+            InvoiceCsvColumn.customer => inv.customer.name,
+            InvoiceCsvColumn.phone => inv.customer.phone,
+            InvoiceCsvColumn.address => inv.customer.address,
+            InvoiceCsvColumn.customerGstin => inv.customer.gstin,
+            InvoiceCsvColumn.type => inv.type,
+            InvoiceCsvColumn.status =>
+              inv.status ?? (inv.type == 'Quotation' ? 'draft' : ''),
+            InvoiceCsvColumn.subtotal => inv.subtotal.toStringAsFixed(2),
+            InvoiceCsvColumn.tax => inv.tax.toStringAsFixed(2),
+            InvoiceCsvColumn.total => inv.total.toStringAsFixed(2),
+            InvoiceCsvColumn.currency => inv.currencyCode,
+            InvoiceCsvColumn.upi => inv.upiId ?? '',
+            InvoiceCsvColumn.items => itemsSummary,
+            InvoiceCsvColumn.notes => inv.notes ?? '',
+            InvoiceCsvColumn.privateNotes => inv.privateNotes ?? '',
+          },
       ];
     }).toList();
 
@@ -127,6 +194,7 @@ class ExportService {
           ? await BackendServices.invoices.getPreviousBalanceDueForInvoice(invoice)
           : 0.0;
       await PDFService.attachReturnInfo(invoice);
+      await PDFService.attachPdfAttachments(invoice);
       final pdf = PDFService.generateInvoicePDFWithSettings(
         invoice,
         s,
@@ -160,6 +228,7 @@ class ExportService {
           ? await BackendServices.invoices.getPreviousBalanceDueForInvoice(invoice)
           : 0.0;
       await PDFService.attachReturnInfo(invoice);
+      await PDFService.attachPdfAttachments(invoice);
       final pdf = PDFService.generateInvoicePDFWithSettings(
         invoice,
         s,

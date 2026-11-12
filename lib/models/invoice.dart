@@ -7,6 +7,7 @@ import 'customer.dart';
 import 'invoice_item.dart';
 import 'invoice_payment.dart';
 import 'refund.dart';
+import 'invoice_attachment.dart';
 
 class Invoice {
   String id;
@@ -15,6 +16,7 @@ class Invoice {
   List<InvoiceItem> items;
   DateTime date;
   String? notes;
+  String? privateNotes; // in-app only — never on PDF / thermal / receipts
   double taxRate;
   String type;
   String? invoiceTitle; // GST document title override (e.g. "Tax Invoice", "Bill of Supply"); null = use type
@@ -53,6 +55,9 @@ class Invoice {
   // Credit / debit note, display-only: type of the linked document ('Invoice'
   // or 'Receipt'), loaded with [refunds] so labels say "Against Receipt".
   String? originalInvoiceType;
+  // PDF-only: customer photos (public attachments, file order), loaded just
+  // before rendering (PDFService.attachPdfAttachments). Not stored on the row.
+  List<PdfAttachmentImage> pdfAttachments = const [];
   bool isDraft; // saved as a draft — no invoiceNumber yet, excluded from revenue/tax/stock
 
   Invoice({
@@ -64,6 +69,7 @@ class Invoice {
     required this.type,
     this.invoiceTitle,
     this.notes,
+    this.privateNotes,
     this.taxRate = 0.0,
     this.currencyCode = 'INR',
     this.currencySymbol = '₹',

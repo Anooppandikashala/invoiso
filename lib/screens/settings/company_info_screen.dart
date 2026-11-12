@@ -13,7 +13,7 @@ import 'package:invoiso/providers/repositories.dart';
 import 'package:invoiso/providers/theme_provider.dart';
 import 'package:invoiso/widgets/language_picker.dart';
 import 'package:invoiso/common/invoiso_colors.dart';
-import 'package:invoiso/database/company_registry_service.dart';
+import 'package:invoiso/services/backend_services.dart';
 import 'package:invoiso/models/company_info.dart';
 import 'package:invoiso/utils/window_title.dart';
 
@@ -273,9 +273,9 @@ class _CompanyInfoScreenState extends ConsumerState<CompanyInfoScreen> {
       // for this company whenever it *isn't* the active one (the active
       // company's own name is resolved live from `company_info`, but a
       // non-active company's label is only ever as fresh as its last sync).
-      final activeCompanyId = await CompanyRegistryService.getActiveCompanyId();
+      final activeCompanyId = await BackendServices.companyRegistry.getActiveCompanyId();
       if (activeCompanyId != null) {
-        await CompanyRegistryService.renameCompany(activeCompanyId, newInfo.name);
+        await BackendServices.companyRegistry.renameCompany(activeCompanyId, newInfo.name);
       }
 
       await refreshWindowTitle();
@@ -1339,8 +1339,9 @@ class _CompanyInfoScreenState extends ConsumerState<CompanyInfoScreen> {
                   ),
                 ),
                 Positioned(
-                  right: 0,
-                  bottom: 0,
+                  right: 4,
+                  // Sit inside the box corner, above the 0/N counter row.
+                  bottom: 28,
                   child: MouseRegion(
                     cursor: SystemMouseCursors.resizeDownRight,
                     child: GestureDetector(
@@ -1354,9 +1355,15 @@ class _CompanyInfoScreenState extends ConsumerState<CompanyInfoScreen> {
                                   _longTextDialogMaxHeight);
                         });
                       },
-                      child: const Padding(
-                        padding: EdgeInsets.all(4),
-                        child: Icon(Icons.south_east, size: 16),
+                      child: Container(
+                        padding: const EdgeInsets.all(2),
+                        decoration: BoxDecoration(
+                          color: Theme.of(ctx).colorScheme.primaryContainer,
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                        child: Icon(Icons.south_east,
+                            size: 20,
+                            color: Theme.of(ctx).colorScheme.onPrimaryContainer),
                       ),
                     ),
                   ),

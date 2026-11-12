@@ -20,6 +20,7 @@ import 'package:invoiso/models/product_list_stats.dart';
 import 'package:invoiso/models/user.dart';
 import 'package:invoiso/utils/formatters.dart';
 import 'package:invoiso/screens/settings/product_columns_settings_screen.dart';
+import 'package:invoiso/widgets/long_text_expand_button.dart';
 import 'package:invoiso/widgets/product_form.dart';
 
 class ProductManagementScreenV2 extends ConsumerStatefulWidget {
@@ -494,6 +495,7 @@ class _ProductManagementScreenV2State extends ConsumerState<ProductManagementScr
     String? prefixText,
     String? helperText,
     VoidCallback? onSubmitted,
+    Widget? suffixIcon,
   }) {
     final l10n = AppLocalizations.of(context)!;
     return TextFormField(
@@ -505,13 +507,16 @@ class _ProductManagementScreenV2State extends ConsumerState<ProductManagementScr
       onFieldSubmitted: onSubmitted == null ? null : (_) => onSubmitted(),
       inputFormatters: isPrice
           ? [FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d{0,2}$'))]
-          : (isStock || isTaxRate)
-              ? [FilteringTextInputFormatter.digitsOnly]
-              : null,
+          : isTaxRate
+              ? [FilteringTextInputFormatter.allow(AppFormatters.taxRateInputPattern)]
+              : isStock
+                  ? [FilteringTextInputFormatter.digitsOnly]
+                  : null,
       decoration: InputDecoration(
         labelText: label,
         prefixIcon: prefixText == null ? Icon(icon) : null,
         prefixText: prefixText,
+        suffixIcon: suffixIcon,
         border: OutlineInputBorder(
             borderRadius: BorderRadius.circular(AppBorderRadius.xsmall)),
         filled: readOnly,
@@ -548,7 +553,7 @@ class _ProductManagementScreenV2State extends ConsumerState<ProductManagementScr
           if (stock == null || stock < 0) return l10n.fieldEnterValidStockMessage;
         }
         if (isTaxRate) {
-          final tax = int.tryParse(value!);
+          final tax = double.tryParse(value!);
           if (tax == null || tax < 0 || tax > 100) return l10n.fieldTaxRangeMessage;
         }
         return null;
@@ -901,7 +906,7 @@ class _ProductManagementScreenV2State extends ConsumerState<ProductManagementScr
         final unlimitedStockStr = getField(row, 'unlimited_stock');
         final priceIncludesTaxStr = getField(row, 'price_includes_tax');
         final lowStockLimit = int.tryParse(getField(row, 'low_stock_limit'));
-        final taxRate = taxStr.isEmpty ? 0 : (int.tryParse(taxStr) ?? 0);
+        final taxRate = taxStr.isEmpty ? 0.0 : (double.tryParse(taxStr) ?? 0.0);
         final stock = stockStr.isEmpty ? 0 : (int.tryParse(stockStr) ?? 0);
         final unlimitedStock = unlimitedStockStr == '1' || unlimitedStockStr.toLowerCase() == 'true';
         final priceIncludesTax = priceIncludesTaxStr == '1' || priceIncludesTaxStr.toLowerCase() == 'true';
@@ -916,7 +921,7 @@ class _ProductManagementScreenV2State extends ConsumerState<ProductManagementScr
           hsncode: getField(row, 'hsn_code'),
           description: getField(row, 'description'),
           price: price,
-          tax_rate: taxRate.clamp(0, 100),
+          tax_rate: taxRate.clamp(0.0, 100.0),
           stock: stock < 0 ? 0 : stock,
           type: type,
           defaultDiscount: discount < 0 ? 0.0 : discount,
@@ -1204,7 +1209,7 @@ class _ProductManagementScreenV2State extends ConsumerState<ProductManagementScr
               p.hsncode,
               p.description,
               p.price,
-              p.tax_rate,
+              AppFormatters.formatTaxRate(p.tax_rate),
               p.stock,
               p.type,
               p.defaultDiscount,
@@ -1313,7 +1318,7 @@ class _ProductManagementScreenV2State extends ConsumerState<ProductManagementScr
                       e.$2.hsncode,
                       e.$2.description,
                       AmountFormat.money(e.$2.price),
-                      '${e.$2.tax_rate}%',
+                      '${AppFormatters.formatTaxRate(e.$2.tax_rate)}%',
                       e.$2.unlimitedStock ? 'Unlimited' : e.$2.stock,
                       e.$2.type,
                       e.$2.defaultDiscount > 0 ? AmountFormat.money(e.$2.defaultDiscount) : '-',
@@ -1603,7 +1608,7 @@ class _ProductManagementScreenV2State extends ConsumerState<ProductManagementScr
           child = _stockCellV2(p);
           break;
         case 'taxRate':
-          child = Text('${p.tax_rate}%');
+          child = Text('${AppFormatters.formatTaxRate(p.tax_rate)}%');
           break;
         case 'unit':
           child = text(p.unit);
@@ -2512,7 +2517,7 @@ class _ProductManagementScreenV2State extends ConsumerState<ProductManagementScr
         text: product.purchasePrice > 0 ? product.purchasePrice.toString() : '0.0');
     final discountCtrl = TextEditingController(
         text: product.defaultDiscount > 0 ? product.defaultDiscount.toString() : '0.0');
-    final taxCtrl = TextEditingController(text: product.tax_rate.toString());
+    final taxCtrl = TextEditingController(text: AppFormatters.formatTaxRate(product.tax_rate));
     final stockCtrl = TextEditingController(text: product.stock.toString());
     final lowStockLimitCtrl =
         TextEditingController(text: product.lowStockLimit?.toString() ?? '');
@@ -2575,6 +2580,7 @@ class _ProductManagementScreenV2State extends ConsumerState<ProductManagementScr
             bool isRequired = false,
             String? prefixText,
             bool locked = false,
+            Widget? suffixIcon,
           }) {
             return _buildDialogTextField(
               controller,
@@ -2589,6 +2595,7 @@ class _ProductManagementScreenV2State extends ConsumerState<ProductManagementScr
               isTaxRate: isTaxRate,
               isRequired: isRequired,
               prefixText: prefixText,
+              suffixIcon: suffixIcon,
             );
           }
 
@@ -2624,7 +2631,7 @@ class _ProductManagementScreenV2State extends ConsumerState<ProductManagementScr
                     ? product.stock
                     : unlimitedStock ? 0 : int.parse(stockCtrl.text.trim()),
                 hsncode: hsnCtrl.text.trim(),
-                tax_rate: int.parse(taxCtrl.text.trim()),
+                tax_rate: double.parse(taxCtrl.text.trim()),
                 type: itemType,
                 defaultDiscount: double.tryParse(discountCtrl.text.trim()) ?? 0.0,
                 purchasePrice: purchasePrice,
@@ -2763,7 +2770,12 @@ class _ProductManagementScreenV2State extends ConsumerState<ProductManagementScr
                             if (_columnsConfig.description) ...[
                               const SizedBox(height: 16),
                               field(descCtrl, l10n.productMgmtDescriptionLabel, Icons.description,
-                                  maxLines: 3, maxLength: 500),
+                                  maxLines: 5, maxLength: DefaultValues.productDescriptionLength,
+                                  suffixIcon: LongTextExpandButton(
+                                      title: l10n.productMgmtDescriptionLabel,
+                                      controller: descCtrl,
+                                      maxLength: DefaultValues.productDescriptionLength,
+                                      readOnly: !isEdit)),
                             ],
                             if (_columnsConfig.hsncode) ...[
                               const SizedBox(height: 16),
@@ -2813,7 +2825,7 @@ class _ProductManagementScreenV2State extends ConsumerState<ProductManagementScr
                                   Expanded(
                                     child: field(
                                         taxCtrl, l10n.fieldTaxRateLabel, Icons.percent,
-                                        keyboardType: TextInputType.number,
+                                        keyboardType: const TextInputType.numberWithOptions(decimal: true),
                                         isTaxRate: true,
                                         isRequired: true),
                                   ),

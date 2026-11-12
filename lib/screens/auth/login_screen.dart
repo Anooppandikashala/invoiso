@@ -6,7 +6,7 @@ import 'package:http/http.dart' as http;
 import 'package:invoiso/common/app_config.dart';
 import 'package:invoiso/common/constants.dart';
 import 'package:invoiso/common/setting_key.dart';
-import 'package:invoiso/database/company_registry_service.dart';
+import 'package:invoiso/services/backend_services.dart';
 import 'package:invoiso/l10n/app_localizations.dart';
 import 'package:invoiso/models/company_profile.dart';
 import 'package:invoiso/models/user.dart';
@@ -50,8 +50,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   }
 
   Future<void> _loadCompanies() async {
-    final companies = await CompanyRegistryService.listCompanies();
-    final activeId = await CompanyRegistryService.getActiveCompanyId();
+    final companies = await BackendServices.companyRegistry.listCompanies();
+    final activeId = await BackendServices.companyRegistry.getActiveCompanyId();
     if (!mounted) return;
     setState(() {
       _companies = companies;
@@ -66,7 +66,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   /// fields fresh for whichever company is now selected.
   Future<void> _onCompanySelected(String? id) async {
     if (id == null || id == _activeCompanyId) return;
-    await CompanyRegistryService.switchToCompany(id);
+    await BackendServices.companyRegistry.switchToCompany(id);
     final themeKey = await ref.read(settingsRepositoryProvider).getThemeMode();
     final localeKey = await ref.read(settingsRepositoryProvider).getAppLocale();
     final purchaseBills = await ref
@@ -138,7 +138,17 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     if (!mounted) return;
     setState(() => _isLoading = true);
 
-    final user = await ref.read(authRepositoryProvider).getUser(username, password);
+    final User? user;
+    try {
+      user = await ref.read(authRepositoryProvider).getUser(username, password);
+    } catch (e) {
+      // e.g. cloud: signed in fine but not assigned to any company.
+      if (!mounted) return;
+      setState(() => _isLoading = false);
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(e.toString())));
+      return;
+    }
 
     if (!mounted) return;
     setState(() => _isLoading = false);

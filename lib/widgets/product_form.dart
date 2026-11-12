@@ -10,6 +10,7 @@ import 'package:invoiso/models/product.dart';
 import 'package:invoiso/models/user.dart';
 import 'package:invoiso/providers/repositories.dart';
 import 'package:invoiso/utils/formatters.dart';
+import 'package:invoiso/widgets/long_text_expand_button.dart';
 
 /// The "add product" form, shared by Product Management (side panel) and the
 /// "New product" dialog on the Create Invoice / Purchase Bill pages, so every
@@ -212,7 +213,7 @@ class ProductFormState extends ConsumerState<ProductForm> {
             ? 0
             : int.parse(_stockController.text.trim()),
         hsncode: _hsnCodeController.text.trim(),
-        tax_rate: int.parse(_taxRateController.text.trim()),
+        tax_rate: double.parse(_taxRateController.text.trim()),
         type: _newItemType,
         defaultDiscount:
             double.tryParse(_defaultDiscountController.text.trim()) ?? 0.0,
@@ -340,7 +341,11 @@ class ProductFormState extends ConsumerState<ProductForm> {
             const SizedBox(height: 16),
             _buildFormField(
                 _descriptionController, l10n.productMgmtDescriptionLabel, Icons.description,
-                maxLines: 3, maxLength: 500, required: false),
+                maxLines: 5, maxLength: DefaultValues.productDescriptionLength, required: false,
+                suffixIcon: LongTextExpandButton(
+                    title: l10n.productMgmtDescriptionLabel,
+                    controller: _descriptionController,
+                    maxLength: DefaultValues.productDescriptionLength)),
           ],
           if (_columnsConfig.hsncode) ...[
             const SizedBox(height: 16),
@@ -388,7 +393,7 @@ class ProductFormState extends ConsumerState<ProductForm> {
               children: [
                 Expanded(
                   child: _buildFormField(_taxRateController, l10n.productMgmtTaxPercentLabel, Icons.percent,
-                      keyboardType: TextInputType.number, isTaxRate: true),
+                      keyboardType: const TextInputType.numberWithOptions(decimal: true), isTaxRate: true),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
@@ -552,6 +557,7 @@ class ProductFormState extends ConsumerState<ProductForm> {
     String? helperText,
     bool enabled = true,
     VoidCallback? onSubmitted,
+    Widget? suffixIcon,
   }) {
     final l10n = AppLocalizations.of(context)!;
     return TextFormField(
@@ -569,13 +575,16 @@ class ProductFormState extends ConsumerState<ProductForm> {
       },
       inputFormatters: isPrice
           ? [FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d{0,2}$'))]
-          : (isStock || isTaxRate)
-              ? [FilteringTextInputFormatter.digitsOnly]
-              : null,
+          : isTaxRate
+              ? [FilteringTextInputFormatter.allow(AppFormatters.taxRateInputPattern)]
+              : isStock
+                  ? [FilteringTextInputFormatter.digitsOnly]
+                  : null,
       decoration: InputDecoration(
         labelText: label,
         prefixIcon: prefixText == null ? Icon(icon) : null,
         prefixText: prefixText,
+        suffixIcon: suffixIcon,
         border: OutlineInputBorder(
             borderRadius: BorderRadius.circular(AppBorderRadius.xsmall)),
         counterText: '',
@@ -596,7 +605,7 @@ class ProductFormState extends ConsumerState<ProductForm> {
           if (stock == null || stock < 0) return l10n.fieldEnterValidStockMessage;
         }
         if (isTaxRate) {
-          final tax = int.tryParse(value);
+          final tax = double.tryParse(value);
           if (tax == null || tax < 0 || tax > 100) {
             return l10n.fieldTaxRangeMessage;
           }
@@ -658,7 +667,7 @@ Future<Product?> showNewProductDialog(
           ],
         ),
         content: SizedBox(
-          width: 480,
+          width: 550,
           child: SingleChildScrollView(
             child: Padding(
               padding: const EdgeInsets.only(top: 8),

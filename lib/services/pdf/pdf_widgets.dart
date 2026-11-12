@@ -2,6 +2,7 @@ import 'dart:typed_data';
 
 import 'package:intl/intl.dart';
 import 'package:pdf/pdf.dart';
+import 'package:invoiso/services/pdf/pdf_attachments_page.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:qr/qr.dart';
 import 'package:invoiso/common/common.dart';
@@ -700,7 +701,7 @@ pw.Widget buildEnhancedTotals(
 String invoiceTaxLabel(Invoice invoice) {
   switch (invoice.taxMode) {
     case TaxMode.global:
-      return "Tax (${(invoice.taxRate * 100).toStringAsFixed(0)}%)";
+      return "Tax (${AppFormatters.formatTaxRate(invoice.taxRate * 100)}%)";
     case TaxMode.perItem:
       return "Tax";
     case TaxMode.none:
@@ -1082,27 +1083,27 @@ pw.Widget buildInvoiceTable(Invoice invoice,
             textAlign: centerOnGridClassic),
         if (splitCgstSgst) ...[
           buildTableCell(
-              '${AmountFormat.money(isGlobalTaxMode ? (itemsTotal > 0 ? invoice.tax * (item.total / itemsTotal) / 2 : 0.0) : item.taxAmount / 2)}\n(${(isGlobalTaxMode ? globalTaxRatePercent : item.product.tax_rate) / 2}%)',
+              '${AmountFormat.money(isGlobalTaxMode ? (itemsTotal > 0 ? invoice.tax * (item.total / itemsTotal) / 2 : 0.0) : item.taxAmount / 2)}\n(${AppFormatters.formatTaxRate((isGlobalTaxMode ? globalTaxRatePercent : item.product.tax_rate) / 2)}%)',
               fontSize: tableFontSize,
               cellPaddingH: cellPaddingH,
               cellPaddingV: cellPaddingV,
               textAlign: centerOnGridClassic),
           buildTableCell(
-              '${AmountFormat.money(isGlobalTaxMode ? (itemsTotal > 0 ? invoice.tax * (item.total / itemsTotal) / 2 : 0.0) : item.taxAmount / 2)}\n(${(isGlobalTaxMode ? globalTaxRatePercent : item.product.tax_rate) / 2}%)',
+              '${AmountFormat.money(isGlobalTaxMode ? (itemsTotal > 0 ? invoice.tax * (item.total / itemsTotal) / 2 : 0.0) : item.taxAmount / 2)}\n(${AppFormatters.formatTaxRate((isGlobalTaxMode ? globalTaxRatePercent : item.product.tax_rate) / 2)}%)',
               fontSize: tableFontSize,
               cellPaddingH: cellPaddingH,
               cellPaddingV: cellPaddingV,
               textAlign: centerOnGridClassic),
         ] else if (showIgstCol)
           buildTableCell(
-              '${AmountFormat.money(isGlobalTaxMode ? (itemsTotal > 0 ? invoice.tax * (item.total / itemsTotal) : 0.0) : item.taxAmount)}\n(${isGlobalTaxMode ? globalTaxRatePercent : item.product.tax_rate}%)',
+              '${AmountFormat.money(isGlobalTaxMode ? (itemsTotal > 0 ? invoice.tax * (item.total / itemsTotal) : 0.0) : item.taxAmount)}\n(${AppFormatters.formatTaxRate(isGlobalTaxMode ? globalTaxRatePercent : item.product.tax_rate)}%)',
               fontSize: tableFontSize,
               cellPaddingH: cellPaddingH,
               cellPaddingV: cellPaddingV,
               textAlign: centerOnGridClassic)
         else if (taxColumnOn)
           buildTableCell(
-              '${AmountFormat.money(isGlobalTaxMode ? (itemsTotal > 0 ? invoice.tax * (item.total / itemsTotal) : 0.0) : item.taxAmount)}\n(${isGlobalTaxMode ? globalTaxRatePercent : item.product.tax_rate}%)',
+              '${AmountFormat.money(isGlobalTaxMode ? (itemsTotal > 0 ? invoice.tax * (item.total / itemsTotal) : 0.0) : item.taxAmount)}\n(${AppFormatters.formatTaxRate(isGlobalTaxMode ? globalTaxRatePercent : item.product.tax_rate)}%)',
               fontSize: tableFontSize,
               cellPaddingH: cellPaddingH,
               cellPaddingV: cellPaddingV,
@@ -1283,7 +1284,8 @@ pw.Widget buildAdditionalNotes(Invoice invoice,
     {double fontSize = 10, PdfColor accentColor = PdfColors.grey700}) {
   final notes = invoice.notes ?? '';
   final returnLines = returnInfoLines(invoice);
-  if (notes.isEmpty && returnLines.isEmpty) return pw.SizedBox();
+  final photos = invoice.pdfAttachments.length;
+  if (notes.isEmpty && returnLines.isEmpty && photos == 0) return pw.SizedBox();
   return pw.Container(
     padding: const pw.EdgeInsets.all(8),
     decoration: pw.BoxDecoration(
@@ -1319,6 +1321,14 @@ pw.Widget buildAdditionalNotes(Invoice invoice,
                 fontSize: fontSize,
                 color: PdfColors.grey700),
           ),
+        ],
+        if (photos > 0) ...[
+          if (notes.isNotEmpty || returnLines.isNotEmpty) pw.SizedBox(height: 4),
+          pw.Text(attachedPhotosNote(photos),
+              style: pw.TextStyle(
+                  fontWeight: pw.FontWeight.bold,
+                  fontSize: fontSize - 1,
+                  color: accentColor)),
         ],
       ],
     ),

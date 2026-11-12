@@ -19,7 +19,7 @@ class DatabaseHelper {
   static String? get path => _path;
   static Database? _database;
   static String _dbFileName = 'invoice_manager.db';
-  final dbVersion = 57;
+  final dbVersion = 59;
 
   /// Startup only, before anything has opened a connection yet — just points
   /// at the right file for the first `_initDB()` call. No close/reopen, so
@@ -172,7 +172,8 @@ class DatabaseHelper {
         original_invoice_date TEXT,
         return_reason TEXT,
         credit_settlement TEXT,
-        is_draft INTEGER DEFAULT 0
+        is_draft INTEGER DEFAULT 0,
+        private_notes TEXT
       )
     ''');
 
@@ -377,6 +378,11 @@ class DatabaseHelper {
         notes              TEXT
       )
     ''');
+
+    // Invoice photo attachments — files live under attachments/<db stem>/
+    // <invoice id>/<file_name> (InvoiceAttachmentService).
+    await db.execute(_invoiceAttachmentsTableSql);
+    await db.execute(_invoiceAttachmentsIndexSql);
 
     // Indexes
     await db.execute('CREATE INDEX idx_invoices_customer ON invoices(customer_name)');
@@ -1335,7 +1341,35 @@ class DatabaseHelper {
         });
       }
     }
+
+    if (oldVersion < 58) {
+      // Private notes: in-app only, never rendered on any PDF / receipt.
+      await _runMigrationStep(db, 58, 'add_private_notes_to_invoices', () async {
+        await db.execute('ALTER TABLE invoices ADD COLUMN private_notes TEXT');
+      });
+    }
+
+    if (oldVersion < 59) {
+      await _runMigrationStep(db, 59, 'create_invoice_attachments_table', () async {
+        await db.execute(_invoiceAttachmentsTableSql);
+        await db.execute(_invoiceAttachmentsIndexSql);
+      });
+    }
   }
+
+  static const _invoiceAttachmentsTableSql = '''
+      CREATE TABLE IF NOT EXISTS invoice_attachments (
+        id          TEXT PRIMARY KEY,
+        invoice_id  TEXT NOT NULL,
+        file_name   TEXT NOT NULL,
+        is_public   INTEGER NOT NULL DEFAULT 0,
+        caption     TEXT,
+        sort_order  INTEGER NOT NULL DEFAULT 0,
+        created_at  TEXT NOT NULL
+      )
+    ''';
+  static const _invoiceAttachmentsIndexSql =
+      'CREATE INDEX IF NOT EXISTS idx_invoice_attachments_invoice ON invoice_attachments(invoice_id)';
 
   // v48 performance indexes (Issues.md #37); re-run idempotently by v57.
   static const _performanceIndexes = [

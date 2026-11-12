@@ -543,6 +543,7 @@ class ReturnService {
             CustomFieldValue.listToJson(inv.customer.customFields),
         'date': inv.date.toIso8601String(),
         'notes': inv.notes,
+        'private_notes': inv.privateNotes,
         'tax_rate': inv.taxRate,
         'type': inv.type,
         'invoice_title': inv.invoiceTitle,

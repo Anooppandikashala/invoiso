@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:invoiso/models/invoice_attachment.dart';
 import 'package:invoiso/services/backend_services.dart';
 import 'dart:io';
 
@@ -16,7 +17,6 @@ import 'package:invoiso/common/constants.dart';
 import 'package:invoiso/models/company_info.dart';
 import 'package:invoiso/models/customer_field_settings.dart';
 import 'package:invoiso/models/invoice.dart';
-import 'package:invoiso/database/return_service.dart';
 import 'package:invoiso/services/pdf/pdf_font_service.dart';
 import 'package:invoiso/services/thermal_printer_service_v1.dart';
 import 'pdf_settings.dart';
@@ -146,6 +146,7 @@ class PDFService {
       BackendServices.settings.getSetting(SettingKey.debitNotePrefix), // 62
       BackendServices.settings.getSetting(SettingKey.quotationPrefix), // 63
       BackendServices.settings.getSetting(SettingKey.receiptPrefix), // 64
+      BackendServices.settings.getSetting(SettingKey.attachmentLayout), // 65
     ]);
 
     final rawPrefix = (results[2] as String?) ?? 'INV';
@@ -240,6 +241,7 @@ class PDFService {
       tableItemsScale: pdfSectionScale(results[58] as String?, fontSizeScale),
       totalsScale: pdfSectionScale(results[59] as String?, fontSizeScale),
       customerFields: results[60] as CustomerFieldSettings,
+      attachmentsAsList: results[65] == 'list',
     );
   }
 
@@ -326,6 +328,7 @@ class PDFService {
           pageFormat: s.pageFormat,
           metadataColumns: s.metadataColumns,
           fontSizeScale: s.fontSizeScale,
+          attachmentsAsList: s.attachmentsAsList,
           companyNameScale: s.companyNameScale,
           docTitleScale: s.docTitleScale,
           tableHeaderScale: s.tableHeaderScale,
@@ -389,6 +392,7 @@ class PDFService {
           pageFormat: s.pageFormat,
           metadataColumns: s.metadataColumns,
           fontSizeScale: s.fontSizeScale,
+          attachmentsAsList: s.attachmentsAsList,
           companyNameScale: s.companyNameScale,
           docTitleScale: s.docTitleScale,
           tableHeaderScale: s.tableHeaderScale,
@@ -452,6 +456,7 @@ class PDFService {
           pageFormat: s.pageFormat,
           metadataColumns: s.metadataColumns,
           fontSizeScale: s.fontSizeScale,
+          attachmentsAsList: s.attachmentsAsList,
           companyNameScale: s.companyNameScale,
           docTitleScale: s.docTitleScale,
           tableHeaderScale: s.tableHeaderScale,
@@ -515,6 +520,7 @@ class PDFService {
           pageFormat: s.pageFormat,
           metadataColumns: s.metadataColumns,
           fontSizeScale: s.fontSizeScale,
+          attachmentsAsList: s.attachmentsAsList,
           companyNameScale: s.companyNameScale,
           docTitleScale: s.docTitleScale,
           tableHeaderScale: s.tableHeaderScale,
@@ -577,6 +583,7 @@ class PDFService {
           pageFormat: s.pageFormat,
           metadataColumns: s.metadataColumns,
           fontSizeScale: s.fontSizeScale,
+          attachmentsAsList: s.attachmentsAsList,
           companyNameScale: s.companyNameScale,
           docTitleScale: s.docTitleScale,
           tableHeaderScale: s.tableHeaderScale,
@@ -683,6 +690,7 @@ class PDFService {
           landscape: s.landscape,
           metadataColumns: s.metadataColumns,
           fontSizeScale: s.fontSizeScale,
+          attachmentsAsList: s.attachmentsAsList,
           companyNameScale: s.companyNameScale,
           docTitleScale: s.docTitleScale,
           tableHeaderScale: s.tableHeaderScale,
@@ -719,22 +727,35 @@ class PDFService {
     return pdf;
   }
 
+  /// Loads [invoice]'s customer photos (public attachments, in order) for its
+  /// PDF. Missing files are skipped. Call next to [attachReturnInfo].
+  static Future<void> attachPdfAttachments(Invoice invoice) async {
+    final photos = <PdfAttachmentImage>[];
+    for (final a in await BackendServices.attachments.listFor(invoice.id)) {
+      if (!a.isPublic) continue;
+      final bytes = await BackendServices.attachments.readBytes(a);
+      if (bytes != null) photos.add((bytes: bytes, caption: a.caption));
+    }
+    invoice.pdfAttachments = photos;
+  }
+
   /// Credit notes print their refunds in the notes block — load them onto
   /// [invoice] before rendering. No-op for other document types.
   static Future<void> attachReturnInfo(Invoice invoice) async {
     if (invoice.type != 'Credit Note' && invoice.type != 'Debit Note') return;
     if (invoice.originalInvoiceId != null) {
       invoice.originalInvoiceType =
-          await ReturnService.getDocumentType(invoice.originalInvoiceId!);
+          await BackendServices.returns.getDocumentType(invoice.originalInvoiceId!);
     }
     if (invoice.type != 'Credit Note') return;
-    invoice.refunds = await ReturnService.getRefundsForCreditNote(invoice.id);
+    invoice.refunds = await BackendServices.returns.getRefundsForCreditNote(invoice.id);
   }
 
   static Future<pw.Document> generateInvoicePDF(Invoice invoice,
       {String datePattern = 'dd/MM/yyyy'}) async {
     final settings = await fetchPdfSettings(datePattern: datePattern);
     await attachReturnInfo(invoice);
+    await attachPdfAttachments(invoice);
     final previousBalanceDue = settings.showPreviousBalance
         ? await BackendServices.invoices.getPreviousBalanceDueForInvoice(invoice)
         : 0.0;

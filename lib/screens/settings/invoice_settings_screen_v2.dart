@@ -320,7 +320,7 @@ class _InvoiceSettingsScreenV2State
         settingsRepo.setSetting(
             SettingKey.quantityLabel, quantityLabelController.text.trim()),
         settingsRepo.setSetting(SettingKey.defaultTaxRate,
-            taxRateVal.clamp(0, 100).toStringAsFixed(1)),
+            AppFormatters.formatTaxRate(taxRateVal.clamp(0, 100))),
         settingsRepo.setShowQuantity(_showQuantity),
         settingsRepo.setShowDiscount(_showDiscount),
         settingsRepo.setShowTypeTag(_showTypeTag),
@@ -601,8 +601,9 @@ class _InvoiceSettingsScreenV2State
                   ),
                 ),
                 Positioned(
-                  right: 0,
-                  bottom: 0,
+                  right: 4,
+                  // Sit inside the box corner, above the 0/N counter row.
+                  bottom: 28,
                   child: MouseRegion(
                     cursor: SystemMouseCursors.resizeDownRight,
                     child: GestureDetector(
@@ -616,9 +617,15 @@ class _InvoiceSettingsScreenV2State
                                   _longTextDialogMaxHeight);
                         });
                       },
-                      child: const Padding(
-                        padding: EdgeInsets.all(4),
-                        child: Icon(Icons.south_east, size: 16),
+                      child: Container(
+                        padding: const EdgeInsets.all(2),
+                        decoration: BoxDecoration(
+                          color: Theme.of(ctx).colorScheme.primaryContainer,
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                        child: Icon(Icons.south_east,
+                            size: 20,
+                            color: Theme.of(ctx).colorScheme.onPrimaryContainer),
                       ),
                     ),
                   ),

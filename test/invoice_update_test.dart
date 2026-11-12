@@ -21,6 +21,15 @@ import 'package:invoiso/models/customer.dart';
 import 'package:invoiso/models/invoice.dart';
 import 'package:invoiso/models/invoice_item.dart';
 import 'package:invoiso/models/product.dart';
+import 'package:invoiso/repositories/sqlite/sqlite_company_info_repository.dart';
+import 'package:invoiso/repositories/sqlite/sqlite_installation_repository.dart';
+import 'package:invoiso/repositories/sqlite/sqlite_invoice_attachment_repository.dart';
+import 'package:invoiso/repositories/sqlite/sqlite_invoice_repository.dart';
+import 'package:invoiso/repositories/sqlite/sqlite_payment_repository.dart';
+import 'package:invoiso/repositories/sqlite/sqlite_company_registry_repository.dart';
+import 'package:invoiso/repositories/sqlite/sqlite_return_repository.dart';
+import 'package:invoiso/repositories/sqlite/sqlite_settings_repository.dart';
+import 'package:invoiso/services/backend_services.dart';
 import 'package:invoiso/providers/sqlite_repository_overrides.dart';
 import 'package:invoiso/screens/create_invoice_screen_v2.dart';
 
@@ -31,6 +40,16 @@ void main() {
   setUpAll(() async {
     sqfliteFfiInit();
     databaseFactory = databaseFactoryFfi;
+    BackendServices.configure(
+      settings: SqliteSettingsRepository(),
+      companyInfo: SqliteCompanyInfoRepository(),
+      invoices: SqliteInvoiceRepository(),
+      payments: SqlitePaymentRepository(),
+      installation: SqliteInstallationRepository(),
+      attachments: SqliteInvoiceAttachmentRepository(),
+      returns: SqliteReturnRepository(),
+      companyRegistry: SqliteCompanyRegistryRepository(),
+    );
     tmp = Directory.systemTemp.createTempSync('invoiso_update_test');
     TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
         .setMockMethodCallHandler(

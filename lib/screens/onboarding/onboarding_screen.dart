@@ -6,7 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image/image.dart' as img;
 import 'package:invoiso/common/common.dart';
-import 'package:invoiso/database/company_registry_service.dart';
+import 'package:invoiso/services/backend_services.dart';
 import 'package:invoiso/l10n/app_localizations.dart';
 import 'package:invoiso/models/company_info.dart';
 import 'package:invoiso/models/user.dart';
@@ -18,6 +18,7 @@ import 'package:invoiso/screens/onboarding/onboarding_step_company.dart';
 import 'package:invoiso/screens/onboarding/onboarding_step_done.dart';
 import 'package:invoiso/screens/onboarding/onboarding_step_invoice.dart';
 import 'package:invoiso/screens/onboarding/onboarding_step_purchase_bills.dart';
+import 'package:invoiso/utils/formatters.dart';
 
 /// One-time, skippable first-login setup wizard. Each step persists its own
 /// fields immediately on "Next" so progress survives even if the app is
@@ -162,9 +163,9 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     ]);
     // Keep the registry label in sync, as Company Info does — it's what the
     // company pickers show while this company isn't the active one.
-    final activeCompanyId = await CompanyRegistryService.getActiveCompanyId();
+    final activeCompanyId = await BackendServices.companyRegistry.getActiveCompanyId();
     if (activeCompanyId != null) {
-      await CompanyRegistryService.renameCompany(activeCompanyId, newInfo.name);
+      await BackendServices.companyRegistry.renameCompany(activeCompanyId, newInfo.name);
     }
     _existingCompanyInfo = newInfo;
   }
@@ -190,7 +191,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
       settingsRepo.setSetting(
           SettingKey.invoiceLeadingZeros, _leadingZeros.toString()),
       settingsRepo.setSetting(
-          SettingKey.defaultTaxRate, taxRate.clamp(0, 100).toStringAsFixed(1)),
+          SettingKey.defaultTaxRate, AppFormatters.formatTaxRate(taxRate.clamp(0, 100))),
     ]);
   }
 

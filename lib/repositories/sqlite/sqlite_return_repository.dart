@@ -117,4 +117,7 @@ class SqliteReturnRepository implements ReturnRepository {
   @override
   Future<List<Refund>> getRefundsForCreditNote(String creditNoteId) =>
       ReturnService.getRefundsForCreditNote(creditNoteId);
+
+  @override
+  Future<String?> getDocumentType(String id) => ReturnService.getDocumentType(id);
 }

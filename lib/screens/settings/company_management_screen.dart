@@ -2,12 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:invoiso/common/constants.dart';
 import 'package:invoiso/common/setting_key.dart';
-import 'package:invoiso/database/company_registry_service.dart';
+import 'package:invoiso/services/backend_services.dart';
 import 'package:invoiso/database/user_service.dart';
 import 'package:invoiso/l10n/app_localizations.dart';
 import 'package:invoiso/models/company_info.dart';
 import 'package:invoiso/models/company_profile.dart';
 import 'package:invoiso/models/user.dart';
+import 'package:invoiso/providers/app_config_provider.dart';
 import 'package:invoiso/providers/locale_provider.dart';
 import 'package:invoiso/providers/purchase_bills_settings_provider.dart';
 import 'package:invoiso/providers/repositories.dart';
@@ -56,8 +57,8 @@ class _CompanyManagementScreenState
 
   Future<void> _load() async {
     setState(() => _isLoading = true);
-    final companies = await CompanyRegistryService.listCompanies();
-    final activeId = await CompanyRegistryService.getActiveCompanyId();
+    final companies = await BackendServices.companyRegistry.listCompanies();
+    final activeId = await BackendServices.companyRegistry.getActiveCompanyId();
     await refreshWindowTitle();
     if (!mounted) return;
     setState(() {
@@ -73,7 +74,7 @@ class _CompanyManagementScreenState
   /// renders, per the same reasoning as the Login screen's own selector.
   Future<void> _liveSwitchTo(String id) async {
     try {
-      await CompanyRegistryService.switchToCompany(id);
+      await BackendServices.companyRegistry.switchToCompany(id);
     } catch (e) {
       if (!mounted) return;
       _showErrorDialog(
@@ -123,14 +124,15 @@ class _CompanyManagementScreenState
     if (confirmed != true || !mounted) return;
 
     try {
-      await CompanyRegistryService.switchToCompany(company.id);
+      await BackendServices.companyRegistry.switchToCompany(company.id);
     } catch (e) {
       if (!mounted) return;
       _showErrorDialog(l10n.companyMgmtSwitchErrorMessage(e.toString()));
       return;
     }
     if (!mounted) return;
-    await returnToLoginAfterCompanyChange(context, ref);
+    await returnToLoginAfterCompanyChange(context, ref,
+        currentUser: widget.currentUser);
   }
 
   void _showErrorDialog(String message) {
@@ -159,6 +161,7 @@ class _CompanyManagementScreenState
     final fieldRadius = BorderRadius.circular(AppBorderRadius.xsmall);
     final existingNames =
         _companies.map((c) => c.name.trim().toLowerCase()).toSet();
+    final isCloud = ref.read(appEditionConfigProvider).isCloud;
     bool obscurePassword = true;
 
     final confirmed = await showDialog<bool>(
@@ -222,6 +225,9 @@ class _CompanyManagementScreenState
                         return null;
                       },
                     ),
+                    // Cloud: the creator owns the new company with the same
+                    // login — no separate admin account.
+                    if (!isCloud) ...[
                     const SizedBox(height: 20),
                     Row(
                       children: [
@@ -271,6 +277,7 @@ class _CompanyManagementScreenState
                           ? l10n.userMgmtPasswordRequiredMessage
                           : null,
                     ),
+                    ],
                   ],
                 ),
               ),
@@ -299,14 +306,22 @@ class _CompanyManagementScreenState
     final username = usernameController.text.trim();
     final password = passwordController.text;
 
-    final profile = await CompanyRegistryService.createCompany(name);
-    await CompanyRegistryService.switchToCompany(profile.id);
+    // Cloud refuses past the plan's company limit — show its message.
+    final CompanyProfile profile;
+    try {
+      profile = await BackendServices.companyRegistry.createCompany(name);
+    } catch (e) {
+      if (mounted) _showErrorDialog(e.toString());
+      return;
+    }
+    await BackendServices.companyRegistry.switchToCompany(profile.id);
 
     // Overwrite the seeded admin/admin login with the credentials just
     // entered, and the placeholder company name — both left behind by the
     // schema's default seed data (`_createDB`), which still needs to run
     // unchanged for the plain single-company case.
-    final seededAdmin = await UserService.getUserByUsername('admin');
+    final seededAdmin =
+        isCloud ? null : await UserService.getUserByUsername('admin');
     if (seededAdmin != null) {
       await UserService.updateUser(User(
         id: seededAdmin.id,
@@ -349,7 +364,8 @@ class _CompanyManagementScreenState
       return;
     }
 
-    await returnToLoginAfterCompanyChange(context, ref);
+    await returnToLoginAfterCompanyChange(context, ref,
+        currentUser: widget.currentUser);
   }
 
   Future<void> _rename(CompanyProfile company) async {
@@ -377,7 +393,7 @@ class _CompanyManagementScreenState
       ),
     );
     if (newName == null || newName.isEmpty || !mounted) return;
-    await CompanyRegistryService.renameCompany(company.id, newName);
+    await BackendServices.companyRegistry.renameCompany(company.id, newName);
     await _load();
   }
 
@@ -425,16 +441,17 @@ class _CompanyManagementScreenState
       // Removing the active company — hand off to whichever other company
       // remains before deleting, so the app always has one to load.
       final fallback = _companies.firstWhere((c) => c.id != company.id);
-      await CompanyRegistryService.switchToCompany(fallback.id);
+      await BackendServices.companyRegistry.switchToCompany(fallback.id);
     }
-    await CompanyRegistryService.deleteCompany(company.id);
+    await BackendServices.companyRegistry.deleteCompany(company.id);
 
     if (!mounted) return;
 
     if (isActive) {
       // Only the active company's removal touches this app instance's own
       // open DB connection — that's what actually needs a fresh login.
-      await returnToLoginAfterCompanyChange(context, ref);
+      await returnToLoginAfterCompanyChange(context, ref,
+        currentUser: widget.currentUser);
     } else {
       await _load();
       if (!mounted) return;
@@ -542,10 +559,13 @@ class _CompanyManagementScreenState
                         ),
                       ),
                     const SizedBox(height: 16),
-                    OutlinedButton(
-                      onPressed: _createCompany,
-                      child: Text(l10n.companyMgmtNewCompanyButton),
-                    ),
+                    // Cloud: only the active company's owner creates
+                    // companies (create_organization is owner-only).
+                    if (canManage || !ref.read(appEditionConfigProvider).isCloud)
+                      OutlinedButton(
+                        onPressed: _createCompany,
+                        child: Text(l10n.companyMgmtNewCompanyButton),
+                      ),
                   ],
                 ),
               ),

@@ -116,6 +116,8 @@ enum SettingKey {
   purchaseBillsBannerDismissed, // '1' once user dismisses the purchase-bills/suppliers discovery banner
   returnsBannerDismissed, // '1' once user dismisses the product-returns notice on the Invoices list
   amountSeparator, // AmountSeparator.key: 'none' | 'international' | 'indian'
+  invoiceCsvColumns, // JSON list of InvoiceCsvColumn names picked for invoice CSV export
+  attachmentLayout, // customer photos on the PDF Attachments page(s): 'grid' (default) | 'list'
 }
 
 extension SettingKeyExtension on SettingKey {
@@ -355,6 +357,10 @@ extension SettingKeyExtension on SettingKey {
         return 'returns_banner_dismissed';
       case SettingKey.amountSeparator:
         return 'amount_separator';
+      case SettingKey.invoiceCsvColumns:
+        return 'invoice_csv_columns';
+      case SettingKey.attachmentLayout:
+        return 'attachment_layout';
 
     }
   }
