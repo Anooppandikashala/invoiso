@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:invoiso/common/common.dart';
 import 'package:invoiso/common/constants.dart';
 import 'package:invoiso/l10n/app_localizations.dart';
+import 'package:invoiso/providers/attachments_settings_provider.dart';
 import 'package:invoiso/providers/cash_exchange_settings_provider.dart';
 import 'package:invoiso/providers/purchase_bills_settings_provider.dart';
 import 'package:invoiso/providers/repositories.dart';
@@ -87,6 +88,13 @@ class _AccessibilityScreenState extends ConsumerState<AccessibilityScreen> {
     if (!mounted) return;
     setState(() => _cashExchangeEnabled = value);
     ref.read(cashUpiExchangeEnabledProvider.notifier).state = value;
+  }
+
+  Future<void> _setAttachmentsEnabled(bool value) async {
+    await ref
+        .read(settingsRepositoryProvider)
+        .setSetting(SettingKey.attachmentsEnabled, value.toString());
+    ref.read(attachmentsEnabledProvider.notifier).state = value;
   }
 
   // Saved immediately and pushed to the provider so the dashboard sidebar
@@ -259,6 +267,31 @@ class _AccessibilityScreenState extends ConsumerState<AccessibilityScreen> {
                                 .onSurfaceVariant)),
                     value: ref.watch(returnsEnabledProvider),
                     onChanged: _setReturnsEnabled,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Card(
+                  elevation: 0,
+                  color: Theme.of(context).colorScheme.surfaceContainer,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(AppBorderRadius.medium),
+                    side: BorderSide(
+                        color: Theme.of(context).colorScheme.outlineVariant),
+                  ),
+                  child: SwitchListTile(
+                    contentPadding:
+                        const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                    secondary: const Icon(Icons.attach_file),
+                    title: Text(l10n.accessibilityAttachmentsLabel,
+                        style: const TextStyle(fontWeight: FontWeight.w600)),
+                    subtitle: Text(l10n.accessibilityAttachmentsSubtitle,
+                        style: TextStyle(
+                            fontSize: AppFontSize.xsmall,
+                            color: Theme.of(context)
+                                .colorScheme
+                                .onSurfaceVariant)),
+                    value: ref.watch(attachmentsEnabledProvider),
+                    onChanged: _setAttachmentsEnabled,
                   ),
                 ),
                 const SizedBox(height: 24),

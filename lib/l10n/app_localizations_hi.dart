@@ -4888,6 +4888,13 @@ class AppLocalizationsHi extends AppLocalizations {
       'गैर-एडमिन उपयोगकर्ताओं से रिपोर्ट मेनू छिपाएँ।';
 
   @override
+  String get accessibilityAttachmentsLabel => 'इनवॉइस अटैचमेंट';
+
+  @override
+  String get accessibilityAttachmentsSubtitle =>
+      'इनवॉइस में फ़ोटो जोड़ने के लिए इनवॉइस फ़ॉर्म और इनवॉइस सूची में अटैचमेंट विकल्प दिखाता है।';
+
+  @override
   String get accessibilityPurchaseBillsAdminOnlyLabel =>
       'Purchase Bills & Suppliers: Admins Only';
 

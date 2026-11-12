@@ -1237,6 +1237,8 @@
   "accessibilityCashExchangeSubtitle": "नया इनवॉइस के बाद नकद विनिमय सेवाएँ मेनू जोड़ता है, जिससे UPI ↔ नकद विनिमय, सेवा शुल्क और नकद लेन-देन दर्ज कर सकें, नकद और UPI/बैंक शेष के साथ।",
   "accessibilityReportsAdminOnlyLabel": "रिपोर्ट: केवल एडमिन",
   "accessibilityReportsAdminOnlySubtitle": "गैर-एडमिन उपयोगकर्ताओं से रिपोर्ट मेनू छिपाएँ।",
+  "accessibilityAttachmentsLabel": "इनवॉइस अटैचमेंट",
+  "accessibilityAttachmentsSubtitle": "इनवॉइस में फ़ोटो जोड़ने के लिए इनवॉइस फ़ॉर्म और इनवॉइस सूची में अटैचमेंट विकल्प दिखाता है।",
   "cashExchangeCashLabel": "नकद",
   "cashExchangeUpiBankLabel": "UPI/बैंक",
   "cashExchangeTotalLabel": "कुल शेष",

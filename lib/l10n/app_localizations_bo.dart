@@ -4874,6 +4874,13 @@ class AppLocalizationsBo extends AppLocalizations {
       'དོ་དམ་པ་མ་ཡིན་པའི་སྤྱོད་མཁན་ལ་སྙན་ཐོའི་འདེམས་ཐོ་སྦས།';
 
   @override
+  String get accessibilityAttachmentsLabel => 'ཐོ་ཡིག་གི་ཟུར་སྦྱར།';
+
+  @override
+  String get accessibilityAttachmentsSubtitle =>
+      'ཐོ་ཡིག་ལ་པར་རིས་སྣོན་པར་ཐོ་ཡིག་གི་རེའུ་མིག་དང་ཐོ་ཡིག་ཐོ་གཞུང་ནང་ཟུར་སྦྱར་གྱི་འདེམས་ཁ་སྟོན།';
+
+  @override
   String get accessibilityPurchaseBillsAdminOnlyLabel =>
       'Purchase Bills & Suppliers: Admins Only';
 

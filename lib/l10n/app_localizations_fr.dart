@@ -4983,6 +4983,13 @@ class AppLocalizationsFr extends AppLocalizations {
       'Masque le menu Rapports aux utilisateurs non administrateurs.';
 
   @override
+  String get accessibilityAttachmentsLabel => 'Pièces jointes de facture';
+
+  @override
+  String get accessibilityAttachmentsSubtitle =>
+      'Affiche l\'option Pièces jointes dans le formulaire et la liste des factures pour ajouter des photos aux factures.';
+
+  @override
   String get accessibilityPurchaseBillsAdminOnlyLabel =>
       'Purchase Bills & Suppliers: Admins Only';
 

@@ -1237,6 +1237,8 @@
   "accessibilityCashExchangeSubtitle": "Ajoute un menu Services de change d'espèces après Nouvelle facture pour enregistrer les échanges UPI ↔ espèces, les frais de service et les mouvements d'espèces, avec les soldes Espèces et UPI/Banque.",
   "accessibilityReportsAdminOnlyLabel": "Rapports : administrateurs uniquement",
   "accessibilityReportsAdminOnlySubtitle": "Masque le menu Rapports aux utilisateurs non administrateurs.",
+  "accessibilityAttachmentsLabel": "Pièces jointes de facture",
+  "accessibilityAttachmentsSubtitle": "Affiche l'option Pièces jointes dans le formulaire et la liste des factures pour ajouter des photos aux factures.",
   "cashExchangeCashLabel": "Espèces",
   "cashExchangeUpiBankLabel": "UPI/Banque",
   "cashExchangeTotalLabel": "Solde total",

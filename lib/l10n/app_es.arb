@@ -1237,6 +1237,8 @@
   "accessibilityCashExchangeSubtitle": "Añade un menú Servicios de cambio de efectivo después de Nueva factura para registrar cambios UPI ↔ efectivo, comisiones de servicio y movimientos de efectivo, con saldos de efectivo y UPI/Banco.",
   "accessibilityReportsAdminOnlyLabel": "Informes: solo administradores",
   "accessibilityReportsAdminOnlySubtitle": "Oculta el menú Informes a los usuarios que no son administradores.",
+  "accessibilityAttachmentsLabel": "Adjuntos de factura",
+  "accessibilityAttachmentsSubtitle": "Muestra la opción Adjuntos en el formulario y la lista de facturas para añadir fotos a las facturas.",
   "cashExchangeCashLabel": "Efectivo",
   "cashExchangeUpiBankLabel": "UPI/Banco",
   "cashExchangeTotalLabel": "Saldo total",

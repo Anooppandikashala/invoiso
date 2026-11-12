@@ -1237,6 +1237,8 @@
   "accessibilityCashExchangeSubtitle": "नयाँ बीजकपछि नगद विनिमय सेवाहरू मेनु थप्छ, जसले UPI ↔ नगद विनिमय, सेवा शुल्क र नगद कारोबार रेकर्ड गर्छ, नगद र UPI/बैंक मौज्दातसहित।",
   "accessibilityReportsAdminOnlyLabel": "रिपोर्ट: एडमिन मात्र",
   "accessibilityReportsAdminOnlySubtitle": "गैर-एडमिन प्रयोगकर्ताहरूबाट रिपोर्ट मेनु लुकाउनुहोस्।",
+  "accessibilityAttachmentsLabel": "बीजक संलग्नकहरू",
+  "accessibilityAttachmentsSubtitle": "बीजकमा फोटो थप्न बीजक फारम र बीजक सूचीमा संलग्नक विकल्प देखाउँछ।",
   "cashExchangeCashLabel": "नगद",
   "cashExchangeUpiBankLabel": "UPI/बैंक",
   "cashExchangeTotalLabel": "कुल मौज्दात",

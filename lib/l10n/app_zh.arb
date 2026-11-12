@@ -1237,6 +1237,8 @@
   "accessibilityCashExchangeSubtitle": "在“新建发票”之后添加“现金兑换服务”菜单，用于记录 UPI ↔ 现金兑换、服务费和现金收支，并显示现金与 UPI/银行余额。",
   "accessibilityReportsAdminOnlyLabel": "报表：仅管理员",
   "accessibilityReportsAdminOnlySubtitle": "对非管理员用户隐藏报表菜单。",
+  "accessibilityAttachmentsLabel": "发票附件",
+  "accessibilityAttachmentsSubtitle": "在发票表单和发票列表中显示“附件”选项，用于为发票添加照片。",
   "cashExchangeCashLabel": "现金",
   "cashExchangeUpiBankLabel": "UPI/银行",
   "cashExchangeTotalLabel": "总余额",

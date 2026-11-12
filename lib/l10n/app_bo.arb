@@ -1237,6 +1237,8 @@
   "accessibilityCashExchangeSubtitle": "ཐོ་ཡིག་གསར་པའི་རྗེས་སུ་དངུལ་ལག་བརྗེ་རེས་ཞབས་ཞུའི་འདེམས་ཐོ་སྣོན་ནས། UPI ↔ དངུལ་ལག་བརྗེ་རེས་དང་ཞབས་ཞུའི་གླ་ཆ། དངུལ་ལག་འགྲོ་སོང་བཅས་ཐོ་འགོད་བྱེད། དངུལ་ལག་དང་ UPI/དངུལ་ཁང་གི་ལྷག་བསགས་དང་མཉམ་དུ།",
   "accessibilityReportsAdminOnlyLabel": "སྙན་ཐོ། དོ་དམ་པ་ཁོ་ན།",
   "accessibilityReportsAdminOnlySubtitle": "དོ་དམ་པ་མ་ཡིན་པའི་སྤྱོད་མཁན་ལ་སྙན་ཐོའི་འདེམས་ཐོ་སྦས།",
+  "accessibilityAttachmentsLabel": "ཐོ་ཡིག་གི་ཟུར་སྦྱར།",
+  "accessibilityAttachmentsSubtitle": "ཐོ་ཡིག་ལ་པར་རིས་སྣོན་པར་ཐོ་ཡིག་གི་རེའུ་མིག་དང་ཐོ་ཡིག་ཐོ་གཞུང་ནང་ཟུར་སྦྱར་གྱི་འདེམས་ཁ་སྟོན།",
   "cashExchangeCashLabel": "དངུལ་ལག",
   "cashExchangeUpiBankLabel": "UPI/དངུལ་ཁང་།",
   "cashExchangeTotalLabel": "ལྷག་བསགས་ཡོངས་བསྡོམས།",

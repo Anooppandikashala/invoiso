@@ -10,6 +10,7 @@ import 'package:invoiso/l10n/app_localizations.dart';
 import 'package:invoiso/models/customer.dart';
 import 'package:invoiso/models/invoice.dart';
 import 'package:invoiso/models/invoice_list_filter.dart';
+import 'package:invoiso/providers/attachments_settings_provider.dart';
 import 'package:invoiso/providers/repositories.dart';
 import 'package:invoiso/providers/returns_settings_provider.dart';
 import 'package:file_picker/file_picker.dart';
@@ -2000,12 +2001,13 @@ class _InvoiceManagementScreenV2State
             child: _MenuRow(Icons.history, l10n.paymentDialogHistoryTitle, Colors.blueGrey),
           ),
       ],
-      PopupMenuItem(
-          value: 'attachments',
-          child: _MenuRow(
-              Icons.attach_file,
-              l10n.attachmentsMenuLabel(_attachmentCount(invoice)),
-              Colors.brown)),
+      if (ref.read(attachmentsEnabledProvider))
+        PopupMenuItem(
+            value: 'attachments',
+            child: _MenuRow(
+                Icons.attach_file,
+                l10n.attachmentsMenuLabel(_attachmentCount(invoice)),
+                Colors.brown)),
       if ((widget.filterType == 'Invoice' || widget.filterType == 'Receipt') &&
           !isDeclined &&
           !isDraft) ...[
@@ -2320,7 +2322,8 @@ class _InvoiceManagementScreenV2State
                       : Text('#${invoice.invoiceNumber ?? invoice.id}',
                           overflow: TextOverflow.ellipsis,
                           style: const TextStyle(fontSize: 14.5, fontWeight: FontWeight.w700)),
-                  if (_attachmentCount(invoice) > 0)
+                  if (ref.watch(attachmentsEnabledProvider) &&
+                      _attachmentCount(invoice) > 0)
                     InkWell(
                       onTap: () => _editAttachments(invoice),
                       child: Row(
@@ -3079,7 +3082,9 @@ class _InvoiceManagementScreenV2State
         refundsByNote: refundsByNote,
         onVoucherAction: _voucherAction,
         attachmentCount: _attachmentCount(invoice),
-        onAttachments: () => _editAttachments(invoice));
+        onAttachments: ref.read(attachmentsEnabledProvider)
+            ? () => _editAttachments(invoice)
+            : null);
   }
 
   // Refund voucher PDF for one refund: 'preview' | 'download' | 'print'.

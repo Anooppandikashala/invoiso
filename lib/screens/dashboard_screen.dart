@@ -11,6 +11,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:invoiso/common/constants.dart';
 import 'package:invoiso/common/app_config.dart';
 import 'package:invoiso/providers/app_config_provider.dart';
+import 'package:invoiso/providers/attachments_settings_provider.dart';
 import 'package:invoiso/providers/cash_exchange_settings_provider.dart';
 import 'package:invoiso/providers/purchase_bills_settings_provider.dart';
 import 'package:invoiso/providers/repositories.dart';
@@ -116,6 +117,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     _currentUser = widget.loggedInUser;
     _loadServicesEnabled();
     _loadReturnsEnabled();
+    _loadAttachmentsEnabled();
     _loadReportsAdminOnly();
     _loadPurchaseBillsAdminOnly();
     // Number format for every screen's amounts (cached; see AmountFormat).
@@ -473,6 +475,15 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     return await _invoiceFormGuard.canLeave?.call() ?? true;
   }
 
+  // Invoice Attachments UI; the toggle lives in Settings → Accessibility.
+  Future<void> _loadAttachmentsEnabled() async {
+    final v = await ref
+        .read(settingsRepositoryProvider)
+        .getSetting(SettingKey.attachmentsEnabled);
+    if (!mounted) return;
+    ref.read(attachmentsEnabledProvider.notifier).state = v == 'true';
+  }
+
   Future<void> _selectTab(int index) async {
     if (_selectedIndex == index) return;
     if (_selectedIndex == 1 && !await _canLeaveInvoiceForm()) return;
@@ -480,6 +491,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     if (_selectedIndex == 8 && index != 8) {
       await _loadServicesEnabled();
       await _loadReturnsEnabled();
+      await _loadAttachmentsEnabled();
       await _loadReportsAdminOnly();
       await _loadPurchaseBillsAdminOnly();
     }

@@ -4914,6 +4914,13 @@ class AppLocalizationsNe extends AppLocalizations {
       'गैर-एडमिन प्रयोगकर्ताहरूबाट रिपोर्ट मेनु लुकाउनुहोस्।';
 
   @override
+  String get accessibilityAttachmentsLabel => 'बीजक संलग्नकहरू';
+
+  @override
+  String get accessibilityAttachmentsSubtitle =>
+      'बीजकमा फोटो थप्न बीजक फारम र बीजक सूचीमा संलग्नक विकल्प देखाउँछ।';
+
+  @override
   String get accessibilityPurchaseBillsAdminOnlyLabel =>
       'Purchase Bills & Suppliers: Admins Only';
 

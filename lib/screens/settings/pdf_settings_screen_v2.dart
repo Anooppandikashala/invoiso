@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:invoiso/database/settings_service.dart';
+import 'package:invoiso/providers/attachments_settings_provider.dart';
 import 'package:invoiso/providers/repositories.dart';
 
 import 'package:invoiso/common/common.dart';
@@ -606,8 +607,10 @@ class _PdfSettingsScreenV2State extends ConsumerState<PdfSettingsScreenV2> {
                   _previewedTemplate == InvoiceTemplate.gridClassic)
                 const SizedBox(height: 8),
               _buildPdfFontSizeField(),
-              const SizedBox(height: 8),
-              _buildAttachmentLayoutField(),
+              if (ref.watch(attachmentsEnabledProvider)) ...[
+                const SizedBox(height: 8),
+                _buildAttachmentLayoutField(),
+              ],
             ],
             const SizedBox(height: 18),
             _sectionLabel(l10n.pdfSettingsThemeColorLabel),

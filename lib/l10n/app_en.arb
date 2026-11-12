@@ -2675,6 +2675,8 @@
   "accessibilityCashExchangeSubtitle": "Adds a Cash Exchange Services menu after New Invoice to record UPI ↔ Cash exchanges, service fees and cash movements, with Cash and UPI/Bank balances.",
   "accessibilityReportsAdminOnlyLabel": "Reports: Admins Only",
   "accessibilityReportsAdminOnlySubtitle": "Hides the Reports menu from non-admin users.",
+  "accessibilityAttachmentsLabel": "Invoice Attachments",
+  "accessibilityAttachmentsSubtitle": "Shows the Attachments option in the invoice form and invoice list to add photos to invoices.",
   "accessibilityPurchaseBillsAdminOnlyLabel": "Purchase Bills & Suppliers: Admins Only",
   "accessibilityPurchaseBillsAdminOnlySubtitle": "Hides the Purchase Bills and Suppliers menus from non-admin users.",
   "cashExchangeCashLabel": "Cash",

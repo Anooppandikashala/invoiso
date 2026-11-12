@@ -23,6 +23,7 @@ import 'package:invoiso/models/invoice.dart';
 import 'package:invoiso/models/invoice_attachment.dart';
 import 'package:invoiso/models/invoice_item.dart';
 import 'package:invoiso/models/product.dart';
+import 'package:invoiso/providers/attachments_settings_provider.dart';
 import 'package:invoiso/providers/sqlite_repository_overrides.dart';
 import 'package:invoiso/repositories/sqlite/sqlite_company_info_repository.dart';
 import 'package:invoiso/repositories/sqlite/sqlite_installation_repository.dart';
@@ -89,7 +90,10 @@ void main() {
     tester.view.devicePixelRatio = 1.0;
     addTearDown(tester.view.reset);
     await tester.pumpWidget(ProviderScope(
-      overrides: sqliteRepositoryOverrides,
+      overrides: [
+        ...sqliteRepositoryOverrides,
+        attachmentsEnabledProvider.overrideWith((ref) => true),
+      ],
       child: MaterialApp(
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,

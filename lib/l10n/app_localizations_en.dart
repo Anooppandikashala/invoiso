@@ -4871,6 +4871,13 @@ class AppLocalizationsEn extends AppLocalizations {
       'Hides the Reports menu from non-admin users.';
 
   @override
+  String get accessibilityAttachmentsLabel => 'Invoice Attachments';
+
+  @override
+  String get accessibilityAttachmentsSubtitle =>
+      'Shows the Attachments option in the invoice form and invoice list to add photos to invoices.';
+
+  @override
   String get accessibilityPurchaseBillsAdminOnlyLabel =>
       'Purchase Bills & Suppliers: Admins Only';
 

@@ -13,6 +13,7 @@ import 'package:invoiso/domain/invoice_calculator.dart';
 import 'package:invoiso/domain/invoice_totals_calculator.dart';
 import 'package:invoiso/l10n/app_localizations.dart';
 import 'package:invoiso/providers/app_config_provider.dart';
+import 'package:invoiso/providers/attachments_settings_provider.dart';
 import 'package:invoiso/providers/repositories.dart';
 import 'package:uuid/uuid.dart';
 import 'package:invoiso/models/customer.dart';
@@ -7335,8 +7336,10 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
                           _notesFieldV2(),
                           const SizedBox(height: 10),
                           _privateNotesFieldV2(),
-                          const SizedBox(height: 10),
-                          _attachmentsRowV2(),
+                          if (ref.watch(attachmentsEnabledProvider)) ...[
+                            const SizedBox(height: 10),
+                            _attachmentsRowV2(),
+                          ],
                           const SizedBox(height: 18),
                           _sectionLabelV2('Tax settings'),
                           _lockedV2(_taxSettingsSectionV2()),
@@ -7588,8 +7591,10 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
               _notesFieldV2(),
               const SizedBox(height: 10),
               _privateNotesFieldV2(),
-              const SizedBox(height: 10),
-              _attachmentsRowV2(),
+              if (ref.watch(attachmentsEnabledProvider)) ...[
+                const SizedBox(height: 10),
+                _attachmentsRowV2(),
+              ],
               const SizedBox(height: 18),
               _sectionLabelV2('Tax settings'),
               _lockedV2(_taxSettingsSectionV2()),

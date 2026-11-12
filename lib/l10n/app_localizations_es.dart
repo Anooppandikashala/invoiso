@@ -4972,6 +4972,13 @@ class AppLocalizationsEs extends AppLocalizations {
       'Oculta el menú Informes a los usuarios que no son administradores.';
 
   @override
+  String get accessibilityAttachmentsLabel => 'Adjuntos de factura';
+
+  @override
+  String get accessibilityAttachmentsSubtitle =>
+      'Muestra la opción Adjuntos en el formulario y la lista de facturas para añadir fotos a las facturas.';
+
+  @override
   String get accessibilityPurchaseBillsAdminOnlyLabel =>
       'Purchase Bills & Suppliers: Admins Only';
 

@@ -118,6 +118,7 @@ enum SettingKey {
   amountSeparator, // AmountSeparator.key: 'none' | 'international' | 'indian'
   invoiceCsvColumns, // JSON list of InvoiceCsvColumn names picked for invoice CSV export
   attachmentLayout, // customer photos on the PDF Attachments page(s): 'grid' (default) | 'list'
+  attachmentsEnabled, // whether invoice Attachments (photos) UI is shown in the invoice form/list (default false)
 }
 
 extension SettingKeyExtension on SettingKey {
@@ -361,6 +362,8 @@ extension SettingKeyExtension on SettingKey {
         return 'invoice_csv_columns';
       case SettingKey.attachmentLayout:
         return 'attachment_layout';
+      case SettingKey.attachmentsEnabled:
+        return 'attachments_enabled';
 
     }
   }

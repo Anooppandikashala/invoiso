@@ -8286,6 +8286,18 @@ abstract class AppLocalizations {
   /// **'Hides the Reports menu from non-admin users.'**
   String get accessibilityReportsAdminOnlySubtitle;
 
+  /// No description provided for @accessibilityAttachmentsLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Invoice Attachments'**
+  String get accessibilityAttachmentsLabel;
+
+  /// No description provided for @accessibilityAttachmentsSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Shows the Attachments option in the invoice form and invoice list to add photos to invoices.'**
+  String get accessibilityAttachmentsSubtitle;
+
   /// No description provided for @accessibilityPurchaseBillsAdminOnlyLabel.
   ///
   /// In en, this message translates to:

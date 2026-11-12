@@ -4682,6 +4682,13 @@ class AppLocalizationsZh extends AppLocalizations {
   String get accessibilityReportsAdminOnlySubtitle => '对非管理员用户隐藏报表菜单。';
 
   @override
+  String get accessibilityAttachmentsLabel => '发票附件';
+
+  @override
+  String get accessibilityAttachmentsSubtitle =>
+      '在发票表单和发票列表中显示“附件”选项，用于为发票添加照片。';
+
+  @override
   String get accessibilityPurchaseBillsAdminOnlyLabel =>
       'Purchase Bills & Suppliers: Admins Only';
 
