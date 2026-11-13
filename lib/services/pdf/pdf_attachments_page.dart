@@ -15,6 +15,9 @@ List<pw.Widget> buildAttachmentsSection(
   required PdfPageFormat pageFormat,
   required bool asList,
   double fontSizeScale = 1.0,
+  // Compact passes its item-table font: its A6 text is much smaller than the
+  // other templates', so captions and heading follow it instead.
+  double? itemFontSize,
 }) {
   final photos = invoice.pdfAttachments;
   if (photos.isEmpty) return const [];
@@ -25,7 +28,7 @@ List<pw.Widget> buildAttachmentsSection(
   // A6 text follows the smaller page like the templates' own A6 text
   // (A4-sized heading/captions dwarf it).
   final pageScale = small ? 0.6 : 1.0;
-  final captionFs = 9 * fontSizeScale * pageScale;
+  final captionFs = itemFontSize ?? 9 * fontSizeScale * pageScale;
   // A6 grid columns are narrow: allow one more caption line.
   final captionLines = asList ? 8 : (small ? 3 : 2);
 
@@ -123,7 +126,7 @@ List<pw.Widget> buildAttachmentsSection(
           pw.SizedBox(height: 14 * pageScale),
           pw.Text('Attachments',
               style: pw.TextStyle(
-                  fontSize: 12 * fontSizeScale * pageScale,
+                  fontSize: captionFs * 4 / 3,
                   fontWeight: pw.FontWeight.bold)),
           pw.Divider(thickness: 0.5, color: PdfColors.grey400, height: 12 * pageScale),
           rows.first,

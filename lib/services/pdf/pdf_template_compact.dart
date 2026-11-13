@@ -81,9 +81,8 @@ pw.MultiPage buildCompactTemplate(
   final double fontScale = pageFormat == PdfPageFormat.a6 ? 0.78 : 1.0;
   // Fonts use fontScale (page size) × user's PDF text size.
   final double textScale = fontScale * fontSizeScale;
-  // Bank/UPI boxes share a row with the signature: grow with textScale but
-  // never below today's size, so A5/A6 don't push the signature off-page.
-  final double bankUpiScale = textScale < 1 ? 1.0 : textScale;
+  // Bank/UPI boxes (text and QR) follow the body text size.
+  final double bankUpiScale = textScale;
   final double tableBaseFont = pageFormat == PdfPageFormat.a6
       ? compactPdfLayoutStyle.tableFontSize
       : 10 * fontScale;
@@ -465,7 +464,7 @@ pw.MultiPage buildCompactTemplate(
                     invoiceId: invoice.id,
                     accentColor: accentColor,
                     gap: 6,
-                    qrSize: 50,
+                    qrSize: 50 * bankUpiScale,
                     bankFontSize: 5.2 * bankUpiScale,
                     sectionTitleFontSize: 5.8 * bankUpiScale,
                     sectionPadding: 4,
@@ -506,7 +505,7 @@ pw.MultiPage buildCompactTemplate(
                     invoiceId: invoice.id,
                     accentColor: accentColor,
                     gap: 6,
-                    qrSize: 50,
+                    qrSize: 50 * bankUpiScale,
                     bankFontSize: 5.2 * bankUpiScale,
                     sectionTitleFontSize: 5.8 * bankUpiScale,
                     sectionPadding: 4,
@@ -531,7 +530,8 @@ pw.MultiPage buildCompactTemplate(
       ...buildAttachmentsSection(invoice,
           pageFormat: pageFormat,
           asList: attachmentsAsList,
-          fontSizeScale: fontSizeScale),
+          fontSizeScale: fontSizeScale,
+          itemFontSize: tableFontSize),
     ],
   );
 }
