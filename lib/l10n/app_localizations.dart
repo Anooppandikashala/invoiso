@@ -7056,6 +7056,60 @@ abstract class AppLocalizations {
   /// **'Add UPI Account'**
   String get companyInfoAddUpiAccountButton;
 
+  /// No description provided for @paymentQrSourceUpi.
+  ///
+  /// In en, this message translates to:
+  /// **'Generate from UPI ID'**
+  String get paymentQrSourceUpi;
+
+  /// No description provided for @paymentQrSourceImage.
+  ///
+  /// In en, this message translates to:
+  /// **'Upload QR images'**
+  String get paymentQrSourceImage;
+
+  /// No description provided for @paymentQrSourceHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'Use your own QR codes (PayPal, Wise, bank QR...) instead of a UPI QR. Pick one per invoice.'**
+  String get paymentQrSourceHelp;
+
+  /// No description provided for @paymentQrSourceUpiHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'Generates a UPI QR with the invoice amount filled in, from your UPI ID. Pick one per invoice.'**
+  String get paymentQrSourceUpiHelp;
+
+  /// No description provided for @companyInfoPaymentQrSectionLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'PAYMENT QR IMAGES'**
+  String get companyInfoPaymentQrSectionLabel;
+
+  /// No description provided for @companyInfoAddPaymentQrButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Add QR Image'**
+  String get companyInfoAddPaymentQrButton;
+
+  /// No description provided for @companyInfoPaymentQrLabelHint.
+  ///
+  /// In en, this message translates to:
+  /// **'e.g. Pay via PayPal'**
+  String get companyInfoPaymentQrLabelHint;
+
+  /// No description provided for @createInvoicePaymentQrLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Payment QR'**
+  String get createInvoicePaymentQrLabel;
+
+  /// No description provided for @paymentQrDefaultTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Scan to Pay'**
+  String get paymentQrDefaultTitle;
+
   /// No description provided for @companyInfoShowQrToggleTitle.
   ///
   /// In en, this message translates to:
@@ -7065,7 +7119,7 @@ abstract class AppLocalizations {
   /// No description provided for @companyInfoShowQrToggleSubtitle.
   ///
   /// In en, this message translates to:
-  /// **'Adds scannable UPI payment QR codes to generated PDFs'**
+  /// **'Adds a scannable payment QR code to generated PDFs'**
   String get companyInfoShowQrToggleSubtitle;
 
   /// No description provided for @companyInfoShowBankDetailsToggleTitle.

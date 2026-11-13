@@ -119,6 +119,8 @@ enum SettingKey {
   invoiceCsvColumns, // JSON list of InvoiceCsvColumn names picked for invoice CSV export
   attachmentLayout, // customer photos on the PDF Attachments page(s): 'grid' (default) | 'list'
   attachmentsEnabled, // whether invoice Attachments (photos) UI is shown in the invoice form/list (default false)
+  paymentQrSource, // 'upi' (default, QR generated from UPI ID) | 'image' (uploaded QR images)
+  paymentQrEntries, // JSON list of PaymentQrEntry objects (uploaded payment QR images, base64)
 }
 
 extension SettingKeyExtension on SettingKey {
@@ -364,6 +366,10 @@ extension SettingKeyExtension on SettingKey {
         return 'attachment_layout';
       case SettingKey.attachmentsEnabled:
         return 'attachments_enabled';
+      case SettingKey.paymentQrSource:
+        return 'payment_qr_source';
+      case SettingKey.paymentQrEntries:
+        return 'payment_qr_entries';
 
     }
   }

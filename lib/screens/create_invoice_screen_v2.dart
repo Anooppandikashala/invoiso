@@ -222,6 +222,10 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
   String _currencySymbol = '₹';
   List<UpiEntry> _upiEntries = [];
   UpiEntry? _selectedUpi;
+  // Uploaded payment QR images (Company Info, source = 'image').
+  bool _qrFromImage = false;
+  List<PaymentQrEntry> _paymentQrEntries = [];
+  PaymentQrEntry? _selectedPaymentQr;
   List<BankAccount> _bankAccounts = [];
   BankAccount? _selectedBankAccount;
   bool _showGstFields = true;
@@ -623,6 +627,7 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
       'dueDate': _selectedDueDate?.toIso8601String() ?? '',
       'currencyCode': _currencyCode,
       'upiId': _selectedUpi?.id ?? '',
+      'paymentQrId': _selectedPaymentQr?.id ?? '',
       'bankAccount': _selectedBankAccount?.accountNumber ?? '',
       'quantityLabel': _quantityLabel.trim(),
       'hideInvoiceNumber': _hideInvoiceNumber,
@@ -710,6 +715,8 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
         settingsRepo.getShowTimeInPdf(), // 21
         settingsRepo.getPdfTimeFormat(), // 22
         CustomerFieldSettings.load(settingsRepo), // 23
+        settingsRepo.getSetting(SettingKey.paymentQrSource), // 24
+        settingsRepo.getSetting(SettingKey.paymentQrEntries), // 25
       ]);
 
       final c = results[0] as List<Customer>;
@@ -759,6 +766,9 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
       final showTimeInPdf = results[21] as bool;
       final pdfTimeFormat = results[22] as String;
       final customerFieldSettings = results[23] as CustomerFieldSettings;
+      final qrFromImage = (results[24] as String?) == 'image';
+      final paymentQrEntries =
+          PaymentQrEntry.listFromJson(results[25] as String?);
 
       // Determine which UPI to pre-select.
       String? existingUpiId;
@@ -775,6 +785,16 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
       }
       preselectedUpi ??= upiEntries.where((e) => e.isDefault).firstOrNull ??
           upiEntries.firstOrNull;
+
+      // Same pre-select rule for the uploaded payment QR.
+      final existingQrId = isEditing && widget.invoiceToEdit != null
+          ? widget.invoiceToEdit!.paymentQrId
+          : widget.cloneFrom?.paymentQrId;
+      final preselectedQr = paymentQrEntries
+              .where((e) => e.id == existingQrId)
+              .firstOrNull ??
+          paymentQrEntries.where((e) => e.isDefault).firstOrNull ??
+          paymentQrEntries.firstOrNull;
 
       // Determine which bank account to pre-select.
       String? existingBankId;
@@ -814,6 +834,9 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
         _currencySymbol = loadedCurrencySymbol;
         _upiEntries = upiEntries;
         _selectedUpi = preselectedUpi;
+        _qrFromImage = qrFromImage;
+        _paymentQrEntries = paymentQrEntries;
+        _selectedPaymentQr = preselectedQr;
         _bankAccounts = bankAccounts;
         _selectedBankAccount = preselectedBank;
         _showGstFields = showGst;
@@ -1548,6 +1571,7 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
         taxMode: _taxMode,
         isInterState: _isInterState,
         upiId: _selectedUpi?.id,
+        paymentQrId: _selectedPaymentQr?.id,
         bankAccountId: _selectedBankAccount?.accountNumber,
         quantityLabel:
             _quantityLabel.trim().isEmpty ? null : _quantityLabel.trim(),
@@ -1887,6 +1911,7 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
         taxMode: _taxMode,
         isInterState: _isInterState,
         upiId: _selectedUpi?.id,
+        paymentQrId: _selectedPaymentQr?.id,
         bankAccountId: _selectedBankAccount?.accountNumber,
         quantityLabel:
             _quantityLabel.trim().isEmpty ? null : _quantityLabel.trim(),
@@ -4126,6 +4151,7 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
         taxMode: _taxMode,
         isInterState: _isInterState,
         upiId: _selectedUpi?.id,
+        paymentQrId: _selectedPaymentQr?.id,
         bankAccountId: _selectedBankAccount?.accountNumber,
         quantityLabel:
             _quantityLabel.trim().isEmpty ? null : _quantityLabel.trim(),
@@ -7167,7 +7193,31 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
             ),
           ],
         ],
-        if (_upiEntries.isNotEmpty) ...[
+        if (_qrFromImage && _paymentQrEntries.isNotEmpty) ...[
+          const SizedBox(height: 12),
+          DropdownButtonFormField<PaymentQrEntry?>(
+            isExpanded: true,
+            value: _selectedPaymentQr,
+            decoration: _flatFieldDecorationV2(AppLocalizations.of(context)!.createInvoicePaymentQrLabel),
+            items: [
+              DropdownMenuItem<PaymentQrEntry?>(
+                  value: null, child: Text(AppLocalizations.of(context)!.commonNoneLabel)),
+              ..._paymentQrEntries.map((e) => DropdownMenuItem<PaymentQrEntry?>(
+                    value: e,
+                    child: Text(
+                        e.label.trim().isNotEmpty
+                            ? e.label.trim()
+                            : AppLocalizations.of(context)!.paymentQrDefaultTitle,
+                        style: const TextStyle(fontSize: 12)),
+                  )),
+            ],
+            onChanged: (val) {
+              if (!mounted) return;
+              setState(() => _selectedPaymentQr = val);
+            },
+          ),
+        ],
+        if (!_qrFromImage && _upiEntries.isNotEmpty) ...[
           const SizedBox(height: 12),
           DropdownButtonFormField<UpiEntry?>(
             isExpanded: true,

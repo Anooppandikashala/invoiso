@@ -4271,12 +4271,41 @@ class AppLocalizationsFr extends AppLocalizations {
   String get companyInfoAddUpiAccountButton => 'Ajouter un compte UPI';
 
   @override
+  String get paymentQrSourceUpi => 'Générer depuis l\'ID UPI';
+
+  @override
+  String get paymentQrSourceImage => 'Importer des images QR';
+
+  @override
+  String get paymentQrSourceHelp =>
+      'Utilisez vos propres QR codes (PayPal, Wise, QR bancaire...) au lieu d\'un QR UPI. Choisissez-en un par facture.';
+
+  @override
+  String get paymentQrSourceUpiHelp =>
+      'Génère un QR UPI avec le montant de la facture déjà rempli, à partir de votre ID UPI. Choisissez-en un par facture.';
+
+  @override
+  String get companyInfoPaymentQrSectionLabel => 'IMAGES QR DE PAIEMENT';
+
+  @override
+  String get companyInfoAddPaymentQrButton => 'Ajouter une image QR';
+
+  @override
+  String get companyInfoPaymentQrLabelHint => 'ex. Payer via PayPal';
+
+  @override
+  String get createInvoicePaymentQrLabel => 'QR de paiement';
+
+  @override
+  String get paymentQrDefaultTitle => 'Scannez pour payer';
+
+  @override
   String get companyInfoShowQrToggleTitle =>
       'Afficher le code QR sur les factures';
 
   @override
   String get companyInfoShowQrToggleSubtitle =>
-      'Ajoute des codes QR de paiement UPI scannables aux PDF générés';
+      'Ajoute un code QR de paiement scannable aux PDF générés';
 
   @override
   String get companyInfoShowBankDetailsToggleTitle =>

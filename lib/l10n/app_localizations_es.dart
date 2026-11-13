@@ -4260,12 +4260,41 @@ class AppLocalizationsEs extends AppLocalizations {
   String get companyInfoAddUpiAccountButton => 'Añadir cuenta UPI';
 
   @override
+  String get paymentQrSourceUpi => 'Generar desde ID de UPI';
+
+  @override
+  String get paymentQrSourceImage => 'Subir imágenes QR';
+
+  @override
+  String get paymentQrSourceHelp =>
+      'Usa tus propios códigos QR (PayPal, Wise, QR bancario...) en lugar de un QR de UPI. Elige uno por factura.';
+
+  @override
+  String get paymentQrSourceUpiHelp =>
+      'Genera un QR de UPI con el importe de la factura ya incluido, a partir de tu ID de UPI. Elige uno por factura.';
+
+  @override
+  String get companyInfoPaymentQrSectionLabel => 'IMÁGENES QR DE PAGO';
+
+  @override
+  String get companyInfoAddPaymentQrButton => 'Añadir imagen QR';
+
+  @override
+  String get companyInfoPaymentQrLabelHint => 'p. ej. Pagar con PayPal';
+
+  @override
+  String get createInvoicePaymentQrLabel => 'QR de pago';
+
+  @override
+  String get paymentQrDefaultTitle => 'Escanea para pagar';
+
+  @override
   String get companyInfoShowQrToggleTitle =>
       'Mostrar código QR en las facturas';
 
   @override
   String get companyInfoShowQrToggleSubtitle =>
-      'Añade códigos QR de pago UPI escaneables a los PDF generados';
+      'Añade un código QR de pago escaneable a los PDF generados';
 
   @override
   String get companyInfoShowBankDetailsToggleTitle =>

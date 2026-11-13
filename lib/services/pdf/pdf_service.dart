@@ -147,6 +147,8 @@ class PDFService {
       BackendServices.settings.getSetting(SettingKey.quotationPrefix), // 63
       BackendServices.settings.getSetting(SettingKey.receiptPrefix), // 64
       BackendServices.settings.getSetting(SettingKey.attachmentLayout), // 65
+      BackendServices.settings.getSetting(SettingKey.paymentQrSource), // 66
+      BackendServices.settings.getSetting(SettingKey.paymentQrEntries), // 67
     ]);
 
     final rawPrefix = (results[2] as String?) ?? 'INV';
@@ -242,6 +244,8 @@ class PDFService {
       totalsScale: pdfSectionScale(results[59] as String?, fontSizeScale),
       customerFields: results[60] as CustomerFieldSettings,
       attachmentsAsList: results[65] == 'list',
+      paymentQrFromImage: results[66] == 'image',
+      paymentQrEntries: PaymentQrEntry.listFromJson(results[67] as String?),
     );
   }
 
@@ -270,10 +274,25 @@ class PDFService {
     } else {
       effectiveUpiId = effectiveUpiId.trim();
     }
+    // Uploaded QR mode: invoice's pick → default → first; no UPI QR.
+    Uint8List? qrImageBytes;
+    String? qrLabel;
+    if (s.paymentQrFromImage) {
+      final qr = s.paymentQrEntries
+              .where((e) => e.id == invoice.paymentQrId)
+              .firstOrNull ??
+          s.paymentQrEntries.where((e) => e.isDefault).firstOrNull ??
+          s.paymentQrEntries.firstOrNull;
+      if (qr != null && qr.imageBase64.isNotEmpty) {
+        qrImageBytes = base64Decode(qr.imageBase64);
+        qrLabel = qr.label.trim().isNotEmpty ? qr.label.trim() : 'Scan to Pay';
+      }
+      effectiveUpiId = null;
+    }
     final showUpiQr = s.showQrStr == 'true' &&
         invoice.status != 'declined' &&
-        effectiveUpiId != null &&
-        effectiveUpiId.isNotEmpty &&
+        ((effectiveUpiId != null && effectiveUpiId.isNotEmpty) ||
+            qrImageBytes != null) &&
         invoice.outstandingBalance > 0;
 
     BankAccount? effectiveBank;
@@ -303,6 +322,8 @@ class PDFService {
           showTimeInPdf: s.showTimeInPdf,
           pdfTimeFormat: s.pdfTimeFormat,
           upiId: effectiveUpiId,
+          qrImageBytes: qrImageBytes,
+          qrLabel: qrLabel,
           showUpiQr: showUpiQr,
           showGst: s.showGst,
           showSlNo: s.showSlNo,
@@ -367,6 +388,8 @@ class PDFService {
           showTimeInPdf: s.showTimeInPdf,
           pdfTimeFormat: s.pdfTimeFormat,
           upiId: effectiveUpiId,
+          qrImageBytes: qrImageBytes,
+          qrLabel: qrLabel,
           showUpiQr: showUpiQr,
           showGst: s.showGst,
           showSlNo: s.showSlNo,
@@ -431,6 +454,8 @@ class PDFService {
           showTimeInPdf: s.showTimeInPdf,
           pdfTimeFormat: s.pdfTimeFormat,
           upiId: effectiveUpiId,
+          qrImageBytes: qrImageBytes,
+          qrLabel: qrLabel,
           showUpiQr: showUpiQr,
           showGst: s.showGst,
           showSlNo: s.showSlNo,
@@ -495,6 +520,8 @@ class PDFService {
           showTimeInPdf: s.showTimeInPdf,
           pdfTimeFormat: s.pdfTimeFormat,
           upiId: effectiveUpiId,
+          qrImageBytes: qrImageBytes,
+          qrLabel: qrLabel,
           showUpiQr: showUpiQr,
           showGst: s.showGst,
           showSlNo: s.showSlNo,
@@ -557,6 +584,8 @@ class PDFService {
           showTimeInPdf: s.showTimeInPdf,
           pdfTimeFormat: s.pdfTimeFormat,
           upiId: effectiveUpiId,
+          qrImageBytes: qrImageBytes,
+          qrLabel: qrLabel,
           showUpiQr: showUpiQr,
           showGst: s.showGst,
           showSlNo: s.showSlNo,
@@ -664,6 +693,8 @@ class PDFService {
           showTimeInPdf: s.showTimeInPdf,
           pdfTimeFormat: s.pdfTimeFormat,
           upiId: effectiveUpiId,
+          qrImageBytes: qrImageBytes,
+          qrLabel: qrLabel,
           showUpiQr: showUpiQr,
           showGst: s.showGst,
           showSlNo: s.showSlNo,

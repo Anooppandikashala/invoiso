@@ -1,6 +1,6 @@
 {
-  "version": 10,
-  "updated_at": "2026-11-04",
+  "version": 11,
+  "updated_at": "2026-11-12",
   "categories": [
     { "id": "general", "label": "General" },
     { "id": "data-privacy", "label": "Data & Privacy" },
@@ -141,6 +141,13 @@
       "question": "Can I add a UPI QR code to my invoice?",
       "answer": "Yes. Go to **Settings → Company Info → Payment Settings**, enter your **UPI ID** (e.g. yourname@bank), and turn on the QR toggle.\n\nInvoiso then embeds a scannable UPI QR code in every PDF, so customers can pay instantly via GPay, PhonePe, or Paytm.",
       "keywords": ["upi", "qr code", "payment settings", "gpay", "phonepe", "paytm"]
+    },
+    {
+      "id": "faq_payment_qr_image",
+      "category": "features",
+      "question": "Can I add a PayPal, Wise or bank QR code to my invoice?",
+      "answer": "Yes. Go to **Settings → Company Info → Payment Settings**, turn on the QR toggle and choose **Upload QR images**. Add one or more QR images (PNG or JPG) and give each a label, like *Pay via PayPal* — the label prints as the box title on the PDF, with the amount due underneath.\n\nThe starred QR is the default; pick a different one per invoice in the **Payment QR** dropdown when creating an invoice. Useful outside India, where UPI isn't available.",
+      "keywords": ["payment qr", "qr image", "upload qr", "paypal", "wise", "bank qr", "international payment"]
     },
     {
       "id": "faq_upi_apps",

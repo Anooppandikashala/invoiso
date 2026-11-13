@@ -8,11 +8,14 @@
 // first `package:invoiso/...` frame in the failure — that's the real bug
 // site, everything below it (package:pdf/, package:flutter/) is library
 // plumbing.
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:image/image.dart' as img;
 import 'package:pdf/widgets.dart' as pw;
+import 'package:qr/qr.dart';
 
 import 'test_pdf_font_service.dart';
 import 'package:invoiso/common/common.dart';
@@ -122,6 +125,7 @@ PdfGenerationSettings _settings({
   // Section scales; null = same as overall, like PDFService resolves them.
   double? sectionScale,
   bool attachmentsAsList = false,
+  List<PaymentQrEntry>? paymentQrEntries,
 }) {
   return PdfGenerationSettings(
     company: _company,
@@ -174,11 +178,66 @@ PdfGenerationSettings _settings({
     tableItemsScale: sectionScale ?? fontSizeScale,
     totalsScale: sectionScale ?? fontSizeScale,
     attachmentsAsList: attachmentsAsList,
+    paymentQrFromImage: paymentQrEntries != null,
+    paymentQrEntries: paymentQrEntries ?? const [],
   );
+}
+
+// A real scannable QR as PNG, like a user's uploaded PayPal/bank QR.
+String _qrPngBase64(String data) {
+  final qr = QrImage(QrCode.fromData(
+      data: data, errorCorrectLevel: QrErrorCorrectLevel.M));
+  const scale = 8, quiet = 4;
+  final n = qr.moduleCount;
+  final image = img.Image(width: (n + quiet * 2) * scale, height: (n + quiet * 2) * scale);
+  img.fill(image, color: img.ColorRgb8(255, 255, 255));
+  for (var r = 0; r < n; r++) {
+    for (var c = 0; c < n; c++) {
+      if (qr.isDark(r, c)) {
+        img.fillRect(image,
+            x1: (c + quiet) * scale, y1: (r + quiet) * scale,
+            x2: (c + quiet + 1) * scale - 1, y2: (r + quiet + 1) * scale - 1,
+            color: img.ColorRgb8(0, 0, 0));
+      }
+    }
+  }
+  return base64Encode(img.encodePng(image));
 }
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
+
+  // Uploaded payment QR (Company Info source = image) replaces the UPI QR in
+  // every template that has a payment box. Rendered to output/payment_qr/.
+  for (final (template, pageSize) in [
+    for (final t in InvoiceTemplate.values)
+      for (final p in PageSize.values)
+        if (t != InvoiceTemplate.thermal && t.supportsPageSize(p)) (t, p),
+  ]) {
+    test('${template.name} ${pageSize.name} renders the uploaded payment QR',
+        () async {
+      final settings = _settings(
+        template: template,
+        pageSize: pageSize,
+        pdfTheme: await TestPdfFontService.loadTheme(),
+        logoBytes: await File('assets/images/demo_logo.png').readAsBytes(),
+        watermarkBytes: await File('assets/images/watermark.png').readAsBytes(),
+        signatureBytes: await File('assets/images/sig.jpeg').readAsBytes(),
+        paymentQrEntries: [
+          PaymentQrEntry(
+              id: 'q1',
+              label: 'Pay via PayPal',
+              imageBase64: _qrPngBase64('https://paypal.me/example/100')),
+        ],
+      );
+      final invoice = _sampleInvoice()..paymentQrId = 'q1';
+      final pdf = PDFService.generateInvoicePDFWithSettings(invoice, settings);
+      final out = File(
+          'output/payment_qr/${template.name}_${pageSize.name}.pdf');
+      await out.parent.create(recursive: true);
+      await out.writeAsBytes(await pdf.save());
+    });
+  }
 
   // Number format setting: lakh-grouped large amounts must fit the narrow
   // layouts (Grid A6, Thermal 58mm) as well as A4. Rendered for a visual

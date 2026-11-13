@@ -4177,11 +4177,41 @@ class AppLocalizationsBo extends AppLocalizations {
   String get companyInfoAddUpiAccountButton => 'UPI རྩིས་ཁྲ་སྣོན།';
 
   @override
+  String get paymentQrSourceUpi => 'UPI ID ནས་བཟོ།';
+
+  @override
+  String get paymentQrSourceImage => 'QR པར་རིས་ཡར་འཇུག';
+
+  @override
+  String get paymentQrSourceHelp =>
+      'UPI QR ཡི་ཚབ་ཏུ་རང་གི་ QR (PayPal, Wise, དངུལ་ཁང་ QR...) བེད་སྤྱོད་གཏོང་། ཐོ་ཡིག་རེ་རེར་གཅིག་འདེམས།';
+
+  @override
+  String get paymentQrSourceUpiHelp =>
+      'ཁྱེད་ཀྱི་ UPI ID ནས་ཐོ་ཡིག་གི་དངུལ་གྲངས་བཀང་བའི་ UPI QR བཟོ། ཐོ་ཡིག་རེ་རེར་གཅིག་འདེམས།';
+
+  @override
+  String get companyInfoPaymentQrSectionLabel => 'དངུལ་སྤྲོད་ QR པར་རིས།';
+
+  @override
+  String get companyInfoAddPaymentQrButton => 'QR པར་རིས་སྣོན།';
+
+  @override
+  String get companyInfoPaymentQrLabelHint =>
+      'དཔེར་ན། PayPal བརྒྱུད་དངུལ་སྤྲོད།';
+
+  @override
+  String get createInvoicePaymentQrLabel => 'དངུལ་སྤྲོད་ QR';
+
+  @override
+  String get paymentQrDefaultTitle => 'དངུལ་སྤྲོད་ཆེད་ཞིབ་བཤེར།';
+
+  @override
   String get companyInfoShowQrToggleTitle => 'ཁྲལ་ཤོག་ནང་ QR ཨང་རྟགས་སྟོན།';
 
   @override
   String get companyInfoShowQrToggleSubtitle =>
-      'བཟོས་པའི་ PDF ནང་ UPI འཇལ་བའི QR ཨང་རྟགས་སྣོན།';
+      'བཟོས་པའི་ PDF ནང་འཇལ་བའི QR ཨང་རྟགས་སྣོན།';
 
   @override
   String get companyInfoShowBankDetailsToggleTitle =>

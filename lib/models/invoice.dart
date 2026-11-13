@@ -26,6 +26,7 @@ class Invoice {
   bool isInterState; // India: interstate supply → show IGST instead of CGST/SGST
   List<InvoicePayment> payments;
   String? upiId; // selected UPI account for this invoice
+  String? paymentQrId; // selected uploaded payment QR (PaymentQrEntry.id); null = company default
   String? bankAccountId; // selected bank account label key for this invoice
   DateTime? dueDate;
   String?
@@ -77,6 +78,7 @@ class Invoice {
     this.isInterState = false,
     this.payments = const [],
     this.upiId,
+    this.paymentQrId,
     this.bankAccountId,
     this.dueDate,
     this.quantityLabel,

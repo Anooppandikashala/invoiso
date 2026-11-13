@@ -25,6 +25,8 @@ class PdfGenerationSettings {
   final BusinessType businessType;
   final List<UpiEntry> upiEntries;
   final String? showQrStr;
+  final bool paymentQrFromImage; // Company Info QR source = 'image'
+  final List<PaymentQrEntry> paymentQrEntries;
   final bool showBankDetails;
   final bool showPhone;
   final bool showEmail;
@@ -147,6 +149,8 @@ class PdfGenerationSettings {
     this.metadataColumns = const {},
     this.customerFields = const CustomerFieldSettings(),
     this.attachmentsAsList = false,
+    this.paymentQrFromImage = false,
+    this.paymentQrEntries = const [],
     this.fontSizeScale = 1.0,
     this.companyNameScale = 1.0,
     this.docTitleScale = 1.0,

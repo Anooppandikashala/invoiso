@@ -226,6 +226,10 @@ void main() {
     // v59 added invoice photo attachments.
     expect(await db.query('invoice_attachments'), isEmpty);
 
+    // v60 added the per-invoice uploaded payment QR choice.
+    expect(invoice.containsKey('payment_qr_id'), isTrue);
+    expect(invoice['payment_qr_id'], isNull);
+
     // v53 added purchase bills / suppliers / stock tracking.
     for (final table in [
       'suppliers',

@@ -219,6 +219,8 @@ pw.Widget buildBankUpiRow({
   BankAccount? bankAccount,
   bool showUpiQr = false,
   String? upiId,
+  Uint8List? qrImageBytes, // uploaded payment QR; drawn instead of the UPI QR
+  String? qrLabel,
   required String companyName,
   required double amount,
   required String currencyCode,
@@ -232,7 +234,8 @@ pw.Widget buildBankUpiRow({
   double upiIdFontSize = 7,
   double upiAmountFontSize = 7,
 }) {
-  if (bankAccount == null && !(showUpiQr && upiId != null)) {
+  if (bankAccount == null &&
+      !(showUpiQr && (upiId != null || qrImageBytes != null))) {
     return pw.SizedBox();
   }
   return pw.Row(
@@ -247,7 +250,20 @@ pw.Widget buildBankUpiRow({
           rowFontSize: bankFontSize,
           padding: sectionPadding,
         ),
-      if (showUpiQr && upiId != null) ...[
+      if (showUpiQr && qrImageBytes != null) ...[
+        pw.SizedBox(width: gap),
+        buildQrImageSection(
+          imageBytes: qrImageBytes,
+          title: qrLabel ?? 'Scan to Pay',
+          amount: amount,
+          currencyCode: currencyCode,
+          accentColor: accentColor,
+          qrSize: qrSize,
+          titleFontSize: sectionTitleFontSize,
+          padding: sectionPadding,
+          amountFontSize: upiAmountFontSize,
+        ),
+      ] else if (showUpiQr && upiId != null) ...[
         pw.SizedBox(width: gap),
         buildUpiQrSection(
           upiId: upiId,
@@ -321,6 +337,57 @@ pw.Widget buildBankDetailsSection({
           row(bankAccount.codeLabel, bankAccount.ifscCode),
         if (bankAccount.iban.isNotEmpty)
           row('IBAN', bankAccount.iban),
+      ],
+    ),
+  );
+}
+
+/// Same bordered box as [buildUpiQrSection], showing an uploaded QR image
+/// (PayPal, Wise, bank QR...) with the user's label as title. The amount is
+/// printed only — a static image can't carry it.
+pw.Widget buildQrImageSection({
+  required Uint8List imageBytes,
+  required String title,
+  required double amount,
+  required String currencyCode,
+  required PdfColor accentColor,
+  double qrSize = 90.0,
+  double titleFontSize = 8,
+  double amountFontSize = 7,
+  double padding = 8,
+}) {
+  return pw.Container(
+    padding: pw.EdgeInsets.all(padding),
+    decoration: pw.BoxDecoration(
+      border: pw.Border.all(color: accentColor, width: 0.5),
+      borderRadius: pw.BorderRadius.circular(4),
+    ),
+    child: pw.Column(
+      mainAxisSize: pw.MainAxisSize.min,
+      crossAxisAlignment: pw.CrossAxisAlignment.center,
+      children: [
+        pw.Text(
+          title,
+          style: pw.TextStyle(
+            fontSize: titleFontSize,
+            fontWeight: pw.FontWeight.bold,
+            color: accentColor,
+          ),
+          textAlign: pw.TextAlign.center,
+        ),
+        pw.SizedBox(height: 4),
+        pw.Image(pw.MemoryImage(imageBytes),
+            width: qrSize, height: qrSize, fit: pw.BoxFit.contain),
+        pw.SizedBox(height: 4),
+        pw.Text(
+          '${currencyCode.toUpperCase()} ${AmountFormat.money(amount)}',
+          style: pw.TextStyle(
+            fontSize: amountFontSize,
+            fontWeight: pw.FontWeight.bold,
+            color: accentColor,
+          ),
+          textAlign: pw.TextAlign.center,
+        ),
       ],
     ),
   );
