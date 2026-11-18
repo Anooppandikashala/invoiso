@@ -1,0 +1,33 @@
+# To get started with Dependabot version updates, you'll need to specify which
+# package ecosystems to update and where the package manifests are located.
+# Please see the documentation for all configuration options:
+# https://docs.github.com/code-security/dependabot/dependabot-version-updates/configuration-options-for-the-dependabot.yml-file
+
+version: 2
+updates:
+  # Dart / pub packages
+  - package-ecosystem: "pub"
+    directory: "/"                 # location of pubspec.yaml
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 5
+    # optional: ignore specific packages or specify versioning-strategy
+    # versioning-strategy: increase
+
+  # GitHub Actions workflow updates
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+
+  # Uncomment if you actually use Python/pip in the repo
+  #- package-ecosystem: "pip"
+  #  directory: "/"
+  #  schedule:
+  #    interval: "weekly"
+
+  # Uncomment if you have npm packages (frontend JS) to monitor
+  #- package-ecosystem: "npm"
+  #  directory: "/"   # adjust if package.json is elsewhere
+  #  schedule:
+  #    interval: "weekly"
