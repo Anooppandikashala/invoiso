@@ -1,6 +1,6 @@
 {
-  "version": 11,
-  "updated_at": "2026-11-12",
+  "version": 12,
+  "updated_at": "2026-11-19",
   "screens": [
     { "key": "companies", "label": "Companies" },
     { "key": "company_info", "label": "Company Info" },
@@ -60,6 +60,7 @@
     { "id": "set_default_tax_rate", "screen": "invoice_settings", "section": "Tax & GST", "question": "How do I set a default tax rate?", "keywords": ["default tax rate", "tax percentage"], "description": "Use this to set the **tax percentage** (like 18%) that's pre-filled on every new invoice, so you don't type it each time." },
     { "id": "set_tax_enabled_default", "screen": "invoice_settings", "section": "Tax & GST", "question": "How do I turn tax on by default?", "keywords": ["tax enabled by default", "tax toggle"], "description": "Use this to switch the **tax toggle** on by default so new invoices already have tax applied, instead of you enabling it every time." },
     { "id": "set_tax_rate_mode", "screen": "invoice_settings", "section": "Tax & GST", "question": "How do I apply tax per item instead of globally?", "keywords": ["tax mode", "global tax", "per item tax"], "description": "Use this to choose whether tax uses **one rate for the whole invoice**, or a **different rate per item**." },
+    { "id": "set_charges_include_tax", "screen": "invoice_settings", "section": "Tax & GST", "question": "Do freight and packing charges include tax?", "keywords": ["taxable charges", "freight tax", "charges include tax", "tax included", "tax extra"], "description": "Choose whether the amount you type for a **taxable charge** (freight, packing…) is **Tax extra** (tax added on top) or **Tax included**. Applies to charges added from now on; saved invoices don't change." },
     { "id": "set_show_gst_fields", "screen": "invoice_settings", "section": "Tax & GST", "question": "How do I show GSTIN and HSN fields?", "keywords": ["gst fields", "gstin", "hsn"], "description": "Use this to see **GSTIN** and **HSN** fields throughout the app — on invoices, PDFs, and exports — for GST-compliant billing." },
     { "id": "set_gst_invoice_title", "screen": "invoice_settings", "section": "Tax & GST", "question": "How do I change the invoice title to Tax Invoice or Bill of Supply?", "keywords": ["invoice title", "tax invoice", "bill of supply", "credit note"], "description": "Pre-selects the title printed at the top of new invoices, such as **Tax Invoice**, **Bill of Supply**, or **Credit Note**." },
     { "id": "set_show_round_off", "screen": "invoice_settings", "section": "Tax & GST", "question": "How do I show rounded total and amount in words?", "keywords": ["round off", "amount in words"], "description": "Use this to add a **rounded total** and write the amount in words (e.g. \"Rupees One Thousand Only\") on the PDF." },
