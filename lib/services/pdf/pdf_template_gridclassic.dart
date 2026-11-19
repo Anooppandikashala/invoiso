@@ -500,6 +500,11 @@ pw.MultiPage buildGridClassicTemplate(
   }
 
   pw.Widget buildInvoiceFooter() {
+    pw.Widget chargeRow(String label, double amount) => totalsRow(
+        label.isEmpty ? 'Extra Cost' : label,
+        amount < 0
+            ? '-$currencySymbol ${AmountFormat.money(-amount)}'
+            : '$currencySymbol ${AmountFormat.money(amount)}');
     return pw.Container(
       decoration: pw.BoxDecoration(
         border: pw.Border(
@@ -530,6 +535,10 @@ pw.MultiPage buildGridClassicTemplate(
                     if (invoice.totalDiscount > 0)
                       totalsRow('Discount',
                           '-$currencySymbol ${AmountFormat.money(invoice.taxableDiscount)}'),
+                    // Taxed charges are part of the taxable value → before tax.
+                    for (final c in invoice.additionalCosts)
+                      if (invoice.chargeTaxableValue(c) case final v?)
+                        chargeRow(c.label, v),
                     if (invoice.taxMode != TaxMode.none && !showIgst)
                       totalsRow(invoiceTaxLabel(invoice),
                           '$currencySymbol ${AmountFormat.money(invoice.tax)}'),
@@ -542,11 +551,9 @@ pw.MultiPage buildGridClassicTemplate(
                       totalsRow('SGST',
                           '$currencySymbol ${AmountFormat.money(invoice.tax / 2)}'),
                     ],
-                    ...invoice.additionalCosts.map((c) => totalsRow(
-                        c.label.isEmpty ? 'Extra Cost' : c.label,
-                        c.amount < 0
-                            ? '-$currencySymbol ${AmountFormat.money(-c.amount)}'
-                            : '$currencySymbol ${AmountFormat.money(c.amount)}')),
+                    for (final c in invoice.additionalCosts)
+                      if (invoice.chargeTaxableValue(c) == null)
+                        chargeRow(c.label, c.amount),
                     if (invoice.invoiceDiscountAmount > 0)
                       totalsRow(invoice.invoiceDiscountType == InvoiceDiscountType.percent
                           ? "Extra Discount (${invoice.invoiceDiscountValue.toStringAsFixed(1)}%)"

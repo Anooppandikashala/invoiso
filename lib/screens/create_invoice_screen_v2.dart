@@ -7424,13 +7424,24 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
               ],
             ),
           ],
+          // Taxed charges (at taxable value) before Tax, untaxed after — as on the PDF.
+          for (final c in _buildAdditionalCosts())
+            if (InvoiceTotalsCalculator.chargeTaxableValue(c, _taxMode, taxRate)
+                case final v?)
+              Padding(
+                padding: const EdgeInsets.only(top: 4),
+                child: _buildTotalRow(
+                    c.label.isEmpty ? AppLocalizations.of(context)!.createInvoiceExtraCostFallbackLabel : c.label, v, false),
+              ),
           const SizedBox(height: 6),
           _buildTotalRow(AppLocalizations.of(context)!.fieldTaxLabel, tax, false),
-          ..._buildAdditionalCosts().map((c) => Padding(
+          for (final c in _buildAdditionalCosts())
+            if (InvoiceTotalsCalculator.chargeTaxableValue(c, _taxMode, taxRate) == null)
+              Padding(
                 padding: const EdgeInsets.only(top: 4),
                 child: _buildTotalRow(
                     c.label.isEmpty ? AppLocalizations.of(context)!.createInvoiceExtraCostFallbackLabel : c.label, c.amount, false),
-              )),
+              ),
           if (invoiceDiscountAmount > 0) ...[
             const SizedBox(height: 4),
             Row(

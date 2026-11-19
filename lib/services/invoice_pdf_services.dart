@@ -170,6 +170,10 @@ class InvoicePdfServices {
                         '-${invoice.currencySymbol} ${AmountFormat.money(invoice.taxableDiscount)}'),
                   ],
                 ),
+              // Taxed charges are part of the taxable value → before tax.
+              for (final c in invoice.additionalCosts)
+                if (invoice.chargeTaxableValue(c) case final v?)
+                  _chargeRow(invoice, c.label, v),
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
@@ -179,16 +183,9 @@ class InvoicePdfServices {
                       '${invoice.currencySymbol} ${AmountFormat.money(invoice.tax)}'),
                 ],
               ),
-              ...invoice.additionalCosts.map((c) => Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text('${c.label.isEmpty ? 'Extra Cost' : c.label}:',
-                          style: const TextStyle(fontWeight: FontWeight.bold)),
-                      Text(c.amount < 0
-                          ? '-${invoice.currencySymbol} ${AmountFormat.money(-c.amount)}'
-                          : '${invoice.currencySymbol} ${AmountFormat.money(c.amount)}'),
-                    ],
-                  )),
+              for (final c in invoice.additionalCosts)
+                if (invoice.chargeTaxableValue(c) == null)
+                  _chargeRow(invoice, c.label, c.amount),
               if (invoice.invoiceDiscountAmount > 0)
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -389,6 +386,17 @@ class InvoicePdfServices {
       },
     );
   }
+
+  static Widget _chargeRow(Invoice invoice, String label, double amount) => Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text('${label.isEmpty ? 'Extra Cost' : label}:',
+              style: const TextStyle(fontWeight: FontWeight.bold)),
+          Text(amount < 0
+              ? '-${invoice.currencySymbol} ${AmountFormat.money(-amount)}'
+              : '${invoice.currencySymbol} ${AmountFormat.money(amount)}'),
+        ],
+      );
 
   static String _taxLabel(Invoice invoice) {
     switch (invoice.taxMode) {

@@ -530,6 +530,15 @@ pw.Widget buildEnhancedTotals(
   final rowHorizontalPadding = compactStyle?.rowHorizontalPadding;
   final rowVerticalPadding = compactStyle?.rowVerticalPadding;
   final borderRadius = compactStyle?.borderRadius ?? 6.0;
+  pw.Widget chargeRow(String label, double amount) => pdfTotalRow(
+        label.isEmpty ? 'Extra Cost' : label,
+        amount < 0
+            ? "-$currencySymbol ${AmountFormat.money(-amount)}"
+            : "$currencySymbol ${AmountFormat.money(amount)}",
+        fontSize: rowFontSize,
+        horizontalPadding: rowHorizontalPadding,
+        verticalPadding: rowVerticalPadding,
+      );
 
   final totalsBox = pw.Container(
     width: totalWidth,
@@ -555,6 +564,9 @@ pw.Widget buildEnhancedTotals(
             horizontalPadding: rowHorizontalPadding,
             verticalPadding: rowVerticalPadding,
           ),
+        // Taxed charges are part of the taxable value → before the tax rows.
+        for (final c in invoice.additionalCosts)
+          if (invoice.chargeTaxableValue(c) case final v?) chargeRow(c.label, v),
         if (invoice.taxMode != TaxMode.none && !showCgstSgst && !showIgst)
           pdfTotalRow(invoiceTaxLabel(invoice),
               "$currencySymbol ${AmountFormat.money(invoice.tax)}",
@@ -576,15 +588,9 @@ pw.Widget buildEnhancedTotals(
               horizontalPadding: rowHorizontalPadding,
               verticalPadding: rowVerticalPadding),
         ],
-        ...invoice.additionalCosts.map((c) => pdfTotalRow(
-              c.label.isEmpty ? 'Extra Cost' : c.label,
-              c.amount < 0
-                  ? "-$currencySymbol ${AmountFormat.money(-c.amount)}"
-                  : "$currencySymbol ${AmountFormat.money(c.amount)}",
-              fontSize: rowFontSize,
-              horizontalPadding: rowHorizontalPadding,
-              verticalPadding: rowVerticalPadding,
-            )),
+        for (final c in invoice.additionalCosts)
+          if (invoice.chargeTaxableValue(c) == null)
+            chargeRow(c.label, c.amount),
         if (invoice.invoiceDiscountAmount > 0)
           pdfTotalRow(
             invoice.invoiceDiscountType == InvoiceDiscountType.percent

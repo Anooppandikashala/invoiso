@@ -32,7 +32,7 @@ class Invoice {
   String?
       quantityLabel; // custom label for the Qty column (e.g. "Words", "Hours")
   List<AdditionalCost>
-      additionalCosts; // e.g. Shipping, Packaging (zero tax, added after tax)
+      additionalCosts; // e.g. Shipping, Packaging (untaxed unless marked taxable)
   double previousBalance;
   InvoiceDiscountType invoiceDiscountType; // invoice-level discount, applied after tax
   double invoiceDiscountValue;
@@ -151,6 +151,14 @@ class Invoice {
   double get taxableDiscount => _totals.taxableDiscount;
 
   double get tax => _totals.tax;
+
+  /// Taxable value of taxed charges; taxable value = subtotal + this.
+  double get taxableChargesTotal => _totals.taxableChargesTotal;
+
+  /// Taxed charge → its taxable value (printed before the tax rows);
+  /// null → untaxed (printed after the tax rows at its amount).
+  double? chargeTaxableValue(AdditionalCost c) =>
+      InvoiceTotalsCalculator.chargeTaxableValue(c, taxMode, taxRate);
 
   double get additionalCostsTotal =>
       additionalCosts.fold(0.0, (sum, c) => sum + c.amount);

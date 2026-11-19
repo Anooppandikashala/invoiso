@@ -401,15 +401,21 @@ class ThermalPrinterService {
     if (invoice.totalDiscount > 0) {
       twoCol('Discount:', '-$currency ${AmountFormat.money(invoice.taxableDiscount)}');
     }
+    void chargeRow(String label, double amount) => twoCol(
+        label.isEmpty ? 'Extra Cost' : label,
+        amount < 0
+            ? '-$currency ${AmountFormat.money(-amount)}'
+            : '$currency ${AmountFormat.money(amount)}');
+    // Taxed charges are part of the taxable value → before the tax row.
+    for (final c in invoice.additionalCosts) {
+      final v = invoice.chargeTaxableValue(c);
+      if (v != null) chargeRow(c.label, v);
+    }
     if (invoice.taxMode != TaxMode.none) {
       twoCol(invoiceTaxLabel(invoice), '$currency ${AmountFormat.money(invoice.tax)}');
     }
     for (final c in invoice.additionalCosts) {
-      twoCol(
-          c.label.isEmpty ? 'Extra Cost' : c.label,
-          c.amount < 0
-              ? '-$currency ${AmountFormat.money(-c.amount)}'
-              : '$currency ${AmountFormat.money(c.amount)}');
+      if (invoice.chargeTaxableValue(c) == null) chargeRow(c.label, c.amount);
     }
     if (invoice.invoiceDiscountAmount > 0) {
       twoCol(
@@ -444,7 +450,8 @@ class ThermalPrinterService {
           company!.country.toLowerCase() == 'india';
       hr();
       line('=== TAX SUMMARY ===', align: PosAlign.center, bold: true);
-      twoCol('Taxable Amt:', '$currency ${AmountFormat.money(invoice.subtotal)}');
+      twoCol('Taxable Amt:',
+          '$currency ${AmountFormat.money(invoice.subtotal + invoice.taxableChargesTotal)}');
       if (settings.showCgstSgst && isIndia && invoice.isInterState) {
         twoCol('IGST:', '$currency ${AmountFormat.money(invoice.tax)}');
       } else if (settings.showCgstSgst && isIndia) {

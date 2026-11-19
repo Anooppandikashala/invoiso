@@ -167,6 +167,15 @@ class InvoiceTotalsCalculator {
     );
   }
 
+  /// Taxable value of charge [c] on an invoice (tax backed out when
+  /// inclusive), or null when the charge is not taxed there.
+  static double? chargeTaxableValue(
+      AdditionalCost c, TaxMode taxMode, double globalRateFraction) {
+    if (!c.taxable || taxMode == TaxMode.none) return null;
+    return c.netAmount(
+        taxMode == TaxMode.global ? globalRateFraction * 100 : c.taxRate);
+  }
+
   static InvoiceTotals totals({
     required Iterable<InvoiceLineAmount> lines,
     required TaxMode taxMode,
@@ -204,13 +213,11 @@ class InvoiceTotalsCalculator {
     double taxableChargesTotal = 0;
     double chargesTax = 0;
     for (final c in additionalCosts) {
-      if (!c.taxable || taxMode == TaxMode.none) {
+      final net = chargeTaxableValue(c, taxMode, globalRateFraction);
+      if (net == null) {
         additionalCostsTotal += c.amount;
         continue;
       }
-      final ratePercent =
-          taxMode == TaxMode.global ? globalRateFraction * 100 : c.taxRate;
-      final net = c.netAmount(ratePercent);
       additionalCostsTotal += net;
       taxableChargesTotal += net;
       chargesTax += c.inclusive

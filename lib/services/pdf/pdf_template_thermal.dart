@@ -308,7 +308,7 @@ pw.Page buildThermalTemplate(
 
   List<pw.Widget> buildTaxSummary() {
     if (invoice.taxMode == TaxMode.none || invoice.tax <= 0) return [];
-    final totalTaxable = invoice.subtotal;
+    final totalTaxable = invoice.subtotal + invoice.taxableChargesTotal;
     final totalTax = invoice.tax;
     final isIndia = (company?.country ?? '').isEmpty ||
         company!.country.toLowerCase() == 'india';
@@ -534,14 +534,22 @@ pw.Page buildThermalTemplate(
       if (invoice.totalDiscount > 0)
         labelValue('Discount:',
             '-$currencySymbol ${AmountFormat.money(invoice.taxableDiscount)}'),
+      // Taxed charges are part of the taxable value → before the tax row.
+      for (final c in invoice.additionalCosts)
+        if (invoice.chargeTaxableValue(c) case final v?)
+          labelValue(c.label.isEmpty ? 'Extra Cost' : c.label,
+              v < 0
+                  ? '-$currencySymbol ${AmountFormat.money(-v)}'
+                  : '$currencySymbol ${AmountFormat.money(v)}'),
       if (invoice.taxMode != TaxMode.none)
         labelValue(invoiceTaxLabel(invoice),
             '$currencySymbol ${AmountFormat.money(invoice.tax)}'),
       for (final c in invoice.additionalCosts)
-        labelValue(c.label.isEmpty ? 'Extra Cost' : c.label,
-            c.amount < 0
-                ? '-$currencySymbol ${AmountFormat.money(-c.amount)}'
-                : '$currencySymbol ${AmountFormat.money(c.amount)}'),
+        if (invoice.chargeTaxableValue(c) == null)
+          labelValue(c.label.isEmpty ? 'Extra Cost' : c.label,
+              c.amount < 0
+                  ? '-$currencySymbol ${AmountFormat.money(-c.amount)}'
+                  : '$currencySymbol ${AmountFormat.money(c.amount)}'),
       if (invoice.invoiceDiscountAmount > 0)
         labelValue(invoice.invoiceDiscountType == InvoiceDiscountType.percent
             ? "Extra Discount (${invoice.invoiceDiscountValue.toStringAsFixed(1)}%)"
