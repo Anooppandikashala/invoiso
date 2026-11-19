@@ -137,7 +137,7 @@ class Invoice {
         taxMode: taxMode,
         globalTaxRate: taxRate,
         globalTaxRateFormat: TaxRateFormat.fraction,
-        additionalCostsTotal: additionalCostsTotal,
+        additionalCosts: additionalCosts,
         invoiceDiscountType: invoiceDiscountType,
         invoiceDiscountValue: invoiceDiscountValue,
       );

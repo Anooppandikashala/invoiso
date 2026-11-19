@@ -145,8 +145,7 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
   List<InvoiceItem> invoiceItems = [];
   final Set<String> _savedAdHocIds =
       {}; // tracks custom item IDs already saved to products
-  final List<({TextEditingController label, TextEditingController amount})>
-      _additionalCostControllers = [];
+  final List<_ChargeRow> _additionalCostControllers = [];
   bool _showAdditionalCosts = false;
   bool _invoiceDetailsExpanded = true;
   bool _customerDetailsExpanded = true;
@@ -362,10 +361,7 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
       _hideInvoiceNumber = _invoice!.hideInvoiceNumber;
       customInvoiceNumberController.text = _invoice!.customInvoiceNumber ?? '';
       for (final c in _invoice!.additionalCosts) {
-        _additionalCostControllers.add((
-          label: TextEditingController(text: c.label),
-          amount: TextEditingController(text: c.amount.toStringAsFixed(2)),
-        ));
+        _additionalCostControllers.add(_ChargeRow.from(c));
       }
       if (_additionalCostControllers.isNotEmpty) _showAdditionalCosts = true;
       _customFieldValues = {
@@ -434,10 +430,7 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
       for (final c in (debitNoteFor || creditNoteFor)
           ? const <AdditionalCost>[]
           : src.additionalCosts) {
-        _additionalCostControllers.add((
-          label: TextEditingController(text: c.label),
-          amount: TextEditingController(text: c.amount.toStringAsFixed(2)),
-        ));
+        _additionalCostControllers.add(_ChargeRow.from(c));
       }
       if (_additionalCostControllers.isNotEmpty) _showAdditionalCosts = true;
       _invoiceDiscountType = src.invoiceDiscountType;
@@ -540,8 +533,7 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
     _customerExtraFields.dispose();
     _customerCardScrollController.dispose();
     for (final row in _additionalCostControllers) {
-      row.label.dispose();
-      row.amount.dispose();
+      row.dispose();
     }
     _invoiceDiscountController.dispose();
     _payAmountController.dispose();
@@ -609,6 +601,9 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
           .map((row) => {
                 'label': row.label.text.trim(),
                 'amount': row.amount.text.trim(),
+                'taxable': row.taxable,
+                'taxRate': row.rate.text.trim(),
+                'hsn': row.hsn.text.trim(),
               })
           .toList(),
       'showAdditionalCosts': _showAdditionalCosts,
@@ -2879,8 +2874,7 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
       selectedCustomer = null;
       invoiceItems.clear();
       for (final row in _additionalCostControllers) {
-        row.label.dispose();
-        row.amount.dispose();
+        row.dispose();
       }
       _additionalCostControllers.clear();
       _showAdditionalCosts = false;
@@ -3529,10 +3523,25 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
       final label = row.label.text.trim();
       final amount = double.tryParse(row.amount.text) ?? 0.0;
       if (label.isNotEmpty && amount != 0) {
-        costs.add(AdditionalCost(label: label, amount: amount));
+        costs.add(AdditionalCost(
+            label: label,
+            amount: amount,
+            taxable: row.taxable,
+            taxRate: (double.tryParse(row.rate.text) ?? 0.0).clamp(0.0, 100.0),
+            hsn: row.hsn.text.trim()));
       }
     }
     return costs;
+  }
+
+  // Composite supply: a charge takes the rate of the principal
+  // (largest-value) line. Default only — the user can change it.
+  double _principalTaxRate() {
+    InvoiceItem? top;
+    for (final it in invoiceItems) {
+      if (top == null || it.total > top.total) top = it;
+    }
+    return top?.product.tax_rate ?? 0.0;
   }
 
   Widget _buildAdditionalCostsSection() {
@@ -3622,7 +3631,9 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
                     final row = entry.value;
                     return Padding(
                       padding: const EdgeInsets.only(bottom: 8),
-                      child: Row(
+                      child: Column(
+                        children: [
+                      Row(
                         children: [
                           Expanded(
                             flex: 3,
@@ -3690,12 +3701,97 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
                             onPressed: () {
                               if(!mounted) return;
                               setState(() {
-                                _additionalCostControllers[i].label.dispose();
-                                _additionalCostControllers[i].amount.dispose();
+                                _additionalCostControllers[i].dispose();
                                 _additionalCostControllers.removeAt(i);
                               });
                             },
                           ),
+                        ],
+                      ),
+                          if (_taxMode != TaxMode.none)
+                            Padding(
+                              padding: const EdgeInsets.only(top: 6),
+                              child: Align(
+                                alignment: Alignment.centerLeft,
+                                child: Wrap(
+                                  spacing: 8,
+                                  runSpacing: 6,
+                                  crossAxisAlignment: WrapCrossAlignment.center,
+                                  children: [
+                                    Tooltip(
+                                      message: AppLocalizations.of(context)!.chargeTaxableTooltip,
+                                      child: Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          Switch(
+                                            value: row.taxable,
+                                            materialTapTargetSize:
+                                                MaterialTapTargetSize.shrinkWrap,
+                                            onChanged: (v) {
+                                              if (!mounted) return;
+                                              setState(() => row.taxable = v);
+                                            },
+                                          ),
+                                          Text(
+                                            AppLocalizations.of(context)!.chargeTaxableLabel,
+                                            style: TextStyle(
+                                                fontSize: 12, color: Colors.teal[800]),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                    if (row.taxable && _taxMode == TaxMode.perItem)
+                                      SizedBox(
+                                        width: 120,
+                                        child: TextField(
+                                          controller: row.rate,
+                                          onChanged: (_) {
+                                            if (!mounted) return;
+                                            setState(() {});
+                                          },
+                                          keyboardType:
+                                              const TextInputType.numberWithOptions(
+                                                  decimal: true),
+                                          decoration: InputDecoration(
+                                            labelText: AppLocalizations.of(context)!.fieldTaxRateLabel,
+                                            isDense: true,
+                                            border: OutlineInputBorder(
+                                              borderRadius: BorderRadius.circular(
+                                                  AppBorderRadius.xsmall),
+                                            ),
+                                            filled: true,
+                                            fillColor: Theme.of(context).colorScheme.surfaceContainerHighest,
+                                          ),
+                                        ),
+                                      ),
+                                    if (row.taxable && _showGstFields)
+                                      SizedBox(
+                                        width: 160,
+                                        child: ValueListenableBuilder<TextEditingValue>(
+                                          valueListenable: row.hsn,
+                                          builder: (context, value, _) => TextField(
+                                            controller: row.hsn,
+                                            decoration: InputDecoration(
+                                              labelText: AppLocalizations.of(context)!.productMgmtHsnSacLabel,
+                                              isDense: true,
+                                              border: OutlineInputBorder(
+                                                borderRadius: BorderRadius.circular(
+                                                    AppBorderRadius.xsmall),
+                                              ),
+                                              filled: true,
+                                              fillColor: Theme.of(context).colorScheme.surfaceContainerHighest,
+                                              errorText: !GstUtils.isValidHsn(value.text)
+                                                  ? AppLocalizations.of(context)!.gstHsnFormatWarning
+                                                  : null,
+                                              errorMaxLines: 3,
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                  ],
+                                ),
+                              ),
+                            ),
                         ],
                       ),
                     );
@@ -3706,10 +3802,13 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
                       onPressed: () {
                         if(!mounted) return;
                         setState(() {
-                          _additionalCostControllers.add((
-                            label: TextEditingController(),
-                            amount: TextEditingController(),
-                          ));
+                          _additionalCostControllers.add(_ChargeRow.from(
+                              AdditionalCost(
+                                  label: '',
+                                  amount: 0,
+                                  taxable: _showGstFields &&
+                                      _taxMode != TaxMode.none,
+                                  taxRate: _principalTaxRate())));
                         });
                       },
                       icon: Icon(Icons.add_circle_outline,
@@ -4583,8 +4682,6 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
       ));
     }
 
-    final additionalTotal =
-        _buildAdditionalCosts().fold(0.0, (sum, c) => sum + c.amount);
     final totals = InvoiceTotalsCalculator.totals(
       lines: invoiceItems.map((item) => InvoiceTotalsCalculator.line(
             price: item.effectivePrice,
@@ -4601,7 +4698,7 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
       taxMode: _taxMode,
       globalTaxRate: taxRate,
       globalTaxRateFormat: TaxRateFormat.fraction,
-      additionalCostsTotal: additionalTotal,
+      additionalCosts: _buildAdditionalCosts(),
       invoiceDiscountType: _invoiceDiscountType,
       invoiceDiscountValue: _invoiceDiscountValue,
     );
@@ -5106,16 +5203,12 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
       _isPerItem = inv.taxMode == TaxMode.perItem;
       _isInterState = inv.isInterState;
       for (final row in _additionalCostControllers) {
-        row.label.dispose();
-        row.amount.dispose();
+        row.dispose();
       }
       _additionalCostControllers.clear();
       // Extra costs (shipping…) go back once — only on the first return.
       for (final c in hasEarlierNote ? const <AdditionalCost>[] : inv.additionalCosts) {
-        _additionalCostControllers.add((
-          label: TextEditingController(text: c.label),
-          amount: TextEditingController(text: c.amount.toStringAsFixed(2)),
-        ));
+        _additionalCostControllers.add(_ChargeRow.from(c));
       }
       _showAdditionalCosts = _additionalCostControllers.isNotEmpty;
       _invoiceDiscountType = inv.invoiceDiscountType;
@@ -7769,5 +7862,29 @@ class _UnitPickerState extends State<_UnitPicker> {
         ],
       ],
     );
+  }
+}
+
+/// One Charges & Adjustments row in the invoice form.
+class _ChargeRow {
+  final TextEditingController label;
+  final TextEditingController amount;
+  final TextEditingController rate;
+  final TextEditingController hsn;
+  bool taxable;
+
+  _ChargeRow.from(AdditionalCost c)
+      : label = TextEditingController(text: c.label),
+        amount = TextEditingController(
+            text: c.amount == 0 ? '' : c.amount.toStringAsFixed(2)),
+        rate = TextEditingController(text: AppFormatters.formatTaxRate(c.taxRate)),
+        hsn = TextEditingController(text: c.hsn),
+        taxable = c.taxable;
+
+  void dispose() {
+    label.dispose();
+    amount.dispose();
+    rate.dispose();
+    hsn.dispose();
   }
 }

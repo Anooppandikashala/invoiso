@@ -10364,6 +10364,18 @@ abstract class AppLocalizations {
   /// **'GST: HSN/SAC should be 4, 6 or 8 digits'**
   String get gstHsnFormatWarning;
 
+  /// No description provided for @chargeTaxableLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Taxable'**
+  String get chargeTaxableLabel;
+
+  /// No description provided for @chargeTaxableTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Tax is added on this charge (freight, packing…). Turn off for pure-agent reimbursements paid on the buyer\'s behalf at actual cost.'**
+  String get chargeTaxableTooltip;
+
   /// No description provided for @gstInvalidB2bGstinWarning.
   ///
   /// In en, this message translates to:

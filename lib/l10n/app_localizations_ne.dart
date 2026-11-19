@@ -6129,6 +6129,13 @@ class AppLocalizationsNe extends AppLocalizations {
   String get gstHsnFormatWarning => 'GST: HSN/SAC should be 4, 6 or 8 digits';
 
   @override
+  String get chargeTaxableLabel => 'Taxable';
+
+  @override
+  String get chargeTaxableTooltip =>
+      'Tax is added on this charge (freight, packing…). Turn off for pure-agent reimbursements paid on the buyer\'s behalf at actual cost.';
+
+  @override
   String gstInvalidB2bGstinWarning(String customers) {
     return 'Invalid GSTIN format on B2B invoices for: $customers. GSTR-1 will reject these — fix the customer GSTIN and re-save those invoices.';
   }

@@ -435,9 +435,6 @@ class InvoiceService {
     double previousBalanceDue = 0.0;
     for (final row in invoiceRows) {
       final invoiceId = row['id'] as String;
-      final additionalCostsTotal =
-          AdditionalCost.listFromJson(row['additional_costs'] as String?)
-              .fold(0.0, (sum, cost) => sum + cost.amount);
       final rowTaxMode = TaxModeExtension.fromKey(row['tax_mode'] as String?);
       final rowTaxRate = (row['tax_rate'] as num?)?.toDouble() ?? 0.0;
       final totals = InvoiceTotalsCalculator.totals(
@@ -447,7 +444,8 @@ class InvoiceService {
         taxMode: rowTaxMode,
         globalTaxRate: rowTaxRate,
         globalTaxRateFormat: TaxRateFormat.fraction,
-        additionalCostsTotal: additionalCostsTotal,
+        additionalCosts:
+            AdditionalCost.listFromJson(row['additional_costs'] as String?),
         invoiceDiscountType: InvoiceDiscountTypeExtension.fromKey(
             row['invoice_discount_type'] as String?),
         invoiceDiscountValue:
@@ -897,9 +895,8 @@ class InvoiceService {
         taxMode: taxMode,
         globalTaxRate: taxRate,
         globalTaxRateFormat: TaxRateFormat.fraction,
-        additionalCostsTotal:
-            AdditionalCost.listFromJson(row['additional_costs'] as String?)
-                .fold(0.0, (sum, cost) => sum + cost.amount),
+        additionalCosts:
+            AdditionalCost.listFromJson(row['additional_costs'] as String?),
         invoiceDiscountType: InvoiceDiscountTypeExtension.fromKey(
             row['invoice_discount_type'] as String?),
         invoiceDiscountValue:
@@ -1308,16 +1305,14 @@ class InvoiceService {
       final invTaxMode = TaxModeExtension.fromKey(taxMode);
       final items = itemsByInvoice[invId] ?? [];
 
-      final additionalTotal =
-          AdditionalCost.listFromJson(inv['additional_costs'] as String?)
-              .fold(0.0, (sum, c) => sum + c.amount);
       final totals = InvoiceTotalsCalculator.totals(
         lines: items.map((r) => InvoiceTotalsCalculator.lineFromDbRow(r,
             taxMode: invTaxMode, globalTaxRatePercent: taxRate * 100)),
         taxMode: invTaxMode,
         globalTaxRate: taxRate,
         globalTaxRateFormat: TaxRateFormat.fraction,
-        additionalCostsTotal: additionalTotal,
+        additionalCosts:
+            AdditionalCost.listFromJson(inv['additional_costs'] as String?),
         invoiceDiscountType: InvoiceDiscountTypeExtension.fromKey(
             inv['invoice_discount_type'] as String?),
         invoiceDiscountValue:

@@ -1,4 +1,5 @@
 import 'package:invoiso/common/common.dart';
+import 'package:invoiso/models/additional_cost.dart';
 
 // Price glossary — which "price" to use where:
 //
@@ -60,6 +61,10 @@ class InvoiceTotals {
   final double tax;
   final double additionalCostsTotal;
   final double invoiceDiscountAmount;
+  /// Taxable additional charges (part of [additionalCostsTotal]) and the tax
+  /// on them (part of [tax]). Taxable value = [subtotal] + [taxableChargesTotal].
+  final double taxableChargesTotal;
+  final double chargesTax;
 
   const InvoiceTotals({
     required this.subtotal,
@@ -68,6 +73,8 @@ class InvoiceTotals {
     required this.tax,
     required this.additionalCostsTotal,
     this.invoiceDiscountAmount = 0.0,
+    this.taxableChargesTotal = 0.0,
+    this.chargesTax = 0.0,
   });
 
   double get preDiscountTotal => subtotal + tax + additionalCostsTotal;
@@ -165,7 +172,7 @@ class InvoiceTotalsCalculator {
     required TaxMode taxMode,
     required double globalTaxRate,
     TaxRateFormat globalTaxRateFormat = TaxRateFormat.fraction,
-    double additionalCostsTotal = 0,
+    Iterable<AdditionalCost> additionalCosts = const [],
     InvoiceDiscountType invoiceDiscountType = InvoiceDiscountType.percent,
     double invoiceDiscountValue = 0,
   }) {
@@ -181,14 +188,28 @@ class InvoiceTotalsCalculator {
       if (taxMode == TaxMode.perItem) itemTax += line.itemTax;
     }
 
-    final tax = switch (taxMode) {
-      TaxMode.global => subtotal *
-          (globalTaxRateFormat == TaxRateFormat.percent
-              ? globalTaxRate / 100
-              : globalTaxRate),
+    final globalRateFraction = globalTaxRateFormat == TaxRateFormat.percent
+        ? globalTaxRate / 100
+        : globalTaxRate;
+    final itemsTax = switch (taxMode) {
+      TaxMode.global => subtotal * globalRateFraction,
       TaxMode.perItem => itemTax,
       TaxMode.none => 0.0,
     };
+
+    // Taxable charges (amount is tax-exclusive): global mode uses the invoice
+    // rate, per-item mode the charge's own rate, no-tax mode none.
+    double additionalCostsTotal = 0;
+    double taxableChargesTotal = 0;
+    double chargesTax = 0;
+    for (final c in additionalCosts) {
+      additionalCostsTotal += c.amount;
+      if (!c.taxable || taxMode == TaxMode.none) continue;
+      taxableChargesTotal += c.amount;
+      chargesTax += c.amount *
+          (taxMode == TaxMode.global ? globalRateFraction : c.taxRate / 100);
+    }
+    final tax = itemsTax + chargesTax;
 
     final preDiscountTotal = subtotal + tax + additionalCostsTotal;
     final invoiceDiscountAmount = invoiceDiscountValue <= 0
@@ -204,6 +225,8 @@ class InvoiceTotalsCalculator {
       tax: tax,
       additionalCostsTotal: additionalCostsTotal,
       invoiceDiscountAmount: invoiceDiscountAmount,
+      taxableChargesTotal: taxableChargesTotal,
+      chargesTax: chargesTax,
     );
   }
 }

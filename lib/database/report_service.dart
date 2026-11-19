@@ -190,16 +190,14 @@ class ReportService {
       final items = itemsByInv[id] ?? [];
       final paid = paidByInv[id] ?? 0.0;
 
-      final addCosts =
-          AdditionalCost.listFromJson(inv['additional_costs'] as String?)
-              .fold(0.0, (s, c) => s + c.amount);
       final totals = InvoiceTotalsCalculator.totals(
         lines: items.map((r) => InvoiceTotalsCalculator.lineFromDbRow(r,
             taxMode: taxMode, globalTaxRatePercent: taxRate * 100)),
         taxMode: taxMode,
         globalTaxRate: taxRate,
         globalTaxRateFormat: TaxRateFormat.fraction,
-        additionalCostsTotal: addCosts,
+        additionalCosts:
+            AdditionalCost.listFromJson(inv['additional_costs'] as String?),
         invoiceDiscountType: InvoiceDiscountTypeExtension.fromKey(
             inv['invoice_discount_type'] as String?),
         invoiceDiscountValue:
