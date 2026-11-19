@@ -1181,6 +1181,29 @@
   "companyMgmtDeleteRestartTitle": "Entreprise supprimée",
   "companyMgmtDeleteRestartBody": "L'entreprise a été supprimée et Invoiso est passé à une autre. Veuillez fermer puis rouvrir l'application pour continuer.",
   "companyMgmtOnlyCompanyTooltip": "Il vous faut au moins une autre entreprise avant de pouvoir supprimer celle-ci",
+  "companyMgmtHeading": "Entreprises",
+  "companyMgmtSubtitle": "Chaque entreprise conserve séparément ses propres factures, clients, stocks et paramètres.",
+  "companyMgmtPickTitle": "Choisissez une entreprise",
+  "companyMgmtPickSubtitle": "Choisissez l'entreprise à laquelle vous connecter. Chacune a ses propres utilisateurs et données.",
+  "companyMgmtSignedInTo": "Connecté à",
+  "companyMgmtOtherCompanies": "Autres entreprises",
+  "companyMgmtAddAnother": "Ajouter une autre entreprise",
+  "companyMgmtCreatedOn": "Créée le {date}",
+  "@companyMgmtCreatedOn": {
+    "placeholders": {
+      "date": {"type": "String"}
+    }
+  },
+  "companyMgmtSwitchSignsOutNote": "Changer d'entreprise ou en créer une vous déconnecte et revient à l'écran de connexion.",
+  "companyMgmtSelected": "Sélectionnée",
+  "companyMgmtReadyToSignIn": "Prêt à vous connecter à {name}",
+  "@companyMgmtReadyToSignIn": {
+    "placeholders": {
+      "name": {"type": "String"}
+    }
+  },
+  "companyMgmtContinueToSignIn": "Continuer vers la connexion",
+  "companyMgmtRenameDeleteHint": "Connectez-vous en tant qu'administrateur d'une entreprise pour la renommer ou la supprimer.",
   "loginCompanyGearTooltip": "Gérer les entreprises",
   "loginCompanySelectorLabel": "Entreprise",
   "customizationEyebrowLabel": "PERSONNALISATION",

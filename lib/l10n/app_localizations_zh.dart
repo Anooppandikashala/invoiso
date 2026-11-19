@@ -4498,6 +4498,49 @@ class AppLocalizationsZh extends AppLocalizations {
   String get companyMgmtOnlyCompanyTooltip => '删除此公司前，您至少需要另一家公司';
 
   @override
+  String get companyMgmtHeading => '公司';
+
+  @override
+  String get companyMgmtSubtitle => '每家公司分别保存自己的发票、客户、库存和设置。';
+
+  @override
+  String get companyMgmtPickTitle => '选择公司';
+
+  @override
+  String get companyMgmtPickSubtitle => '选择要登录的公司。每家公司都有自己的用户和数据。';
+
+  @override
+  String get companyMgmtSignedInTo => '当前登录';
+
+  @override
+  String get companyMgmtOtherCompanies => '其他公司';
+
+  @override
+  String get companyMgmtAddAnother => '添加其他公司';
+
+  @override
+  String companyMgmtCreatedOn(String date) {
+    return '创建于 $date';
+  }
+
+  @override
+  String get companyMgmtSwitchSignsOutNote => '切换或创建公司会让您退出登录并返回登录界面。';
+
+  @override
+  String get companyMgmtSelected => '已选择';
+
+  @override
+  String companyMgmtReadyToSignIn(String name) {
+    return '准备登录 $name';
+  }
+
+  @override
+  String get companyMgmtContinueToSignIn => '继续登录';
+
+  @override
+  String get companyMgmtRenameDeleteHint => '以公司管理员身份登录后即可重命名或删除该公司。';
+
+  @override
   String get loginCompanyGearTooltip => '管理公司';
 
   @override

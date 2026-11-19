@@ -1181,6 +1181,29 @@
   "companyMgmtDeleteRestartTitle": "कम्पनी मेटाइयो",
   "companyMgmtDeleteRestartBody": "कम्पनी मेटाइयो र Invoiso अर्को कम्पनीमा स्विच भयो। जारी राख्न कृपया एप्लिकेसन बन्द गरी पुनः खोल्नुहोस्।",
   "companyMgmtOnlyCompanyTooltip": "यो मेटाउनु अघि तपाईंलाई कम्तिमा अर्को एउटा कम्पनी चाहिन्छ",
+  "companyMgmtHeading": "कम्पनीहरू",
+  "companyMgmtSubtitle": "प्रत्येक कम्पनीले आफ्नै इनभ्वाइस, ग्राहक, स्टक र सेटिङहरू छुट्टै राख्छ।",
+  "companyMgmtPickTitle": "कम्पनी छान्नुहोस्",
+  "companyMgmtPickSubtitle": "साइन इन गर्ने कम्पनी छान्नुहोस्। प्रत्येकका आफ्नै प्रयोगकर्ता र डाटा हुन्छन्।",
+  "companyMgmtSignedInTo": "साइन इन गरिएको",
+  "companyMgmtOtherCompanies": "अन्य कम्पनीहरू",
+  "companyMgmtAddAnother": "अर्को कम्पनी थप्नुहोस्",
+  "companyMgmtCreatedOn": "{date} मा सिर्जना गरिएको",
+  "@companyMgmtCreatedOn": {
+    "placeholders": {
+      "date": {"type": "String"}
+    }
+  },
+  "companyMgmtSwitchSignsOutNote": "कम्पनी बदल्दा वा नयाँ बनाउँदा तपाईं साइन आउट हुनुहुन्छ र लगइन स्क्रिनमा फर्किनुहुन्छ।",
+  "companyMgmtSelected": "छानिएको",
+  "companyMgmtReadyToSignIn": "{name} मा साइन इन गर्न तयार",
+  "@companyMgmtReadyToSignIn": {
+    "placeholders": {
+      "name": {"type": "String"}
+    }
+  },
+  "companyMgmtContinueToSignIn": "साइन इनमा जारी राख्नुहोस्",
+  "companyMgmtRenameDeleteHint": "नाम बदल्न वा मेटाउन कम्पनीको एडमिनको रूपमा साइन इन गर्नुहोस्।",
   "loginCompanyGearTooltip": "कम्पनीहरू व्यवस्थापन गर्नुहोस्",
   "loginCompanySelectorLabel": "कम्पनी",
   "customizationEyebrowLabel": "अनुकूलन",

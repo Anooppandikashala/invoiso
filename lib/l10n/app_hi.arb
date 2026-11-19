@@ -1181,6 +1181,29 @@
   "companyMgmtDeleteRestartTitle": "कंपनी हटा दी गई",
   "companyMgmtDeleteRestartBody": "कंपनी हटा दी गई और Invoiso दूसरी कंपनी में स्विच हो गया। जारी रखने के लिए कृपया एप्लिकेशन बंद करके फिर से खोलें।",
   "companyMgmtOnlyCompanyTooltip": "इसे हटाने से पहले आपके पास कम से कम एक और कंपनी होनी चाहिए",
+  "companyMgmtHeading": "कंपनियाँ",
+  "companyMgmtSubtitle": "हर कंपनी अपने इनवॉइस, ग्राहक, स्टॉक और सेटिंग्स अलग से रखती है।",
+  "companyMgmtPickTitle": "कंपनी चुनें",
+  "companyMgmtPickSubtitle": "जिस कंपनी में साइन इन करना है उसे चुनें। हर कंपनी के अपने उपयोगकर्ता और डेटा होते हैं।",
+  "companyMgmtSignedInTo": "साइन इन है",
+  "companyMgmtOtherCompanies": "अन्य कंपनियाँ",
+  "companyMgmtAddAnother": "एक और कंपनी जोड़ें",
+  "companyMgmtCreatedOn": "{date} को बनाई गई",
+  "@companyMgmtCreatedOn": {
+    "placeholders": {
+      "date": {"type": "String"}
+    }
+  },
+  "companyMgmtSwitchSignsOutNote": "कंपनी बदलने या नई बनाने पर आप साइन आउट हो जाते हैं और लॉगिन स्क्रीन पर लौट आते हैं।",
+  "companyMgmtSelected": "चयनित",
+  "companyMgmtReadyToSignIn": "{name} में साइन इन के लिए तैयार",
+  "@companyMgmtReadyToSignIn": {
+    "placeholders": {
+      "name": {"type": "String"}
+    }
+  },
+  "companyMgmtContinueToSignIn": "साइन इन जारी रखें",
+  "companyMgmtRenameDeleteHint": "नाम बदलने या हटाने के लिए कंपनी के एडमिन के रूप में साइन इन करें।",
   "loginCompanyGearTooltip": "कंपनियाँ प्रबंधित करें",
   "loginCompanySelectorLabel": "कंपनी",
   "customizationEyebrowLabel": "कस्टमाइज़ेशन",

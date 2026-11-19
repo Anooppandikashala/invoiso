@@ -4681,6 +4681,53 @@ class AppLocalizationsEn extends AppLocalizations {
       'You need at least one other company before you can delete this one';
 
   @override
+  String get companyMgmtHeading => 'Companies';
+
+  @override
+  String get companyMgmtSubtitle =>
+      'Each company keeps its own invoices, customers, stock and settings separately.';
+
+  @override
+  String get companyMgmtPickTitle => 'Choose a company';
+
+  @override
+  String get companyMgmtPickSubtitle =>
+      'Pick the company to sign in to. Each one has its own users and data.';
+
+  @override
+  String get companyMgmtSignedInTo => 'Signed in to';
+
+  @override
+  String get companyMgmtOtherCompanies => 'Other companies';
+
+  @override
+  String get companyMgmtAddAnother => 'Add another company';
+
+  @override
+  String companyMgmtCreatedOn(String date) {
+    return 'Created $date';
+  }
+
+  @override
+  String get companyMgmtSwitchSignsOutNote =>
+      'Switching or creating a company signs you out and returns to the login screen.';
+
+  @override
+  String get companyMgmtSelected => 'Selected';
+
+  @override
+  String companyMgmtReadyToSignIn(String name) {
+    return 'Ready to sign in to $name';
+  }
+
+  @override
+  String get companyMgmtContinueToSignIn => 'Continue to sign in';
+
+  @override
+  String get companyMgmtRenameDeleteHint =>
+      'Sign in as a company\'s admin to rename or delete it.';
+
+  @override
   String get loginCompanyGearTooltip => 'Manage companies';
 
   @override

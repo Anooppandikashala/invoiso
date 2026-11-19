@@ -1181,6 +1181,29 @@
   "companyMgmtDeleteRestartTitle": "Empresa eliminada",
   "companyMgmtDeleteRestartBody": "La empresa fue eliminada e Invoiso cambió a otra. Cierre y vuelva a abrir la aplicación para continuar.",
   "companyMgmtOnlyCompanyTooltip": "Necesita al menos otra empresa antes de poder eliminar esta",
+  "companyMgmtHeading": "Empresas",
+  "companyMgmtSubtitle": "Cada empresa guarda por separado sus propias facturas, clientes, inventario y ajustes.",
+  "companyMgmtPickTitle": "Elija una empresa",
+  "companyMgmtPickSubtitle": "Elija la empresa en la que desea iniciar sesión. Cada una tiene sus propios usuarios y datos.",
+  "companyMgmtSignedInTo": "Sesión iniciada en",
+  "companyMgmtOtherCompanies": "Otras empresas",
+  "companyMgmtAddAnother": "Añadir otra empresa",
+  "companyMgmtCreatedOn": "Creada el {date}",
+  "@companyMgmtCreatedOn": {
+    "placeholders": {
+      "date": {"type": "String"}
+    }
+  },
+  "companyMgmtSwitchSignsOutNote": "Cambiar o crear una empresa cierra su sesión y vuelve a la pantalla de inicio de sesión.",
+  "companyMgmtSelected": "Seleccionada",
+  "companyMgmtReadyToSignIn": "Listo para iniciar sesión en {name}",
+  "@companyMgmtReadyToSignIn": {
+    "placeholders": {
+      "name": {"type": "String"}
+    }
+  },
+  "companyMgmtContinueToSignIn": "Continuar al inicio de sesión",
+  "companyMgmtRenameDeleteHint": "Inicie sesión como administrador de una empresa para cambiarle el nombre o eliminarla.",
   "loginCompanyGearTooltip": "Gestionar empresas",
   "loginCompanySelectorLabel": "Empresa",
   "customizationEyebrowLabel": "PERSONALIZACIÓN",

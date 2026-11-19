@@ -1181,6 +1181,29 @@
   "companyMgmtDeleteRestartTitle": "ཚོང་ལས་བསུབས་ཟིན།",
   "companyMgmtDeleteRestartBody": "ཚོང་ལས་བསུབས་ཤིང་ Invoiso ཚོང་ལས་གཞན་ཞིག་ལ་བརྗེས་སོང་། མུ་མཐུད་ཆེད་ཐུགས་རྗེས་ཉར་ཚགས་ཁ་བརྒྱབ་ནས་ཡང་བསྐྱར་ཕྱེ་རོགས།",
   "companyMgmtOnlyCompanyTooltip": "འདི་བསུབ་གོང་ཁྱེད་ལ་ཚོང་ལས་གཞན་ཞིག་དགོས།",
+  "companyMgmtHeading": "ཚོང་ཁང་།",
+  "companyMgmtSubtitle": "ཚོང་ཁང་རེ་རེས་རང་གི་འཛིན་ཤོག་དང་། ཉོ་མཁན། ཉར་ཚགས། སྒྲིག་འགོད་བཅས་སོ་སོར་ཉར་གྱི་ཡོད།",
+  "companyMgmtPickTitle": "ཚོང་ཁང་གདམ་པ།",
+  "companyMgmtPickSubtitle": "ནང་འཛུལ་བྱེད་པའི་ཚོང་ཁང་གདམ་རོགས། ཚོང་ཁང་རེ་རེར་རང་གི་སྤྱོད་མཁན་དང་གཞི་གྲངས་ཡོད།",
+  "companyMgmtSignedInTo": "ནང་འཛུལ་བྱས་ཡོད།",
+  "companyMgmtOtherCompanies": "ཚོང་ཁང་གཞན།",
+  "companyMgmtAddAnother": "ཚོང་ཁང་གཞན་ཞིག་སྣོན་པ།",
+  "companyMgmtCreatedOn": "{date} ལ་བཟོས།",
+  "@companyMgmtCreatedOn": {
+    "placeholders": {
+      "date": {"type": "String"}
+    }
+  },
+  "companyMgmtSwitchSignsOutNote": "ཚོང་ཁང་བརྗེ་བའམ་གསར་བཟོ་བྱས་ན་ཕྱིར་ཐོན་ནས་ནང་འཛུལ་ངོས་སུ་ལོག་ཡོང་།",
+  "companyMgmtSelected": "གདམ་ཟིན།",
+  "companyMgmtReadyToSignIn": "{name} ལ་ནང་འཛུལ་བྱེད་པར་གྲ་སྒྲིག་ཡོད།",
+  "@companyMgmtReadyToSignIn": {
+    "placeholders": {
+      "name": {"type": "String"}
+    }
+  },
+  "companyMgmtContinueToSignIn": "ནང་འཛུལ་མུ་མཐུད།",
+  "companyMgmtRenameDeleteHint": "མིང་བསྒྱུར་བའམ་བསུབ་པར་ཚོང་ཁང་གི་དོ་དམ་པའི་ཐོག་ནས་ནང་འཛུལ་གྱིས།",
   "loginCompanyGearTooltip": "ཚོང་ལས་དོ་དམ།",
   "loginCompanySelectorLabel": "ཚོང་ལས།",
   "customizationEyebrowLabel": "སྒེར་སྒྲིག",

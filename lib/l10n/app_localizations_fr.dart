@@ -4787,6 +4787,53 @@ class AppLocalizationsFr extends AppLocalizations {
       'Il vous faut au moins une autre entreprise avant de pouvoir supprimer celle-ci';
 
   @override
+  String get companyMgmtHeading => 'Entreprises';
+
+  @override
+  String get companyMgmtSubtitle =>
+      'Chaque entreprise conserve séparément ses propres factures, clients, stocks et paramètres.';
+
+  @override
+  String get companyMgmtPickTitle => 'Choisissez une entreprise';
+
+  @override
+  String get companyMgmtPickSubtitle =>
+      'Choisissez l\'entreprise à laquelle vous connecter. Chacune a ses propres utilisateurs et données.';
+
+  @override
+  String get companyMgmtSignedInTo => 'Connecté à';
+
+  @override
+  String get companyMgmtOtherCompanies => 'Autres entreprises';
+
+  @override
+  String get companyMgmtAddAnother => 'Ajouter une autre entreprise';
+
+  @override
+  String companyMgmtCreatedOn(String date) {
+    return 'Créée le $date';
+  }
+
+  @override
+  String get companyMgmtSwitchSignsOutNote =>
+      'Changer d\'entreprise ou en créer une vous déconnecte et revient à l\'écran de connexion.';
+
+  @override
+  String get companyMgmtSelected => 'Sélectionnée';
+
+  @override
+  String companyMgmtReadyToSignIn(String name) {
+    return 'Prêt à vous connecter à $name';
+  }
+
+  @override
+  String get companyMgmtContinueToSignIn => 'Continuer vers la connexion';
+
+  @override
+  String get companyMgmtRenameDeleteHint =>
+      'Connectez-vous en tant qu\'administrateur d\'une entreprise pour la renommer ou la supprimer.';
+
+  @override
   String get loginCompanyGearTooltip => 'Gérer les entreprises';
 
   @override

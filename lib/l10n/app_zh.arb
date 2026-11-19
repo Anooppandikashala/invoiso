@@ -1181,6 +1181,29 @@
   "companyMgmtDeleteRestartTitle": "公司已删除",
   "companyMgmtDeleteRestartBody": "该公司已被删除，Invoiso 已切换到另一家公司。请关闭并重新打开应用程序以继续。",
   "companyMgmtOnlyCompanyTooltip": "删除此公司前，您至少需要另一家公司",
+  "companyMgmtHeading": "公司",
+  "companyMgmtSubtitle": "每家公司分别保存自己的发票、客户、库存和设置。",
+  "companyMgmtPickTitle": "选择公司",
+  "companyMgmtPickSubtitle": "选择要登录的公司。每家公司都有自己的用户和数据。",
+  "companyMgmtSignedInTo": "当前登录",
+  "companyMgmtOtherCompanies": "其他公司",
+  "companyMgmtAddAnother": "添加其他公司",
+  "companyMgmtCreatedOn": "创建于 {date}",
+  "@companyMgmtCreatedOn": {
+    "placeholders": {
+      "date": {"type": "String"}
+    }
+  },
+  "companyMgmtSwitchSignsOutNote": "切换或创建公司会让您退出登录并返回登录界面。",
+  "companyMgmtSelected": "已选择",
+  "companyMgmtReadyToSignIn": "准备登录 {name}",
+  "@companyMgmtReadyToSignIn": {
+    "placeholders": {
+      "name": {"type": "String"}
+    }
+  },
+  "companyMgmtContinueToSignIn": "继续登录",
+  "companyMgmtRenameDeleteHint": "以公司管理员身份登录后即可重命名或删除该公司。",
   "loginCompanyGearTooltip": "管理公司",
   "loginCompanySelectorLabel": "公司",
   "customizationEyebrowLabel": "定制服务",
