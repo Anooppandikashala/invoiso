@@ -10370,6 +10370,36 @@ abstract class AppLocalizations {
   /// **'Taxable'**
   String get chargeTaxableLabel;
 
+  /// No description provided for @chargeInclTaxSuffix.
+  ///
+  /// In en, this message translates to:
+  /// **'incl. tax'**
+  String get chargeInclTaxSuffix;
+
+  /// No description provided for @invoiceSettingsChargesTaxLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Taxable charges (freight, packing…)'**
+  String get invoiceSettingsChargesTaxLabel;
+
+  /// No description provided for @invoiceSettingsChargesTaxSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Whether the amount typed for a taxable charge already includes tax. Applies to charges added from now on — saved invoices don\'t change.'**
+  String get invoiceSettingsChargesTaxSubtitle;
+
+  /// No description provided for @invoiceSettingsChargesTaxExtra.
+  ///
+  /// In en, this message translates to:
+  /// **'Tax extra'**
+  String get invoiceSettingsChargesTaxExtra;
+
+  /// No description provided for @invoiceSettingsChargesTaxIncluded.
+  ///
+  /// In en, this message translates to:
+  /// **'Tax included'**
+  String get invoiceSettingsChargesTaxIncluded;
+
   /// No description provided for @chargeTaxableTooltip.
   ///
   /// In en, this message translates to:

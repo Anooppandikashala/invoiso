@@ -6210,6 +6210,23 @@ class AppLocalizationsFr extends AppLocalizations {
   String get chargeTaxableLabel => 'Taxable';
 
   @override
+  String get chargeInclTaxSuffix => 'incl. tax';
+
+  @override
+  String get invoiceSettingsChargesTaxLabel =>
+      'Taxable charges (freight, packing…)';
+
+  @override
+  String get invoiceSettingsChargesTaxSubtitle =>
+      'Whether the amount typed for a taxable charge already includes tax. Applies to charges added from now on — saved invoices don\'t change.';
+
+  @override
+  String get invoiceSettingsChargesTaxExtra => 'Tax extra';
+
+  @override
+  String get invoiceSettingsChargesTaxIncluded => 'Tax included';
+
+  @override
   String get chargeTaxableTooltip =>
       'Tax is added on this charge (freight, packing…). Turn off for pure-agent reimbursements paid on the buyer\'s behalf at actual cost.';
 

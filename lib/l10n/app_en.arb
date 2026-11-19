@@ -3428,6 +3428,11 @@
   "gstPrefixTooLongWarning": "GST: prefix + 8-digit number must be 16 characters or less (max 7 prefix characters)",
   "gstHsnFormatWarning": "GST: HSN/SAC should be 4, 6 or 8 digits",
   "chargeTaxableLabel": "Taxable",
+  "chargeInclTaxSuffix": "incl. tax",
+  "invoiceSettingsChargesTaxLabel": "Taxable charges (freight, packing…)",
+  "invoiceSettingsChargesTaxSubtitle": "Whether the amount typed for a taxable charge already includes tax. Applies to charges added from now on — saved invoices don't change.",
+  "invoiceSettingsChargesTaxExtra": "Tax extra",
+  "invoiceSettingsChargesTaxIncluded": "Tax included",
   "chargeTaxableTooltip": "Tax is added on this charge (freight, packing…). Turn off for pure-agent reimbursements paid on the buyer's behalf at actual cost.",
   "gstInvalidB2bGstinWarning": "Invalid GSTIN format on B2B invoices for: {customers}. GSTR-1 will reject these — fix the customer GSTIN and re-save those invoices.",
   "@gstInvalidB2bGstinWarning": {

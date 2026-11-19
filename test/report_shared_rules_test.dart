@@ -169,6 +169,47 @@ void main() {
             .single;
         expect([back.taxable, back.taxRate, back.hsn], [true, 18.0, '9965']);
       });
+
+      test('inclusive charge: tax backed out, total grows by the amount', () {
+        for (final mode in [TaxMode.global, TaxMode.perItem]) {
+          final t = totals(mode, [
+            const AdditionalCost(
+                label: 'Freight', amount: 118, taxable: true, taxRate: 18,
+                inclusive: true),
+          ]);
+          final itemsTax = mode == TaxMode.global ? 180.0 : 120.0;
+          expect(t.taxableChargesTotal, closeTo(100, 1e-9), reason: '$mode');
+          expect(t.chargesTax, closeTo(18, 1e-9), reason: '$mode');
+          expect(t.total, closeTo(1000 + itemsTax + 118, 1e-9),
+              reason: '$mode');
+        }
+      });
+
+      test('inclusive flag ignored when untaxed or in no-tax mode', () {
+        const c = AdditionalCost(
+            label: 'Freight', amount: 118, taxRate: 18, inclusive: true);
+        expect(totals(TaxMode.perItem, [c]).total, closeTo(1238, 1e-9));
+        expect(
+            totals(TaxMode.none, [
+              const AdditionalCost(
+                  label: 'Freight', amount: 118, taxable: true, taxRate: 18,
+                  inclusive: true),
+            ]).total,
+            closeTo(1118, 1e-9));
+      });
+
+      test('inclusive key written only when set', () {
+        const c = AdditionalCost(
+            label: 'Freight', amount: 118, taxable: true, taxRate: 18,
+            inclusive: true);
+        expect(AdditionalCost.listToJson([c]), contains('"inclusive":true'));
+        expect(AdditionalCost.listFromJson(AdditionalCost.listToJson([c]))
+            .single.inclusive, isTrue);
+        expect(
+            AdditionalCost.listToJson(
+                [const AdditionalCost(label: 'Freight', amount: 100)]),
+            isNot(contains('inclusive')));
+      });
     });
   });
 

@@ -197,17 +197,26 @@ class InvoiceTotalsCalculator {
       TaxMode.none => 0.0,
     };
 
-    // Taxable charges (amount is tax-exclusive): global mode uses the invoice
-    // rate, per-item mode the charge's own rate, no-tax mode none.
+    // Taxable charges: global mode uses the invoice rate, per-item mode the
+    // charge's own rate, no-tax mode none. Inclusive charges add exactly
+    // their amount (tax backed out of it); exclusive ones add tax on top.
     double additionalCostsTotal = 0;
     double taxableChargesTotal = 0;
     double chargesTax = 0;
     for (final c in additionalCosts) {
-      additionalCostsTotal += c.amount;
-      if (!c.taxable || taxMode == TaxMode.none) continue;
-      taxableChargesTotal += c.amount;
-      chargesTax += c.amount *
-          (taxMode == TaxMode.global ? globalRateFraction : c.taxRate / 100);
+      if (!c.taxable || taxMode == TaxMode.none) {
+        additionalCostsTotal += c.amount;
+        continue;
+      }
+      final ratePercent =
+          taxMode == TaxMode.global ? globalRateFraction * 100 : c.taxRate;
+      final net = c.netAmount(ratePercent);
+      additionalCostsTotal += net;
+      taxableChargesTotal += net;
+      chargesTax += c.inclusive
+          ? c.amount - net
+          : c.amount *
+              (taxMode == TaxMode.global ? globalRateFraction : c.taxRate / 100);
     }
     final tax = itemsTax + chargesTax;
 

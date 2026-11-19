@@ -146,6 +146,7 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
   final Set<String> _savedAdHocIds =
       {}; // tracks custom item IDs already saved to products
   final List<_ChargeRow> _additionalCostControllers = [];
+  bool _chargesIncludeTax = false; // setting; stamped on new charge rows
   bool _showAdditionalCosts = false;
   bool _invoiceDetailsExpanded = true;
   bool _customerDetailsExpanded = true;
@@ -604,6 +605,7 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
                 'taxable': row.taxable,
                 'taxRate': row.rate.text.trim(),
                 'hsn': row.hsn.text.trim(),
+                'inclusive': row.inclusive,
               })
           .toList(),
       'showAdditionalCosts': _showAdditionalCosts,
@@ -713,6 +715,7 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
         CustomerFieldSettings.load(settingsRepo), // 23
         settingsRepo.getSetting(SettingKey.paymentQrSource), // 24
         settingsRepo.getSetting(SettingKey.paymentQrEntries), // 25
+        settingsRepo.getSetting(SettingKey.chargesIncludeTax), // 26
       ]);
 
       final c = results[0] as List<Customer>;
@@ -765,6 +768,7 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
       final qrFromImage = (results[24] as String?) == 'image';
       final paymentQrEntries =
           PaymentQrEntry.listFromJson(results[25] as String?);
+      final chargesIncludeTax = (results[26] as String?) == 'true';
 
       // Determine which UPI to pre-select.
       String? existingUpiId;
@@ -841,6 +845,7 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
         _showPreviousBalance = showPrevBalance;
         _showAliasNameInPdf = showAliasNameInPdf;
         _allowDuplicateInvoiceItems = allowDuplicateInvoiceItems;
+        _chargesIncludeTax = chargesIncludeTax;
         if (!isEditing && widget.cloneFrom == null) {
           _isTaxEnabled = showTaxButtonInInvoicePage;
           _isPerItem = defaultTaxMode == 'perItem';
@@ -3528,7 +3533,8 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
             amount: amount,
             taxable: row.taxable,
             taxRate: (double.tryParse(row.rate.text) ?? 0.0).clamp(0.0, 100.0),
-            hsn: row.hsn.text.trim()));
+            hsn: row.hsn.text.trim(),
+            inclusive: row.inclusive));
       }
     }
     return costs;
@@ -3683,6 +3689,11 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
                               decoration: InputDecoration(
                                 labelText: AppLocalizations.of(context)!.labelAmount,
                                 prefixText: '$_currencySymbol ',
+                                suffixText: row.taxable &&
+                                        row.inclusive &&
+                                        _taxMode != TaxMode.none
+                                    ? AppLocalizations.of(context)!.chargeInclTaxSuffix
+                                    : null,
                                 isDense: true,
                                 border: OutlineInputBorder(
                                   borderRadius: BorderRadius.circular(
@@ -3808,7 +3819,8 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
                                   amount: 0,
                                   taxable: _showGstFields &&
                                       _taxMode != TaxMode.none,
-                                  taxRate: _principalTaxRate())));
+                                  taxRate: _principalTaxRate(),
+                                  inclusive: _chargesIncludeTax)));
                         });
                       },
                       icon: Icon(Icons.add_circle_outline,
@@ -7872,6 +7884,7 @@ class _ChargeRow {
   final TextEditingController rate;
   final TextEditingController hsn;
   bool taxable;
+  final bool inclusive; // from the setting when the row was added
 
   _ChargeRow.from(AdditionalCost c)
       : label = TextEditingController(text: c.label),
@@ -7879,7 +7892,8 @@ class _ChargeRow {
             text: c.amount == 0 ? '' : c.amount.toStringAsFixed(2)),
         rate = TextEditingController(text: AppFormatters.formatTaxRate(c.taxRate)),
         hsn = TextEditingController(text: c.hsn),
-        taxable = c.taxable;
+        taxable = c.taxable,
+        inclusive = c.inclusive;
 
   void dispose() {
     label.dispose();

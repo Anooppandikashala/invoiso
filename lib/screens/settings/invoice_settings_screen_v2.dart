@@ -73,6 +73,7 @@ class _InvoiceSettingsScreenV2State
   bool _showTaxColumn = true;
   bool _showRoundOff = false;
   String _defaultTaxMode = 'global';
+  bool _chargesIncludeTax = false;
   String? _signatureBase64;
   String _signaturePosition = 'left';
   String _selectedSignatureSize = 'medium';
@@ -181,6 +182,8 @@ class _InvoiceSettingsScreenV2State
     final customFieldsEnabledStr =
         await settingsRepo.getSetting(SettingKey.customFieldsEnabled);
     final customFieldDefs = await settingsRepo.getCustomFieldDefs();
+    final chargesIncludeTax =
+        await settingsRepo.getSetting(SettingKey.chargesIncludeTax);
     final creditNotePrefix =
         await settingsRepo.getSetting(SettingKey.creditNotePrefix);
     final debitNotePrefix =
@@ -254,6 +257,7 @@ class _InvoiceSettingsScreenV2State
       };
       _customFieldsEnabled = customFieldsEnabledStr == 'true';
       _customFieldDefs = customFieldDefs;
+      _chargesIncludeTax = chargesIncludeTax == 'true';
       creditNotePrefixController.text =
           (creditNotePrefix == null || creditNotePrefix.isEmpty)
               ? 'CN-'
@@ -339,6 +343,8 @@ class _InvoiceSettingsScreenV2State
         settingsRepo.setSetting(
             SettingKey.showTaxColumn, _showTaxColumn.toString()),
         settingsRepo.setSetting(SettingKey.defaultTaxMode, _defaultTaxMode),
+        settingsRepo.setSetting(
+            SettingKey.chargesIncludeTax, _chargesIncludeTax.toString()),
         settingsRepo.setSetting(
             SettingKey.showRoundOff, _showRoundOff.toString()),
         settingsRepo.setSetting(SettingKey.hideInvoiceNumberByDefault,
@@ -991,6 +997,28 @@ class _InvoiceSettingsScreenV2State
                   if (!mounted) return;
                   setState(() =>
                       _defaultTaxMode = selection.first ? 'perItem' : 'global');
+                },
+              ),
+              const SizedBox(height: 16),
+              Text(l10n.invoiceSettingsChargesTaxLabel),
+              Text(l10n.invoiceSettingsChargesTaxSubtitle,
+                  style: const TextStyle(fontSize: 12)),
+              const SizedBox(height: 8),
+              SegmentedButton<bool>(
+                segments: [
+                  ButtonSegment<bool>(
+                      value: false,
+                      icon: const Icon(Icons.add, size: 16),
+                      label: Text(l10n.invoiceSettingsChargesTaxExtra)),
+                  ButtonSegment<bool>(
+                      value: true,
+                      icon: const Icon(Icons.check, size: 16),
+                      label: Text(l10n.invoiceSettingsChargesTaxIncluded)),
+                ],
+                selected: {_chargesIncludeTax},
+                onSelectionChanged: (selection) {
+                  if (!mounted) return;
+                  setState(() => _chargesIncludeTax = selection.first);
                 },
               ),
             ],

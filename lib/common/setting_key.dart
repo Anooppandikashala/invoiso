@@ -121,6 +121,7 @@ enum SettingKey {
   attachmentsEnabled, // whether invoice Attachments (photos) UI is shown in the invoice form/list (default false)
   paymentQrSource, // 'upi' (default, QR generated from UPI ID) | 'image' (uploaded QR images)
   paymentQrEntries, // JSON list of PaymentQrEntry objects (uploaded payment QR images, base64)
+  chargesIncludeTax, // 'true' = new taxable additional charges are entered tax-inclusive (default false); stamped per charge
 }
 
 extension SettingKeyExtension on SettingKey {
@@ -370,6 +371,8 @@ extension SettingKeyExtension on SettingKey {
         return 'payment_qr_source';
       case SettingKey.paymentQrEntries:
         return 'payment_qr_entries';
+      case SettingKey.chargesIncludeTax:
+        return 'charges_include_tax';
 
     }
   }
