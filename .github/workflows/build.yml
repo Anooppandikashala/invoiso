@@ -17,6 +17,10 @@ jobs:
   build-windows:
     if: ${{ vars.BUILD_WINDOWS == 'true' }}
     runs-on: windows-2022
+    # SignPath action downloads the unsigned artifact via GITHUB_TOKEN
+    permissions:
+      actions: read
+      contents: read
 
     steps:
       - name: Checkout
@@ -77,11 +81,30 @@ jobs:
           echo "Found installer(s):"
           find dist -name "invoiso-*-windows-setup.exe"
 
+      - name: Upload unsigned Windows Installer
+        id: upload-unsigned
+        uses: actions/upload-artifact@v4
+        with:
+          name: Invoiso-Windows-Installer-unsigned
+          path: dist/*/invoiso-*-windows-setup.exe
+
+      - name: Sign Windows Installer with SignPath
+        uses: signpath/github-action-submit-signing-request@v3
+        with:
+          api-token: ${{ secrets.SIGNPATH_API_TOKEN }}
+          organization-id: 6fb4637d-d44f-4fe3-a690-68e2c3f92a73
+          project-slug: invoiso
+          signing-policy-slug: test-signing
+          artifact-configuration-slug: github-installer
+          github-artifact-id: ${{ steps.upload-unsigned.outputs.artifact-id }}
+          wait-for-completion: true
+          output-artifact-directory: signed
+
       - name: Upload Windows Installer
         uses: actions/upload-artifact@v4
         with:
           name: Invoiso-Windows-Installer
-          path: dist/*/invoiso-*-windows-setup.exe
+          path: signed/*.exe
 
   # ─────────────────────────────────────────────────────────────
   # Linux — build .deb package
