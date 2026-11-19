@@ -14,6 +14,10 @@ abstract class ReportRepository {
   /// for a currency picker, e.g. next to the Outstanding column.
   Future<List<String>> getInvoiceCurrencies();
   Future<List<TaxBucket>> getTaxByRate(DateTime from, DateTime to, {String? currencyCode});
+  /// GST HSN summary (GSTR-1 Table 12).
+  Future<List<HsnSummaryRow>> getHsnSummary(DateTime from, DateTime to, {String? currencyCode});
+  /// GST documents issued (GSTR-1 Table 13).
+  Future<List<DocumentIssuedRow>> getDocumentsIssued(DateTime from, DateTime to);
   Future<List<TopCustomer>> getTopCustomers(DateTime from, DateTime to, {int limit = 500, String? currencyCode});
   Future<List<CustomerStatementCustomer>> getStatementCustomers({String? currencyCode});
   Future<List<CustomerStatement>> getCustomerStatements(String customerKey, DateTime from, DateTime to, {String? currencyCode});

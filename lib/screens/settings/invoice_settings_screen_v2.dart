@@ -531,6 +531,13 @@ class _InvoiceSettingsScreenV2State
     };
   }
 
+  // GST Rule 46(b): document number ≤ 16 chars. Printed as "<prefix>-" + 8
+  // digits, so the prefix can take at most 7. Warning only — saving still allowed.
+  String? _gstPrefixWarning(String prefix) =>
+      _showGstFields && prefix.trim().replaceFirst(RegExp(r'-+$'), '').length > 7
+          ? AppLocalizations.of(context)!.gstPrefixTooLongWarning
+          : null;
+
   InputDecoration _fieldDecorationV2(
     BuildContext context, {
     required String label,
@@ -716,9 +723,11 @@ class _InvoiceSettingsScreenV2State
         TextField(
           controller: invoicePrefixController,
           maxLength: 25,
+          onChanged: (_) => setState(() {}),
           decoration: _fieldDecorationV2(context,
               label: l10n.invoiceSettingsPrefixLabel,
-              prefixIcon: const Icon(Icons.confirmation_number)),
+              prefixIcon: const Icon(Icons.confirmation_number))
+              .copyWith(errorText: _gstPrefixWarning(invoicePrefixController.text)),
         ),
         TextField(
           controller: quotationPrefixController,
@@ -785,16 +794,20 @@ class _InvoiceSettingsScreenV2State
           TextField(
             controller: creditNotePrefixController,
             maxLength: 25,
+            onChanged: (_) => setState(() {}),
             decoration: _fieldDecorationV2(context,
                 label: l10n.creditNotePrefixLabel,
-                prefixIcon: const Icon(Icons.confirmation_number_outlined)),
+                prefixIcon: const Icon(Icons.confirmation_number_outlined))
+                .copyWith(errorText: _gstPrefixWarning(creditNotePrefixController.text)),
           ),
           TextField(
             controller: debitNotePrefixController,
             maxLength: 25,
+            onChanged: (_) => setState(() {}),
             decoration: _fieldDecorationV2(context,
                 label: l10n.debitNotePrefixLabel,
-                prefixIcon: const Icon(Icons.confirmation_number_outlined)),
+                prefixIcon: const Icon(Icons.confirmation_number_outlined))
+                .copyWith(errorText: _gstPrefixWarning(debitNotePrefixController.text)),
           ),
         ],
         _buildCurrencyField(),

@@ -6072,4 +6072,70 @@ class AppLocalizationsBo extends AppLocalizations {
 
   @override
   String get amountSeparatorIndianLabel => 'Indian  (12,34,567.89)';
+
+  @override
+  String get gstPrefixTooLongWarning =>
+      'GST: prefix + 8-digit number must be 16 characters or less (max 7 prefix characters)';
+
+  @override
+  String get gstHsnFormatWarning => 'GST: HSN/SAC should be 4, 6 or 8 digits';
+
+  @override
+  String gstInvalidB2bGstinWarning(String customers) {
+    return 'Invalid GSTIN format on B2B invoices for: $customers. GSTR-1 will reject these — fix the customer GSTIN and re-save those invoices.';
+  }
+
+  @override
+  String get gstMissingB2bHsnWarning =>
+      'Some B2B invoice items have no HSN/SAC (shown as —). HSN is mandatory for B2B in GSTR-1 — add it to those invoices and their products before filing.';
+
+  @override
+  String get reportsCgstSgstLabel => 'CGST + SGST';
+
+  @override
+  String get reportsIgstLabel => 'IGST';
+
+  @override
+  String get reportsHsnSummaryTitle => 'HSN summary (GSTR-1 Table 12)';
+
+  @override
+  String get reportsDocumentsIssuedTitle =>
+      'Documents issued (GSTR-1 Table 13)';
+
+  @override
+  String get reportsNoDocumentsIssuedMessage =>
+      'No invoices, credit notes or debit notes in this period';
+
+  @override
+  String get reportsGstSupplyTypeLabel => 'Type';
+
+  @override
+  String get reportsGstUnitLabel => 'Unit';
+
+  @override
+  String get reportsGstQtyLabel => 'Qty';
+
+  @override
+  String get reportsGstDocNatureLabel => 'Nature of document';
+
+  @override
+  String get reportsGstFromLabel => 'From';
+
+  @override
+  String get reportsGstToLabel => 'To';
+
+  @override
+  String get reportsGstTotalNumberLabel => 'Total';
+
+  @override
+  String get reportsGstCancelledLabel => 'Cancelled';
+
+  @override
+  String get gstDocNatureOutward => 'Invoices for outward supply';
+
+  @override
+  String get gstDocNatureCreditNote => 'Credit Note';
+
+  @override
+  String get gstDocNatureDebitNote => 'Debit Note';
 }

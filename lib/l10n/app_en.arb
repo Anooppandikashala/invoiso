@@ -3424,5 +3424,30 @@
   "amountSeparatorLabel": "Number format",
   "amountSeparatorNoneLabel": "No separator  (1234567.89)",
   "amountSeparatorInternationalLabel": "International  (1,234,567.89)",
-  "amountSeparatorIndianLabel": "Indian  (12,34,567.89)"
+  "amountSeparatorIndianLabel": "Indian  (12,34,567.89)",
+  "gstPrefixTooLongWarning": "GST: prefix + 8-digit number must be 16 characters or less (max 7 prefix characters)",
+  "gstHsnFormatWarning": "GST: HSN/SAC should be 4, 6 or 8 digits",
+  "gstInvalidB2bGstinWarning": "Invalid GSTIN format on B2B invoices for: {customers}. GSTR-1 will reject these — fix the customer GSTIN and re-save those invoices.",
+  "@gstInvalidB2bGstinWarning": {
+    "placeholders": {
+      "customers": {"type": "String"}
+    }
+  },
+  "gstMissingB2bHsnWarning": "Some B2B invoice items have no HSN/SAC (shown as —). HSN is mandatory for B2B in GSTR-1 — add it to those invoices and their products before filing.",
+  "reportsCgstSgstLabel": "CGST + SGST",
+  "reportsIgstLabel": "IGST",
+  "reportsHsnSummaryTitle": "HSN summary (GSTR-1 Table 12)",
+  "reportsDocumentsIssuedTitle": "Documents issued (GSTR-1 Table 13)",
+  "reportsNoDocumentsIssuedMessage": "No invoices, credit notes or debit notes in this period",
+  "reportsGstSupplyTypeLabel": "Type",
+  "reportsGstUnitLabel": "Unit",
+  "reportsGstQtyLabel": "Qty",
+  "reportsGstDocNatureLabel": "Nature of document",
+  "reportsGstFromLabel": "From",
+  "reportsGstToLabel": "To",
+  "reportsGstTotalNumberLabel": "Total",
+  "reportsGstCancelledLabel": "Cancelled",
+  "gstDocNatureOutward": "Invoices for outward supply",
+  "gstDocNatureCreditNote": "Credit Note",
+  "gstDocNatureDebitNote": "Debit Note"
 }

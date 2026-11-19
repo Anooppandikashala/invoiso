@@ -35,6 +35,7 @@ import 'package:invoiso/services/invoice_pdf_services.dart';
 import 'package:invoiso/services/pdf_service.dart';
 import 'package:invoiso/widgets/apply_payment_dialog.dart';
 import 'package:invoiso/common/constants.dart';
+import 'package:invoiso/common/gst_utils.dart';
 import 'package:invoiso/widgets/return_l10n.dart';
 import 'package:invoiso/widgets/product_form.dart';
 import 'package:invoiso/widgets/long_text_expand_button.dart';
@@ -2105,7 +2106,9 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
                   ),
                   if (_columnsConfig.hsncode) ...[
                     const SizedBox(height: 16),
-                    TextField(
+                    ValueListenableBuilder<TextEditingValue>(
+                      valueListenable: hsnController,
+                      builder: (context, value, _) => TextField(
                       controller: hsnController,
                       decoration: InputDecoration(
                         labelText: AppLocalizations.of(context)!.productMgmtHsnSacLabel,
@@ -2115,7 +2118,12 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
                         prefixIcon: const Icon(Icons.qr_code_2),
                         filled: true,
                         fillColor: Theme.of(context).colorScheme.surfaceContainerHighest,
+                        errorText: _showGstFields && !GstUtils.isValidHsn(value.text)
+                            ? AppLocalizations.of(context)!.gstHsnFormatWarning
+                            : null,
+                        errorMaxLines: 3,
                       ),
+                    ),
                     ),
                   ],
                 ],
@@ -2503,7 +2511,9 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
                 ],
                 if (_columnsConfig.hsncode) ...[
                   const SizedBox(height: 16),
-                  TextField(
+                  ValueListenableBuilder<TextEditingValue>(
+                    valueListenable: hsnController,
+                    builder: (context, value, _) => TextField(
                     controller: hsnController,
                     decoration: InputDecoration(
                       labelText: AppLocalizations.of(context)!.productMgmtHsnSacLabel,
@@ -2513,7 +2523,12 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
                       prefixIcon: const Icon(Icons.qr_code_2),
                       filled: true,
                       fillColor: Theme.of(context).colorScheme.surfaceContainerHighest,
+                      errorText: _showGstFields && !GstUtils.isValidHsn(value.text)
+                          ? AppLocalizations.of(context)!.gstHsnFormatWarning
+                          : null,
+                      errorMaxLines: 3,
                     ),
+                  ),
                   ),
                 ],
                 const SizedBox(height: 16),
@@ -2771,7 +2786,19 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
       _customerExtraFields.load(customer);
       _customerFieldsUnlocked = false;
     });
+    if (_showGstFields && customer != null) await _autoSetInterState(customer.gstin);
     await _loadPreviousBalanceDue(customer);
+  }
+
+  // India: company and customer GSTINs in different states → interstate (IGST).
+  // Only when both GSTINs are valid; the manual toggle still overrides.
+  Future<void> _autoSetInterState(String customerGstin) async {
+    final customerState = GstUtils.stateCodeFromGstin(customerGstin);
+    if (customerState == null) return;
+    final company = await ref.read(companyInfoRepositoryProvider).getCompanyInfo();
+    final companyState = GstUtils.stateCodeFromGstin(company?.gstin);
+    if (companyState == null || !mounted) return;
+    setState(() => _isInterState = customerState != companyState);
   }
 
   Future<void> _loadPreviousBalanceDue(Customer? customer) async {

@@ -162,14 +162,65 @@ class TaxBucket {
   final double rate;
   final double taxCollected;
   final double taxableAmount;
+  final double igst; // India: tax on interstate invoices; the rest is CGST + SGST
 
   const TaxBucket({
     required this.rate,
     required this.taxCollected,
     this.taxableAmount = 0.0,
+    this.igst = 0.0,
   });
 
   double get gross => taxableAmount + taxCollected;
+  double get cgst => (taxCollected - igst) / 2;
+  double get sgst => cgst;
+}
+
+/// One HSN × unit × rate line of the GST HSN summary (GSTR-1 Table 12).
+class HsnSummaryRow {
+  final bool b2b; // customer had a GSTIN
+  final String hsn;
+  final String unit;
+  final double rate;
+  final double quantity;
+  final double taxable;
+  final double igst;
+  final double cgst; // SGST is the same amount
+  final Set<String> invalidGstinCustomers; // B2B customers whose GSTIN fails the format check
+
+  const HsnSummaryRow({
+    required this.b2b,
+    required this.hsn,
+    required this.unit,
+    required this.rate,
+    required this.quantity,
+    required this.taxable,
+    required this.igst,
+    required this.cgst,
+    this.invalidGstinCustomers = const {},
+  });
+
+  double get sgst => cgst;
+  double get totalValue => taxable + igst + cgst + sgst;
+}
+
+/// Number range of one document type issued in a period (GSTR-1 Table 13).
+class DocumentIssuedRow {
+  final String type; // 'Invoice' | 'Credit Note' | 'Debit Note'
+  final String from;
+  final String to;
+  final int total;
+  final int cancelled;
+
+  const DocumentIssuedRow({
+    required this.type,
+    required this.from,
+    required this.to,
+    required this.total,
+    required this.cancelled,
+  });
+
+  int get netIssued => total - cancelled;
 }
 
 class TopCustomer {

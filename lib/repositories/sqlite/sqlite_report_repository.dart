@@ -28,6 +28,14 @@ class SqliteReportRepository implements ReportRepository {
   @override
   Future<List<TaxBucket>> getTaxByRate(DateTime from, DateTime to, {String? currencyCode}) =>
       ReportService.getTaxByRate(from, to, currencyCode: currencyCode);
+
+  @override
+  Future<List<HsnSummaryRow>> getHsnSummary(DateTime from, DateTime to, {String? currencyCode}) =>
+      ReportService.getHsnSummary(from, to, currencyCode: currencyCode);
+
+  @override
+  Future<List<DocumentIssuedRow>> getDocumentsIssued(DateTime from, DateTime to) =>
+      ReportService.getDocumentsIssued(from, to);
   @override
   Future<List<TopCustomer>> getTopCustomers(DateTime from, DateTime to, {int limit = 500, String? currencyCode}) =>
       ReportService.getTopCustomers(from, to, limit: limit, currencyCode: currencyCode);

@@ -10351,6 +10351,126 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Indian  (12,34,567.89)'**
   String get amountSeparatorIndianLabel;
+
+  /// No description provided for @gstPrefixTooLongWarning.
+  ///
+  /// In en, this message translates to:
+  /// **'GST: prefix + 8-digit number must be 16 characters or less (max 7 prefix characters)'**
+  String get gstPrefixTooLongWarning;
+
+  /// No description provided for @gstHsnFormatWarning.
+  ///
+  /// In en, this message translates to:
+  /// **'GST: HSN/SAC should be 4, 6 or 8 digits'**
+  String get gstHsnFormatWarning;
+
+  /// No description provided for @gstInvalidB2bGstinWarning.
+  ///
+  /// In en, this message translates to:
+  /// **'Invalid GSTIN format on B2B invoices for: {customers}. GSTR-1 will reject these — fix the customer GSTIN and re-save those invoices.'**
+  String gstInvalidB2bGstinWarning(String customers);
+
+  /// No description provided for @gstMissingB2bHsnWarning.
+  ///
+  /// In en, this message translates to:
+  /// **'Some B2B invoice items have no HSN/SAC (shown as —). HSN is mandatory for B2B in GSTR-1 — add it to those invoices and their products before filing.'**
+  String get gstMissingB2bHsnWarning;
+
+  /// No description provided for @reportsCgstSgstLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'CGST + SGST'**
+  String get reportsCgstSgstLabel;
+
+  /// No description provided for @reportsIgstLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'IGST'**
+  String get reportsIgstLabel;
+
+  /// No description provided for @reportsHsnSummaryTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'HSN summary (GSTR-1 Table 12)'**
+  String get reportsHsnSummaryTitle;
+
+  /// No description provided for @reportsDocumentsIssuedTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Documents issued (GSTR-1 Table 13)'**
+  String get reportsDocumentsIssuedTitle;
+
+  /// No description provided for @reportsNoDocumentsIssuedMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'No invoices, credit notes or debit notes in this period'**
+  String get reportsNoDocumentsIssuedMessage;
+
+  /// No description provided for @reportsGstSupplyTypeLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Type'**
+  String get reportsGstSupplyTypeLabel;
+
+  /// No description provided for @reportsGstUnitLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Unit'**
+  String get reportsGstUnitLabel;
+
+  /// No description provided for @reportsGstQtyLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Qty'**
+  String get reportsGstQtyLabel;
+
+  /// No description provided for @reportsGstDocNatureLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Nature of document'**
+  String get reportsGstDocNatureLabel;
+
+  /// No description provided for @reportsGstFromLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'From'**
+  String get reportsGstFromLabel;
+
+  /// No description provided for @reportsGstToLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'To'**
+  String get reportsGstToLabel;
+
+  /// No description provided for @reportsGstTotalNumberLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Total'**
+  String get reportsGstTotalNumberLabel;
+
+  /// No description provided for @reportsGstCancelledLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancelled'**
+  String get reportsGstCancelledLabel;
+
+  /// No description provided for @gstDocNatureOutward.
+  ///
+  /// In en, this message translates to:
+  /// **'Invoices for outward supply'**
+  String get gstDocNatureOutward;
+
+  /// No description provided for @gstDocNatureCreditNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Credit Note'**
+  String get gstDocNatureCreditNote;
+
+  /// No description provided for @gstDocNatureDebitNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Debit Note'**
+  String get gstDocNatureDebitNote;
 }
 
 class _AppLocalizationsDelegate

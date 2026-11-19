@@ -93,6 +93,8 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
   List<AgedReceivable> _aged = [];
   List<AgedReceivableSummaryRow> _agedSummary = [];
   List<TaxBucket> _taxBuckets = [];
+  List<HsnSummaryRow> _hsnRows = [];
+  List<DocumentIssuedRow> _docRows = [];
   List<TopCustomer> _topCustomers = [];
   List<TopProduct> _topProducts = [];
   List<CustomerStatementCustomer> _statementCustomers = [];
@@ -123,6 +125,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
   int _inventoryPageSize = 25;
 
   bool _showFooterBranding = true;
+  bool _showGstFields = false;
 
   // Formatting
   final _fmtInt = NumberFormat('#,##0');
@@ -258,6 +261,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
     final settingsRepo = ref.read(settingsRepositoryProvider);
     final showFooterBranding =
         await settingsRepo.getShowInvoiceFooterBranding();
+    final showGst = await settingsRepo.getShowGstFields();
     final results = await Future.wait([
       settingsRepo.getSetting(SettingKey.currency),
       settingsRepo.getDateFormat(),
@@ -279,6 +283,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
         _currencyName = currency.name;
         _datePattern = dateFormat.key;
         _showFooterBranding = showFooterBranding;
+        _showGstFields = showGst;
       });
     }
   }
@@ -361,11 +366,18 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
             _agedSummaryPage = 0;
           });
         case 2:
-          final buckets = await ref
-              .read(reportRepositoryProvider)
-              .getTaxByRate(from, to, currencyCode: _reportCurrencyCode);
+          final repo = ref.read(reportRepositoryProvider);
+          final r = await Future.wait([
+            repo.getTaxByRate(from, to, currencyCode: _reportCurrencyCode),
+            repo.getHsnSummary(from, to, currencyCode: _reportCurrencyCode),
+            repo.getDocumentsIssued(from, to),
+          ]);
           if (!mounted) return;
-          setState(() => _taxBuckets = buckets);
+          setState(() {
+            _taxBuckets = r[0] as List<TaxBucket>;
+            _hsnRows = r[1] as List<HsnSummaryRow>;
+            _docRows = r[2] as List<DocumentIssuedRow>;
+          });
         case 3:
           final r = await Future.wait([
             ref
@@ -1249,7 +1261,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
     );
   }
 
-  Widget _missingCostBanner() {
+  Widget _missingCostBanner([String? message]) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       decoration: BoxDecoration(
@@ -1265,7 +1277,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
           const SizedBox(width: 8),
           Expanded(
             child: Text(
-              AppLocalizations.of(context)!
+              message ?? AppLocalizations.of(context)!
                   .reportsMissingCostBannerMessage(_missingCostItemCount),
               style: const TextStyle(fontSize: 12, color: Color(0xFF92400E)),
             ),
@@ -2315,7 +2327,24 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
                             Icons.pie_chart_outline),
                       ),
                       const SizedBox(width: 12),
-                      const Spacer(flex: 2),
+                      if (_showGstFields) ...[
+                        Expanded(
+                          child: _kpiCard(
+                              l10n.reportsCgstSgstLabel,
+                              _money(_taxBuckets.fold(0.0, (s, b) => s + b.cgst + b.sgst)),
+                              const Color(0xFF059669),
+                              Icons.call_split),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: _kpiCard(
+                              l10n.reportsIgstLabel,
+                              _money(_taxBuckets.fold(0.0, (s, b) => s + b.igst)),
+                              const Color(0xFFD97706),
+                              Icons.local_shipping_outlined),
+                        ),
+                      ] else
+                        const Spacer(flex: 2),
                     ],
                   ),
                 ),
@@ -2336,7 +2365,8 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
                           children: [
                             _exportBtn(l10n.reportsExportCsvLabel, () async {
                               final csv =
-                                  ReportService.exportTaxCsv(_taxBuckets);
+                                  ReportService.exportTaxCsv(_taxBuckets,
+                                      showGst: _showGstFields);
                               await _saveCsv(csv, 'tax_report_$ts.csv');
                             }),
                             const SizedBox(width: 4),
@@ -2348,6 +2378,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
                                 _taxBuckets,
                                 currencySymbol: _sym,
                                 showFooterBranding: _showFooterBranding,
+                                showGst: _showGstFields,
                                 dateRangeLabel:
                                     '${_formatDate(from)} – ${_formatDate(to)}  •  $_currencyScopeLabel',
                               );
@@ -2380,6 +2411,10 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
                   ],
                 ),
               ),
+              if (_showGstFields) ...[
+                _hsnSummaryCard(ts),
+                _docsIssuedCard(ts),
+              ],
             ],
           ),
         ),
@@ -2512,6 +2547,149 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
                       fontSize: 13,
                       fontWeight: FontWeight.bold,
                       color: Theme.of(context).colorScheme.onSurfaceVariant))),
+        ],
+      ),
+    );
+  }
+
+  // GST HSN summary (GSTR-1 Table 12) and documents issued (Table 13) —
+  // shown on the Tax tab only when GST fields are on.
+  Widget _gstTableRow(List<(String, int, bool)> cells,
+      {bool header = false, bool bold = false}) {
+    final cs = Theme.of(context).colorScheme;
+    return Container(
+      decoration: header
+          ? null
+          : BoxDecoration(
+              border: Border(top: BorderSide(color: cs.outlineVariant))),
+      color: header ? cs.surfaceContainerHighest : null,
+      padding: EdgeInsets.symmetric(horizontal: 20, vertical: header ? 8 : 10),
+      child: Row(
+        children: [
+          for (final (text, flex, right) in cells)
+            Expanded(
+              flex: flex,
+              child: header
+                  ? _TableHead(text, right: right)
+                  : Text(text,
+                      textAlign: right ? TextAlign.right : TextAlign.left,
+                      style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: bold ? FontWeight.w600 : FontWeight.normal,
+                          color: cs.onSurface)),
+            ),
+        ],
+      ),
+    );
+  }
+
+  Widget _hsnSummaryCard(int ts) {
+    final l10n = AppLocalizations.of(context)!;
+    String rate(double r) => '${r.toStringAsFixed(r % 1 == 0 ? 0 : 2)}%';
+    String qty(double q) => q.toStringAsFixed(q % 1 == 0 ? 0 : 2);
+    return _sectionCard(
+      padding: EdgeInsets.zero,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(20, 20, 20, 12),
+            child: _cardTitle(
+              l10n.reportsHsnSummaryTitle,
+              trailing: _exportBtn(l10n.reportsExportCsvLabel, () async {
+                await _saveCsv(ReportService.exportHsnSummaryCsv(_hsnRows),
+                    'hsn_summary_$ts.csv');
+              }),
+            ),
+          ),
+          if (_hsnRows.isEmpty)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 20),
+              child: _emptyState(l10n.reportsNoTaxableItemsMessage),
+            )
+          else ...[
+            if (_hsnRows.any((r) => r.b2b && r.hsn.isEmpty))
+              Padding(
+                padding: const EdgeInsets.fromLTRB(20, 0, 20, 12),
+                child: _missingCostBanner(l10n.gstMissingB2bHsnWarning),
+              ),
+            if (_hsnRows.any((r) => r.invalidGstinCustomers.isNotEmpty))
+              Padding(
+                padding: const EdgeInsets.fromLTRB(20, 0, 20, 12),
+                child: _missingCostBanner(l10n.gstInvalidB2bGstinWarning(
+                    {for (final r in _hsnRows) ...r.invalidGstinCustomers}
+                        .join(', '))),
+              ),
+            _gstTableRow([
+              (l10n.reportsGstSupplyTypeLabel, 2, false),
+              (l10n.productMgmtHsnSacLabel, 3, false),
+              (l10n.reportsGstUnitLabel, 2, false),
+              (l10n.fieldTaxRateLabel, 2, true),
+              (l10n.reportsGstQtyLabel, 2, true),
+              (l10n.reportsTaxableAmountLabel, 3, true),
+              (l10n.reportsTaxCollectedLabel, 3, true),
+            ], header: true),
+            for (final r in _hsnRows)
+              _gstTableRow([
+                (r.b2b ? 'B2B' : 'B2C', 2, false),
+                (r.hsn.isEmpty ? '—' : r.hsn, 3, false),
+                (r.unit.isEmpty ? '—' : r.unit, 2, false),
+                (rate(r.rate), 2, true),
+                (qty(r.quantity), 2, true),
+                (_money(r.taxable), 3, true),
+                (_money(r.igst + r.cgst + r.sgst), 3, true),
+              ]),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _docsIssuedCard(int ts) {
+    final l10n = AppLocalizations.of(context)!;
+    String nature(String type) => switch (type) {
+          'Credit Note' => l10n.gstDocNatureCreditNote,
+          'Debit Note' => l10n.gstDocNatureDebitNote,
+          _ => l10n.gstDocNatureOutward,
+        };
+    return _sectionCard(
+      padding: EdgeInsets.zero,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(20, 20, 20, 12),
+            child: _cardTitle(
+              l10n.reportsDocumentsIssuedTitle,
+              trailing: _exportBtn(l10n.reportsExportCsvLabel, () async {
+                await _saveCsv(
+                    ReportService.exportDocumentsIssuedCsv(_docRows),
+                    'documents_issued_$ts.csv');
+              }),
+            ),
+          ),
+          if (_docRows.isEmpty)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 20),
+              child: _emptyState(l10n.reportsNoDocumentsIssuedMessage),
+            )
+          else ...[
+            _gstTableRow([
+              (l10n.reportsGstDocNatureLabel, 4, false),
+              (l10n.reportsGstFromLabel, 3, false),
+              (l10n.reportsGstToLabel, 3, false),
+              (l10n.reportsGstTotalNumberLabel, 2, true),
+              (l10n.reportsGstCancelledLabel, 2, true),
+            ], header: true),
+            for (final r in _docRows)
+              _gstTableRow([
+                (nature(r.type), 4, false),
+                (r.from, 3, false),
+                (r.to, 3, false),
+                ('${r.total}', 2, true),
+                ('${r.cancelled}', 2, true),
+              ]),
+          ],
         ],
       ),
     );

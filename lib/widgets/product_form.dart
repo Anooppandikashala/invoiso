@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 import 'package:uuid/uuid.dart';
 import 'package:invoiso/common/common.dart';
 import 'package:invoiso/common/constants.dart';
+import 'package:invoiso/common/gst_utils.dart';
 import 'package:invoiso/l10n/app_localizations.dart';
 import 'package:invoiso/models/product.dart';
 import 'package:invoiso/models/user.dart';
@@ -82,6 +83,7 @@ class ProductFormState extends ConsumerState<ProductForm> {
   String _newItemType = 'product';
   bool _unlimitedStock = false;
   bool _priceIncludesTax = false;
+  bool _showGstFields = false;
   ProductColumnsConfig _columnsConfig = const ProductColumnsConfig();
   // Purchase price restricted to admins and this user isn't one.
   bool _hidePurchasePrice = false;
@@ -119,10 +121,12 @@ class ProductFormState extends ConsumerState<ProductForm> {
     final bt = await repo.getBusinessType();
     final currency = await repo.getCurrency();
     final fmt = await repo.getDateFormat();
+    final showGst = await repo.getShowGstFields();
     if (!mounted) return;
     final isAdmin = widget.user?.isAdmin() ?? false;
     final hide = config.purchasePriceAdminOnly && !isAdmin;
     setState(() {
+      _showGstFields = showGst;
       _hidePurchasePrice = hide;
       _stockLocked = config.stockEditAdminOnly && !isAdmin;
       _columnsConfig = hide ? config.copyWith(purchasePrice: false) : config;
@@ -349,8 +353,15 @@ class ProductFormState extends ConsumerState<ProductForm> {
           ],
           if (_columnsConfig.hsncode) ...[
             const SizedBox(height: 16),
-            _buildFormField(_hsnCodeController, l10n.productMgmtHsnSacLabel, Icons.qr_code,
-                maxLength: 100, required: false),
+            ValueListenableBuilder<TextEditingValue>(
+              valueListenable: _hsnCodeController,
+              builder: (context, value, _) => _buildFormField(
+                  _hsnCodeController, l10n.productMgmtHsnSacLabel, Icons.qr_code,
+                  maxLength: 100, required: false,
+                  errorText: _showGstFields && !GstUtils.isValidHsn(value.text)
+                      ? l10n.gstHsnFormatWarning
+                      : null),
+            ),
           ],
           const SizedBox(height: 20),
           _sectionLabel(l10n.productMgmtSectionPricing),
@@ -555,6 +566,7 @@ class ProductFormState extends ConsumerState<ProductForm> {
     bool isTaxRate = false,
     String? prefixText,
     String? helperText,
+    String? errorText,
     bool enabled = true,
     VoidCallback? onSubmitted,
     Widget? suffixIcon,
@@ -590,6 +602,8 @@ class ProductFormState extends ConsumerState<ProductForm> {
         counterText: '',
         helperText: helperText,
         helperMaxLines: 3,
+        errorText: errorText,
+        errorMaxLines: 3,
       ),
       validator: (value) {
         if (!required) return null;

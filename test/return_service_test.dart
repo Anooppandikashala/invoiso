@@ -1029,6 +1029,107 @@ void main() {
       expect(buckets.first.taxCollected, closeTo(90, 0.01));
     });
 
+    test('tax by rate splits IGST from CGST/SGST', () async {
+      await seedSale(taxRate: 18); // intrastate, tax 180
+      final p = (await InvoiceService.getInvoiceById('i1'))!.items.first.product;
+      await InvoiceService.insertInvoice(_invoice(
+          id: 'i2',
+          number: '00000002',
+          customer: _cust(),
+          items: [_item(p, 5)], // tax 90
+          date: DateTime(2026, 3, 6))
+        ..isInterState = true);
+
+      final b = (await ReportService.getTaxByRate(from, to)).single;
+      expect(b.taxCollected, closeTo(270, 0.01));
+      expect(b.igst, closeTo(90, 0.01));
+      expect(b.cgst, closeTo(90, 0.01));
+      expect(b.sgst, closeTo(90, 0.01));
+    });
+
+    test('HSN summary splits B2B/B2C and nets credit notes', () async {
+      final p = _prod(taxRate: 18)..hsncode = '8471';
+      await ProductService.insertProduct(p);
+      await InvoiceService.insertInvoice(_invoice(
+          id: 'i1',
+          number: '00000001',
+          customer: _cust(), // no GSTIN → B2C
+          items: [_item(p, 10)],
+          date: DateTime(2026, 3, 5)));
+      await InvoiceService.insertInvoice(_invoice(
+          id: 'i2',
+          number: '00000002',
+          customer: _cust(id: 'c2')..gstin = '33ABCDE1234F1Z5',
+          items: [_item(p, 4)],
+          date: DateTime(2026, 3, 6))
+        ..isInterState = true);
+      final original = (await InvoiceService.getInvoiceById('i1'))!;
+      await ReturnService.createCreditNote(
+        creditNote: _creditNote(
+          id: 'cn1',
+          original: original,
+          items: [_item(p, 3)],
+          settlement: CreditSettlement.customerCredit,
+        ),
+        originalInvoice: original,
+      );
+
+      final rows = await ReportService.getHsnSummary(from, to);
+      expect(rows, hasLength(2));
+      final b2b = rows.first, b2c = rows.last;
+      expect(b2b.b2b, isTrue);
+      expect(b2b.hsn, '8471');
+      expect(b2b.quantity, 4);
+      expect(b2b.taxable, closeTo(400, 0.01));
+      expect(b2b.igst, closeTo(72, 0.01));
+      expect(b2b.cgst, 0);
+      expect(b2c.b2b, isFalse);
+      expect(b2c.quantity, 7); // 10 sold − 3 returned
+      expect(b2c.taxable, closeTo(700, 0.01));
+      expect(b2c.cgst, closeTo(63, 0.01));
+      expect(b2c.igst, 0);
+      expect(b2b.invalidGstinCustomers, isEmpty);
+    });
+
+    test('HSN summary flags B2B customers with a malformed GSTIN', () async {
+      final p = _prod(taxRate: 18)..hsncode = '8471';
+      await ProductService.insertProduct(p);
+      await InvoiceService.insertInvoice(_invoice(
+          id: 'i1',
+          number: '00000001',
+          customer: _cust(id: 'c2', name: 'Bad Co')..gstin = '123',
+          items: [_item(p, 1)],
+          date: DateTime(2026, 3, 5)));
+
+      final rows = await ReportService.getHsnSummary(from, to);
+      expect(rows.single.b2b, isTrue);
+      expect(rows.single.invalidGstinCustomers, {'Bad Co'});
+    });
+
+    test('documents issued counts deleted invoices as cancelled', () async {
+      final p = _prod();
+      await ProductService.insertProduct(p);
+      for (var n = 1; n <= 3; n++) {
+        await InvoiceService.insertInvoice(_invoice(
+            id: 'i$n',
+            number: '0000000$n',
+            customer: _cust(),
+            items: [_item(p, 1)],
+            date: DateTime(2026, 3, n)));
+      }
+      await db.update('invoices', {'deleted_at': '2026-03-10'},
+          where: 'id = ?', whereArgs: ['i3']);
+
+      final docs = await ReportService.getDocumentsIssued(from, to);
+      expect(docs, hasLength(1));
+      expect(docs.single.type, 'Invoice');
+      expect(docs.single.from, 'INV-00000001');
+      expect(docs.single.to, 'INV-00000003');
+      expect(docs.single.total, 3);
+      expect(docs.single.cancelled, 1);
+      expect(docs.single.netIssued, 2);
+    });
+
     test('top products subtracts returned units', () async {
       await seedSale();
       final original = (await InvoiceService.getInvoiceById('i1'))!;

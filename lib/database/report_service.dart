@@ -4,6 +4,7 @@ import 'package:invoiso/database/database_helper.dart';
 import 'package:invoiso/services/backend_services.dart';
 import 'package:invoiso/services/pdf/pdf_report_header.dart';
 import 'package:invoiso/common/common.dart';
+import 'package:invoiso/common/gst_utils.dart';
 import 'package:invoiso/domain/customer_identity.dart';
 import 'package:invoiso/domain/invoice_calculator.dart';
 import 'package:invoiso/domain/invoice_totals_calculator.dart';
@@ -751,6 +752,7 @@ class ReportService {
 
     final taxByRate = <double, double>{};
     final taxableByRate = <double, double>{};
+    final igstByRate = <double, double>{};
 
     // Returns net off tax: a credit note subtracts, a debit note adds.
     const typeSign = "(CASE WHEN i.type = 'Credit Note' THEN -1 ELSE 1 END)";
@@ -758,7 +760,7 @@ class ReportService {
 
     // Per-item mode: tax computed per line item's product_tax_rate
     final perItemRows = await db.rawQuery(
-      "SELECT ii.product_tax_rate AS rate, "
+      "SELECT ii.product_tax_rate AS rate, COALESCE(i.is_interstate, 0) AS inter, "
       "SUM($typeSign * CASE WHEN ii.product_price_includes_tax = 1 "
       "THEN $_invoiceItemNetSql * ii.product_tax_rate / (100 + ii.product_tax_rate) "
       "ELSE $_invoiceItemNetSql * ii.product_tax_rate / 100 "
@@ -775,20 +777,23 @@ class ReportService {
       "$ccFilter"
       "AND i.date >= ? AND i.date <= ? "
       "AND ii.product_tax_rate > 0 "
-      "GROUP BY ii.product_tax_rate",
+      "GROUP BY ii.product_tax_rate, inter",
       dateArgs,
     );
     for (final r in perItemRows) {
       final rate = (r['rate'] as num).toDouble();
-      taxByRate[rate] =
-          (taxByRate[rate] ?? 0) + ((r['tax_amount'] as num?)?.toDouble() ?? 0);
+      final tax = (r['tax_amount'] as num?)?.toDouble() ?? 0;
+      taxByRate[rate] = (taxByRate[rate] ?? 0) + tax;
+      if ((r['inter'] as num?) == 1) {
+        igstByRate[rate] = (igstByRate[rate] ?? 0) + tax;
+      }
       taxableByRate[rate] = (taxableByRate[rate] ?? 0) +
           ((r['taxable_amount'] as num?)?.toDouble() ?? 0);
     }
 
     // Global mode: single tax rate applied to the invoice subtotal
     final globalInvRows = await db.rawQuery(
-      "SELECT i.id, i.type, i.tax_rate, i.additional_costs "
+      "SELECT i.id, i.type, i.tax_rate, i.additional_costs, i.is_interstate "
       "FROM invoices i "
       "WHERE i.deleted_at IS NULL AND $salesDocTypes "
       "AND i.is_draft = 0 "
@@ -838,6 +843,9 @@ class ReportService {
           taxByRate[ratePercent] = (taxByRate[ratePercent] ?? 0) + sign * tax;
           taxableByRate[ratePercent] =
               (taxableByRate[ratePercent] ?? 0) + sign * totals.subtotal;
+          if ((inv['is_interstate'] as num?) == 1) {
+            igstByRate[ratePercent] = (igstByRate[ratePercent] ?? 0) + sign * tax;
+          }
         }
       }
     }
@@ -847,9 +855,196 @@ class ReportService {
               rate: e.key,
               taxCollected: e.value,
               taxableAmount: taxableByRate[e.key] ?? 0,
+              igst: igstByRate[e.key] ?? 0,
             ))
         .toList()
       ..sort((a, b) => a.rate.compareTo(b.rate)));
+  }
+
+  // ── GST: HSN summary (GSTR-1 Table 12) ────────────────────────────────────
+
+  /// Every sales line (0% included) grouped by B2B/B2C × HSN × unit × rate.
+  /// Credit notes subtract, debit notes add — same scope as [getTaxByRate].
+  static Future<List<HsnSummaryRow>> getHsnSummary(DateTime from, DateTime to,
+      {String? currencyCode}) async {
+    final db = await _db.database;
+    final rows = await db.rawQuery(
+      "SELECT ii.product_hsn_code, ii.unit AS line_unit, ii.product_unit, "
+      "ii.quantity, ii.unit_price, ii.product_price, ii.discount, "
+      "ii.discount_per_unit, ii.discount_is_percent, ii.extra_cost, "
+      "ii.product_tax_rate, ii.product_price_includes_tax, "
+      "i.type, i.tax_mode, i.tax_rate, i.is_interstate, i.customer_gstin, "
+      "i.customer_name "
+      "FROM invoice_items ii "
+      "JOIN invoices i ON i.id = ii.invoice_id "
+      "WHERE i.deleted_at IS NULL "
+      "AND i.type IN ('Invoice', 'Credit Note', 'Debit Note') "
+      "AND i.is_draft = 0 "
+      "AND (i.status IS NULL OR i.status != 'declined') "
+      "${currencyCode != null ? 'AND (i.currency_code = ? OR i.currency_code IS NULL) ' : ''}"
+      "AND i.date >= ? AND i.date <= ?",
+      [
+        if (currencyCode != null) currencyCode,
+        AppDate.dateKeyStart(from),
+        AppDate.dateKeyEnd(to),
+      ],
+    );
+    return hsnSummaryFromLines(rows);
+  }
+
+  /// Groups raw sales lines (columns of the [getHsnSummary] query) into
+  /// HSN rows. Shared with the cloud edition, whose RPC returns the same columns.
+  static List<HsnSummaryRow> hsnSummaryFromLines(
+      List<Map<String, Object?>> rows) {
+    // key → [qty, taxable, igst, cgst+sgst]
+    final sums = <String, List<double>>{};
+    final heads = <String, (bool, String, String, double)>{};
+    final badGstin = <String, Set<String>>{};
+    for (final r in rows) {
+      final perItem = r['tax_mode'] == 'per_item';
+      final globalPct = ((r['tax_rate'] as num?)?.toDouble() ?? 0) * 100;
+      final line = InvoiceTotalsCalculator.lineFromDbRow(r,
+          taxMode: perItem ? TaxMode.perItem : TaxMode.global,
+          globalTaxRatePercent: globalPct);
+      final rate = perItem ? line.taxRatePercent : globalPct;
+      final sign = r['type'] == 'Credit Note' ? -1.0 : 1.0;
+      final b2b = ((r['customer_gstin'] as String?) ?? '').trim().isNotEmpty;
+      final hsn = ((r['product_hsn_code'] as String?) ?? '').trim();
+      final lineUnit = ((r['line_unit'] as String?) ?? '').trim();
+      final unit = lineUnit.isNotEmpty
+          ? lineUnit
+          : ((r['product_unit'] as String?) ?? '').trim();
+      final key = '$b2b|$hsn|$unit|$rate';
+      heads[key] = (b2b, hsn, unit, rate);
+      if (b2b && GstUtils.stateCodeFromGstin(r['customer_gstin'] as String) == null) {
+        badGstin.putIfAbsent(key, () => {}).add((r['customer_name'] as String?) ?? '');
+      }
+      final s = sums.putIfAbsent(key, () => [0, 0, 0, 0]);
+      final tax = line.lineTotal * rate / 100;
+      s[0] += sign * ((r['quantity'] as num?)?.toDouble() ?? 0);
+      s[1] += sign * line.lineTotal;
+      s[(r['is_interstate'] as num?) == 1 ? 2 : 3] += sign * tax;
+    }
+
+    return [
+      for (final e in sums.entries)
+        HsnSummaryRow(
+          b2b: heads[e.key]!.$1,
+          hsn: heads[e.key]!.$2,
+          unit: heads[e.key]!.$3,
+          rate: heads[e.key]!.$4,
+          quantity: e.value[0],
+          taxable: e.value[1],
+          igst: e.value[2],
+          cgst: e.value[3] / 2,
+          invalidGstinCustomers: badGstin[e.key] ?? const {},
+        ),
+    ]..sort((a, b) => a.b2b != b.b2b
+        ? (a.b2b ? -1 : 1)
+        : a.hsn != b.hsn
+            ? a.hsn.compareTo(b.hsn)
+            : a.rate.compareTo(b.rate));
+  }
+
+  static String exportHsnSummaryCsv(List<HsnSummaryRow> list) {
+    return buildQuotedCsv([
+      ['Supply Type', 'HSN', 'Unit', 'Total Quantity', 'Total Value', 'Rate (%)',
+        'Taxable Value', 'Integrated Tax', 'Central Tax', 'State/UT Tax'],
+      for (final r in list)
+        [
+          r.b2b ? 'B2B' : 'B2C',
+          r.hsn,
+          r.unit,
+          r.quantity.toStringAsFixed(2),
+          r.totalValue.toStringAsFixed(2),
+          r.rate.toStringAsFixed(r.rate % 1 == 0 ? 0 : 2),
+          r.taxable.toStringAsFixed(2),
+          r.igst.toStringAsFixed(2),
+          r.cgst.toStringAsFixed(2),
+          r.sgst.toStringAsFixed(2),
+        ],
+    ]);
+  }
+
+  // ── GST: documents issued (GSTR-1 Table 13) ───────────────────────────────
+
+  /// First/last number, count and deleted (= cancelled) count per sales
+  /// document type dated in the period. Drafts have no number and are skipped.
+  static Future<List<DocumentIssuedRow>> getDocumentsIssued(
+      DateTime from, DateTime to) async {
+    final db = await _db.database;
+    final rows = await db.rawQuery(
+      "SELECT type, MIN(CAST(invoice_number AS INTEGER)) AS lo, "
+      "MAX(CAST(invoice_number AS INTEGER)) AS hi, COUNT(*) AS total, "
+      "SUM(CASE WHEN deleted_at IS NOT NULL THEN 1 ELSE 0 END) AS cancelled "
+      "FROM invoices "
+      "WHERE type IN ('Invoice', 'Credit Note', 'Debit Note') "
+      "AND is_draft = 0 AND invoice_number IS NOT NULL "
+      "AND date >= ? AND date <= ? "
+      "GROUP BY type",
+      [AppDate.dateKeyStart(from), AppDate.dateKeyEnd(to)],
+    );
+    return documentsIssuedFromRows(rows);
+  }
+
+  /// Formats per-type number ranges (type, lo, hi, total, cancelled) with the
+  /// PDF prefix rules. Shared with the cloud edition's RPC.
+  static Future<List<DocumentIssuedRow>> documentsIssuedFromRows(
+      List<Map<String, Object?>> rows) async {
+    final settings = BackendServices.settings;
+    final leadingZeros =
+        (await settings.getSetting(SettingKey.invoiceLeadingZeros)) != 'false';
+    // Same prefix rules as the PDF (PdfService).
+    String dashed(String raw) {
+      final p = raw.replaceFirst(RegExp(r'-+$'), '');
+      return p.isNotEmpty ? '$p-' : '';
+    }
+    final invPrefix =
+        (await settings.getSetting(SettingKey.invoicePrefix)) ?? 'INV';
+    final prefixes = {
+      'Invoice': invPrefix.isNotEmpty ? '$invPrefix-' : '',
+      'Credit Note': dashed(
+          (await settings.getSetting(SettingKey.creditNotePrefix)) ?? 'CN'),
+      'Debit Note': dashed(
+          (await settings.getSetting(SettingKey.debitNotePrefix)) ?? 'DN'),
+    };
+    String number(String type, Object? n) {
+      final s = '${(n as num?)?.toInt() ?? 0}';
+      return '${prefixes[type]}${leadingZeros ? s.padLeft(8, '0') : s}';
+    }
+
+    const order = ['Invoice', 'Debit Note', 'Credit Note'];
+    return [
+      for (final r in rows)
+        DocumentIssuedRow(
+          type: r['type'] as String,
+          from: number(r['type'] as String, r['lo']),
+          to: number(r['type'] as String, r['hi']),
+          total: (r['total'] as num).toInt(),
+          cancelled: (r['cancelled'] as num?)?.toInt() ?? 0,
+        ),
+    ]..sort((a, b) => order.indexOf(a.type).compareTo(order.indexOf(b.type)));
+  }
+
+  static String exportDocumentsIssuedCsv(List<DocumentIssuedRow> list) {
+    const nature = {
+      'Invoice': 'Invoices for outward supply',
+      'Debit Note': 'Debit Note',
+      'Credit Note': 'Credit Note',
+    };
+    return buildQuotedCsv([
+      ['Nature of Document', 'Sr. No. From', 'Sr. No. To', 'Total Number',
+        'Cancelled', 'Net Issued'],
+      for (final r in list)
+        [
+          nature[r.type] ?? r.type,
+          r.from,
+          r.to,
+          '${r.total}',
+          '${r.cancelled}',
+          '${r.netIssued}',
+        ],
+    ]);
   }
 
   // ── 6. Top customers ──────────────────────────────────────────────────────
@@ -1660,22 +1855,34 @@ class ReportService {
     ]);
   }
 
-  static String exportTaxCsv(List<TaxBucket> list) {
+  static String exportTaxCsv(List<TaxBucket> list, {bool showGst = false}) {
     final tTaxable = list.fold<double>(0, (a, b) => a + b.taxableAmount);
     final tTax = list.fold<double>(0, (a, b) => a + b.taxCollected);
     final tGross = list.fold<double>(0, (a, b) => a + b.gross);
+    final tCgst = list.fold<double>(0, (a, b) => a + b.cgst);
+    final tIgst = list.fold<double>(0, (a, b) => a + b.igst);
     return buildQuotedCsv([
-      ['Tax Rate (%)', 'Taxable Amount', 'Tax', 'Gross'],
+      ['Tax Rate (%)', 'Taxable Amount', if (showGst) ...['CGST', 'SGST', 'IGST'], 'Tax', 'Gross'],
       for (final b in list)
         [
           b.rate.toStringAsFixed(b.rate % 1 == 0 ? 0 : 1),
           b.taxableAmount.toStringAsFixed(2),
+          if (showGst) ...[
+            b.cgst.toStringAsFixed(2),
+            b.sgst.toStringAsFixed(2),
+            b.igst.toStringAsFixed(2),
+          ],
           b.taxCollected.toStringAsFixed(2),
           b.gross.toStringAsFixed(2),
         ],
       [
         'Total',
         tTaxable.toStringAsFixed(2),
+        if (showGst) ...[
+          tCgst.toStringAsFixed(2),
+          tCgst.toStringAsFixed(2),
+          tIgst.toStringAsFixed(2),
+        ],
         tTax.toStringAsFixed(2),
         tGross.toStringAsFixed(2),
       ],
@@ -2206,6 +2413,7 @@ class ReportService {
     required String currencySymbol,
     required String dateRangeLabel,
     bool showFooterBranding = true,
+    bool showGst = false,
   }) async {
     final theme = await PdfFontService.loadTheme();
     final doc = pw.Document(theme: theme);
@@ -2217,6 +2425,8 @@ class ReportService {
     final tTaxable = buckets.fold<double>(0, (a, b) => a + b.taxableAmount);
     final tTax = buckets.fold<double>(0, (a, b) => a + b.taxCollected);
     final tGross = buckets.fold<double>(0, (a, b) => a + b.gross);
+    final tCgst = buckets.fold<double>(0, (a, b) => a + b.cgst);
+    final tIgst = buckets.fold<double>(0, (a, b) => a + b.igst);
 
     doc.addPage(
       pw.MultiPage(
@@ -2254,18 +2464,20 @@ class ReportService {
         ),
         build: (context) => [
           pw.TableHelper.fromTextArray(
-            headers: ['Tax Rate', 'Taxable Amount', 'Tax', 'Gross'],
+            headers: ['Tax Rate', 'Taxable Amount', if (showGst) ...['CGST', 'SGST', 'IGST'], 'Tax', 'Gross'],
             data: [
               for (final b in buckets)
                 [
                   '${b.rate.toStringAsFixed(b.rate % 1 == 0 ? 0 : 1)}%',
                   money(b.taxableAmount),
+                  if (showGst) ...[money(b.cgst), money(b.sgst), money(b.igst)],
                   money(b.taxCollected),
                   money(b.gross),
                 ],
               [
                 'Total',
                 money(tTaxable),
+                if (showGst) ...[money(tCgst), money(tCgst), money(tIgst)],
                 money(tTax),
                 money(tGross),
               ],
@@ -2279,9 +2491,8 @@ class ReportService {
                 const pw.BoxDecoration(color: PdfReportHeader.accentColor),
             cellAlignments: {
               0: pw.Alignment.centerLeft,
-              1: pw.Alignment.centerRight,
-              2: pw.Alignment.centerRight,
-              3: pw.Alignment.centerRight,
+              for (var c = 1; c < (showGst ? 7 : 4); c++)
+                c: pw.Alignment.centerRight,
             },
             cellHeight: 22,
             oddRowDecoration:
