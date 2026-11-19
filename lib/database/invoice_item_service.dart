@@ -22,6 +22,8 @@ class InvoiceItemService {
       'product_tax_rate': item.product.tax_rate,
       'product_price_includes_tax': item.product.priceIncludesTax ? 1 : 0,
       'product_hsn_code': item.product.hsncode,
+      'product_uqc': item.product.uqc,
+      'product_gst_category': item.product.gstCategory,
       'quantity': item.quantity,
       'discount': item.discount,
       'unit_price': item.unitPrice,

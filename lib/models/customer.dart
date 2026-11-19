@@ -16,6 +16,7 @@ class Customer {
   String dob; // ISO 'yyyy-MM-dd', '' = not set
   int? age; // manual age, only used when dob is empty
   String gender; // '' | 'male' | 'female' | 'other'
+  String stateCode; // India GST: 2-digit state code, '' = not set
   List<CustomFieldValue> customFields;
 
   Customer({
@@ -34,6 +35,7 @@ class Customer {
     this.age,
     this.gender = '',
     this.customFields = const [],
+    this.stateCode = '',
   });
 
   /// Age at [on]: computed from [dob] when set, else the manually entered [age].
@@ -67,6 +69,7 @@ class Customer {
       gender: map['gender'] ?? '',
       customFields:
           CustomFieldValue.listFromJson(map['custom_fields'] as String?),
+      stateCode: map['state_code'] as String? ?? '',
     );
   }
 
@@ -88,6 +91,7 @@ class Customer {
       'age': age,
       'gender': gender,
       'custom_fields': CustomFieldValue.listToJson(customFields),
+      'state_code': stateCode,
     };
   }
 }

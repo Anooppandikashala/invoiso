@@ -158,6 +158,46 @@ void main() {
     await db.close();
   });
 
+  test('v61 adds GST columns and backfills customer state from GSTIN',
+      () async {
+    final db = await openDatabase(
+      inMemoryDatabasePath,
+      version: currentVersion,
+      onCreate: (db, v) => DatabaseHelper().createDbForTest(db, v),
+    );
+    // Back to the v60 shape.
+    for (final (table, col) in const [
+      ('customers', 'state_code'),
+      ('invoices', 'place_of_supply'),
+      ('invoices', 'reverse_charge'),
+      ('products', 'uqc'),
+      ('products', 'gst_category'),
+      ('invoice_items', 'product_uqc'),
+      ('invoice_items', 'product_gst_category'),
+    ]) {
+      await db.execute('ALTER TABLE $table DROP COLUMN $col');
+    }
+    await db.insert('customers', {'id': 'c1', 'gstin': '33ABCDE1234F1Z5'});
+    await db.insert('customers', {'id': 'c2', 'gstin': '123'});
+    await db.insert('customers', {'id': 'c3', 'gstin': ''});
+
+    await DatabaseHelper().upgradeDbForTest(db, 60, 61);
+
+    Future<Set<Object?>> cols(String t) async =>
+        (await db.rawQuery('PRAGMA table_info($t)')).map((r) => r['name']).toSet();
+    expect(await cols('customers'), contains('state_code'));
+    expect(await cols('invoices'), containsAll(['place_of_supply', 'reverse_charge']));
+    expect(await cols('products'), containsAll(['uqc', 'gst_category']));
+    expect(await cols('invoice_items'),
+        containsAll(['product_uqc', 'product_gst_category']));
+    final states = {
+      for (final r in await db.query('customers')) r['id']: r['state_code']
+    };
+    expect(states, {'c1': '33', 'c2': '', 'c3': ''});
+
+    await db.close();
+  });
+
   test('re-running upgrade at the same version does not throw', () async {
     final db = await openDatabase(
       inMemoryDatabasePath,

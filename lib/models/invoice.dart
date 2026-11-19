@@ -24,6 +24,8 @@ class Invoice {
   String currencySymbol;
   TaxMode taxMode;
   bool isInterState; // India: interstate supply → show IGST instead of CGST/SGST
+  String? placeOfSupply; // India GST: 2-digit state code; null = not recorded (pre-v61)
+  bool reverseCharge; // India GST: tax payable by the recipient (Rule 46(p))
   List<InvoicePayment> payments;
   String? upiId; // selected UPI account for this invoice
   String? paymentQrId; // selected uploaded payment QR (PaymentQrEntry.id); null = company default
@@ -76,6 +78,8 @@ class Invoice {
     this.currencySymbol = '₹',
     this.taxMode = TaxMode.global,
     this.isInterState = false,
+    this.placeOfSupply,
+    this.reverseCharge = false,
     this.payments = const [],
     this.upiId,
     this.paymentQrId,

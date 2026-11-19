@@ -3,6 +3,7 @@ import 'package:path/path.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:sqflite/sqflite.dart';
 
+import 'package:invoiso/common/gst_utils.dart';
 import 'package:invoiso/utils/app_logger.dart';
 import 'package:invoiso/utils/password_utils.dart';
 
@@ -19,7 +20,7 @@ class DatabaseHelper {
   static String? get path => _path;
   static Database? _database;
   static String _dbFileName = 'invoice_manager.db';
-  final dbVersion = 60;
+  final dbVersion = 61;
 
   /// Startup only, before anything has opened a connection yet — just points
   /// at the right file for the first `_initDB()` call. No close/reopen, so
@@ -84,7 +85,8 @@ class DatabaseHelper {
         dob TEXT DEFAULT '',
         age INTEGER,
         gender TEXT DEFAULT '',
-        custom_fields TEXT
+        custom_fields TEXT,
+        state_code TEXT DEFAULT ''
       )
     ''');
 
@@ -105,7 +107,9 @@ class DatabaseHelper {
         unlimited_stock INTEGER DEFAULT 0,
         price_includes_tax INTEGER DEFAULT 0,
         last_purchase_date TEXT,
-        low_stock_limit INTEGER
+        low_stock_limit INTEGER,
+        uqc TEXT DEFAULT '',
+        gst_category TEXT DEFAULT ''
       )
     ''');
 
@@ -174,7 +178,9 @@ class DatabaseHelper {
         credit_settlement TEXT,
         is_draft INTEGER DEFAULT 0,
         private_notes TEXT,
-        payment_qr_id TEXT
+        payment_qr_id TEXT,
+        place_of_supply TEXT,
+        reverse_charge INTEGER DEFAULT 0
       )
     ''');
 
@@ -203,7 +209,9 @@ class DatabaseHelper {
         product_price_includes_tax INTEGER DEFAULT 0,
         description TEXT,
         line_metadata TEXT,
-        restocked INTEGER DEFAULT 1
+        restocked INTEGER DEFAULT 1,
+        product_uqc TEXT DEFAULT '',
+        product_gst_category TEXT DEFAULT ''
       )
     ''');
 
@@ -1361,6 +1369,45 @@ class DatabaseHelper {
       await _runMigrationStep(db, 60, 'add_payment_qr_id_to_invoices', () async {
         await db.execute('ALTER TABLE invoices ADD COLUMN payment_qr_id TEXT');
       });
+    }
+
+    // GSTR-1 prerequisites: customer state, place of supply, reverse charge,
+    // UQC and nil/exempt/non-GST category (Gstr1ExportPlan.md Part B).
+    if (oldVersion < 61) {
+      for (final (step, sql) in const [
+        ('add_state_code_to_customers',
+            "ALTER TABLE customers ADD COLUMN state_code TEXT DEFAULT ''"),
+        ('add_place_of_supply_to_invoices',
+            'ALTER TABLE invoices ADD COLUMN place_of_supply TEXT'),
+        ('add_reverse_charge_to_invoices',
+            'ALTER TABLE invoices ADD COLUMN reverse_charge INTEGER DEFAULT 0'),
+        ('add_uqc_to_products',
+            "ALTER TABLE products ADD COLUMN uqc TEXT DEFAULT ''"),
+        ('add_gst_category_to_products',
+            "ALTER TABLE products ADD COLUMN gst_category TEXT DEFAULT ''"),
+        ('add_product_uqc_to_invoice_items',
+            "ALTER TABLE invoice_items ADD COLUMN product_uqc TEXT DEFAULT ''"),
+        ('add_product_gst_category_to_invoice_items',
+            "ALTER TABLE invoice_items ADD COLUMN product_gst_category TEXT DEFAULT ''"),
+      ]) {
+        await _runMigrationStep(db, 61, step, () => db.execute(sql));
+      }
+      // Registered customers: state = GSTIN digits 1–2. (Guard: minimal
+      // test fixtures have a customers table without gstin.)
+      final hasGstin = (await db.rawQuery('PRAGMA table_info(customers)'))
+          .any((c) => c['name'] == 'gstin');
+      if (hasGstin) {
+        await _runMigrationStep(db, 61, 'backfill_customer_state_code', () async {
+          final rows = await db.query('customers', columns: ['id', 'gstin']);
+          for (final r in rows) {
+            final code = GstUtils.stateCodeFromGstin(r['gstin'] as String?);
+            if (code != null) {
+              await db.update('customers', {'state_code': code},
+                  where: 'id = ?', whereArgs: [r['id']]);
+            }
+          }
+        });
+      }
     }
   }
 

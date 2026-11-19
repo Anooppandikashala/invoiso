@@ -18,6 +18,8 @@ class Product {
   bool priceIncludesTax;
   DateTime? lastPurchaseDate;
   int? lowStockLimit; // null = default low-stock limit (10)
+  String uqc; // GST unit code (e.g. 'PCS'), '' = not set
+  String gstCategory; // 0 % items: '' (nil-rated) | 'exempt' | 'non_gst'
 
   Product({
     required this.id,
@@ -37,6 +39,8 @@ class Product {
     this.priceIncludesTax = false,
     this.lastPurchaseDate,
     this.lowStockLimit,
+    this.uqc = '',
+    this.gstCategory = '',
   });
 
   // Convert a Map into a Product object
@@ -62,6 +66,8 @@ class Product {
           ? DateTime.tryParse(map['last_purchase_date'] as String)
           : null,
       lowStockLimit: (map['low_stock_limit'] as num?)?.toInt(),
+      uqc: map['uqc'] as String? ?? '',
+      gstCategory: map['gst_category'] as String? ?? '',
     );
   }
 
@@ -82,6 +88,8 @@ class Product {
       aliasName: map['product_alias_name'] as String?,
       unit: map['product_unit'] as String? ?? '',
       priceIncludesTax: (map['product_price_includes_tax'] ?? 0) == 1,
+      uqc: map['product_uqc'] as String? ?? '',
+      gstCategory: map['product_gst_category'] as String? ?? '',
     );
   }
 
@@ -104,6 +112,8 @@ class Product {
       'price_includes_tax': priceIncludesTax ? 1 : 0,
       'last_purchase_date': lastPurchaseDate?.toIso8601String(),
       'low_stock_limit': lowStockLimit,
+      'uqc': uqc,
+      'gst_category': gstCategory,
     };
   }
 
