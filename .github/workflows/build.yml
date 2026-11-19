@@ -104,7 +104,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: Invoiso-Windows-Installer
-          path: signed/*.exe
+          path: signed/*/*.exe
 
   # ─────────────────────────────────────────────────────────────
   # Linux — build .deb package
