@@ -19,6 +19,9 @@ const _registryPrefsKey = 'company_registry';
 const _activeCompanyIdPrefsKey = 'active_company_id';
 const _installationIdPrefsKey = 'installation_id';
 
+/// Login screen's remembered username for one company — removed with it.
+String loginUsernamePrefsKey(String companyId) => 'login_username_$companyId';
+
 /// Device-level registry of companies (each backed by its own SQLite file —
 /// see `DatabaseHelper`), plus the device-level data that must NOT live
 /// inside any single company's database: which company is currently active,
@@ -185,6 +188,7 @@ class CompanyRegistryService {
     await _writeRegistry(prefs, [
       for (final c in companies) if (c.id != id) c,
     ]);
+    await prefs.remove(loginUsernamePrefsKey(id));
 
     final dbDir = await _dbDirPath();
     final path = join(dbDir, target.dbFileName);

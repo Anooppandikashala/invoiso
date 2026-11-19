@@ -4723,6 +4723,53 @@ class AppLocalizationsNe extends AppLocalizations {
       'यो मेटाउनु अघि तपाईंलाई कम्तिमा अर्को एउटा कम्पनी चाहिन्छ';
 
   @override
+  String get companyMgmtHeading => 'कम्पनीहरू';
+
+  @override
+  String get companyMgmtSubtitle =>
+      'प्रत्येक कम्पनीले आफ्नै इनभ्वाइस, ग्राहक, स्टक र सेटिङहरू छुट्टै राख्छ।';
+
+  @override
+  String get companyMgmtPickTitle => 'कम्पनी छान्नुहोस्';
+
+  @override
+  String get companyMgmtPickSubtitle =>
+      'साइन इन गर्ने कम्पनी छान्नुहोस्। प्रत्येकका आफ्नै प्रयोगकर्ता र डाटा हुन्छन्।';
+
+  @override
+  String get companyMgmtSignedInTo => 'साइन इन गरिएको';
+
+  @override
+  String get companyMgmtOtherCompanies => 'अन्य कम्पनीहरू';
+
+  @override
+  String get companyMgmtAddAnother => 'अर्को कम्पनी थप्नुहोस्';
+
+  @override
+  String companyMgmtCreatedOn(String date) {
+    return '$date मा सिर्जना गरिएको';
+  }
+
+  @override
+  String get companyMgmtSwitchSignsOutNote =>
+      'कम्पनी बदल्दा वा नयाँ बनाउँदा तपाईं साइन आउट हुनुहुन्छ र लगइन स्क्रिनमा फर्किनुहुन्छ।';
+
+  @override
+  String get companyMgmtSelected => 'छानिएको';
+
+  @override
+  String companyMgmtReadyToSignIn(String name) {
+    return '$name मा साइन इन गर्न तयार';
+  }
+
+  @override
+  String get companyMgmtContinueToSignIn => 'साइन इनमा जारी राख्नुहोस्';
+
+  @override
+  String get companyMgmtRenameDeleteHint =>
+      'नाम बदल्न वा मेटाउन कम्पनीको एडमिनको रूपमा साइन इन गर्नुहोस्।';
+
+  @override
   String get loginCompanyGearTooltip => 'कम्पनीहरू व्यवस्थापन गर्नुहोस्';
 
   @override

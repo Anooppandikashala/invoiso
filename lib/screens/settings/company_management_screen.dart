@@ -14,7 +14,9 @@ import 'package:invoiso/providers/purchase_bills_settings_provider.dart';
 import 'package:invoiso/providers/repositories.dart';
 import 'package:invoiso/providers/theme_provider.dart';
 import 'package:invoiso/utils/company_switch_navigation.dart';
+import 'package:invoiso/utils/formatters.dart';
 import 'package:invoiso/utils/window_title.dart';
+import 'package:invoiso/widgets/company_avatar.dart';
 
 /// Lists every company registered on this device, with actions to switch,
 /// create, or (self-only) rename/delete. Reused from two entry points:
@@ -38,10 +40,10 @@ class CompanyManagementScreen extends ConsumerStatefulWidget {
 
 class _CompanyManagementScreenState
     extends ConsumerState<CompanyManagementScreen> {
-  // Matches the onboarding wizard's card width (lib/screens/onboarding/
-  // onboarding_screen.dart) so this screen doesn't stretch edge-to-edge on
-  // wide desktop windows.
-  static const _maxContentWidth = 640.0;
+  // Keeps this screen from stretching edge-to-edge on wide desktop windows.
+  static const _maxContentWidth = 800.0;
+  // Same accent as the Login screen's Sign in button.
+  static const _accent = Color(0xFF2563EB);
 
   List<CompanyProfile> _companies = [];
   String? _activeId;
@@ -371,14 +373,28 @@ class _CompanyManagementScreenState
   Future<void> _rename(CompanyProfile company) async {
     final l10n = AppLocalizations.of(context)!;
     final controller = TextEditingController(text: company.name);
+    final formKey = GlobalKey<FormState>();
+    // Same rule as New Company: names must stay unique (case-insensitive),
+    // ignoring this company's own current name.
+    final otherNames = {
+      for (final c in _companies)
+        if (c.id != company.id) c.name.trim().toLowerCase()
+    };
     final newName = await showDialog<String>(
       context: context,
       builder: (context) => AlertDialog(
         title: Text(l10n.companyMgmtRenameTitle),
-        content: TextField(
-          controller: controller,
-          decoration: InputDecoration(labelText: l10n.onboardingCompanyNameLabel),
-          autofocus: true,
+        content: Form(
+          key: formKey,
+          child: TextFormField(
+            controller: controller,
+            decoration: InputDecoration(labelText: l10n.onboardingCompanyNameLabel),
+            autofocus: true,
+            validator: (v) =>
+                otherNames.contains((v ?? '').trim().toLowerCase())
+                    ? l10n.companyMgmtNameTakenMessage
+                    : null,
+          ),
         ),
         actions: [
           TextButton(
@@ -386,7 +402,11 @@ class _CompanyManagementScreenState
             child: Text(l10n.actionCancel),
           ),
           TextButton(
-            onPressed: () => Navigator.of(context).pop(controller.text.trim()),
+            onPressed: () {
+              if (formKey.currentState!.validate()) {
+                Navigator.of(context).pop(controller.text.trim());
+              }
+            },
             child: Text(l10n.actionSave),
           ),
         ],
@@ -424,10 +444,12 @@ class _CompanyManagementScreenState
                 onPressed: () => Navigator.of(context).pop(false),
                 child: Text(l10n.actionCancel),
               ),
-              TextButton(
+              FilledButton(
                 onPressed: matches ? () => Navigator.of(context).pop(true) : null,
-                child: Text(l10n.actionDelete,
-                    style: const TextStyle(color: Colors.red)),
+                style: FilledButton.styleFrom(
+                    backgroundColor: Colors.red.shade700,
+                    foregroundColor: Colors.white),
+                child: Text(l10n.actionDelete),
               ),
             ],
           );
@@ -468,19 +490,12 @@ class _CompanyManagementScreenState
     // another company (whose own admins never authenticated here), and
     // never pre-login.
     final canManage = widget.currentUser?.isAdmin() ?? false;
-    // A light pastel green (fine against the light theme's white cards)
-    // reads as a washed-out, low-contrast card against the dark theme's
-    // near-black background and default light text — swap to a dark,
-    // opaque green so the active card still reads as a clean highlight
-    // in both themes.
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final activeCardFill = isDark ? Colors.green.shade900 : Colors.green.shade50;
-    final activeCardBorder = isDark ? Colors.green.shade600 : Colors.green.shade300;
-    final activeBadgeBg =
-        isDark ? Colors.green.withValues(alpha: 0.25) : Colors.green.withValues(alpha: 0.12);
-    final activeBadgeBorder =
-        isDark ? Colors.green.shade400 : Colors.green.withValues(alpha: 0.4);
-    final activeBadgeText = isDark ? Colors.green.shade300 : Colors.green;
+    final isCloud = ref.read(appEditionConfigProvider).isCloud;
+    // Cloud: only the active company's owner creates companies
+    // (create_organization is owner-only).
+    final canCreate = canManage || !isCloud;
+    final active = _companies.where((c) => c.id == _activeId).firstOrNull;
+    final others = _companies.where((c) => c.id != _activeId).toList();
 
     return Scaffold(
       appBar: AppBar(title: Text(l10n.companyMgmtTitle)),
@@ -490,86 +505,436 @@ class _CompanyManagementScreenState
               child: ConstrainedBox(
                 constraints: const BoxConstraints(maxWidth: _maxContentWidth),
                 child: ListView(
-                  padding: const EdgeInsets.all(16),
+                  padding: const EdgeInsets.fromLTRB(24, 32, 24, 48),
                   children: [
-                    for (final company in _companies)
-                      Card(
-                        // A flat, fully-opaque pastel instead of an
-                        // alpha-blended green — alpha blending combined with
-                        // the card's own drop shadow read as a muddy sage
-                        // rather than a clean highlight.
-                        elevation: company.id == _activeId ? 0 : null,
-                        color: company.id == _activeId ? activeCardFill : null,
-                        shape: company.id == _activeId
-                            ? RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(4),
-                                side: BorderSide(color: activeCardBorder),
-                              )
-                            : null,
-                        child: ListTile(
-                          title: Text(company.name),
-                          subtitle: company.id == _activeId
-                              ? Padding(
-                                  padding: const EdgeInsets.only(top: 4),
-                                  child: Container(
-                                    padding: const EdgeInsets.symmetric(
-                                        horizontal: 8, vertical: 2),
-                                    decoration: BoxDecoration(
-                                      color: activeBadgeBg,
-                                      borderRadius: BorderRadius.circular(12),
-                                      border: Border.all(color: activeBadgeBorder),
-                                    ),
-                                    child: Text(
-                                      l10n.companyMgmtActiveBadge,
-                                      style: TextStyle(
-                                          color: activeBadgeText,
-                                          fontSize: 12,
-                                          fontWeight: FontWeight.w600),
-                                    ),
-                                  ),
-                                )
-                              : null,
-                          trailing: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              if (canManage && company.id == _activeId)
-                                IconButton(
-                                  icon: const Icon(Icons.edit_outlined),
-                                  tooltip: l10n.companyMgmtRenameTooltip,
-                                  onPressed: () => _rename(company),
-                                ),
-                              if (company.id != _activeId)
-                                TextButton(
-                                  onPressed: () => _switchTo(company),
-                                  child: Text(l10n.companyMgmtSwitchButton),
-                                ),
-                              if (canManage && company.id == _activeId)
-                                IconButton(
-                                  icon: const Icon(Icons.delete_outline,
-                                      color: Colors.red),
-                                  tooltip: _companies.length > 1
-                                      ? l10n.companyMgmtDeleteButton
-                                      : l10n.companyMgmtOnlyCompanyTooltip,
-                                  onPressed: _companies.length > 1
-                                      ? () => _deleteCompany(company)
-                                      : null,
-                                ),
-                            ],
+                    _buildHeading(l10n, canCreate),
+                    const SizedBox(height: 28),
+                    if (_isPreLogin) ...[
+                      // Pre-login: every company is a selectable card;
+                      // picking one switches instantly (see [_switchTo]).
+                      for (final company in _companies)
+                        _companyRow(
+                          company,
+                          l10n,
+                          selected: company.id == _activeId,
+                          onTap: company.id == _activeId
+                              ? null
+                              : () => _switchTo(company),
+                          trailing: company.id == _activeId
+                              ? _selectedPill(l10n)
+                              : _radioDot(),
+                        ),
+                      if (canCreate) _addAnotherButton(l10n),
+                      const SizedBox(height: 18),
+                      if (active != null) _continueBar(l10n, active),
+                      const SizedBox(height: 16),
+                      Text(l10n.companyMgmtRenameDeleteHint,
+                          style: _mutedStyle(13)),
+                    ] else ...[
+                      if (active != null) ...[
+                        _sectionLabel(l10n.companyMgmtSignedInTo),
+                        _activeCard(active, l10n, canManage),
+                        const SizedBox(height: 32),
+                      ],
+                      if (others.isNotEmpty || canCreate)
+                        _sectionLabel(l10n.companyMgmtOtherCompanies),
+                      for (final company in others)
+                        _companyRow(
+                          company,
+                          l10n,
+                          trailing: TextButton(
+                            onPressed: () => _switchTo(company),
+                            style: _secondaryButtonStyle(),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                const Icon(Icons.swap_horiz, size: 18),
+                                const SizedBox(width: 8),
+                                Text(l10n.companyMgmtSwitchButton),
+                              ],
+                            ),
                           ),
                         ),
-                      ),
-                    const SizedBox(height: 16),
-                    // Cloud: only the active company's owner creates
-                    // companies (create_organization is owner-only).
-                    if (canManage || !ref.read(appEditionConfigProvider).isCloud)
-                      OutlinedButton(
-                        onPressed: _createCompany,
-                        child: Text(l10n.companyMgmtNewCompanyButton),
-                      ),
+                      if (canCreate) _addAnotherButton(l10n),
+                      if (!isCloud) ...[
+                        const SizedBox(height: 24),
+                        Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Icon(Icons.info_outline,
+                                size: 16,
+                                color: Theme.of(context)
+                                    .colorScheme
+                                    .onSurfaceVariant),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: Text(l10n.companyMgmtSwitchSignsOutNote,
+                                  style: _mutedStyle(13)),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ],
                   ],
                 ),
               ),
             ),
+    );
+  }
+
+  TextStyle _mutedStyle(double size) => TextStyle(
+      fontSize: size,
+      height: 1.5,
+      color: Theme.of(context).colorScheme.onSurfaceVariant);
+
+  ButtonStyle _secondaryButtonStyle({Color? color}) {
+    final scheme = Theme.of(context).colorScheme;
+    return TextButton.styleFrom(
+      foregroundColor: color ?? scheme.onSurface,
+      minimumSize: const Size(0, 40),
+      padding: const EdgeInsets.symmetric(horizontal: 14),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+    ).copyWith(
+      side: WidgetStatePropertyAll(BorderSide(
+          color: color?.withValues(alpha: 0.4) ?? scheme.outlineVariant)),
+    );
+  }
+
+  Widget _buildHeading(AppLocalizations l10n, bool canCreate) {
+    return Wrap(
+      alignment: WrapAlignment.spaceBetween,
+      crossAxisAlignment: WrapCrossAlignment.end,
+      spacing: 16,
+      runSpacing: 16,
+      children: [
+        ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 520),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                _isPreLogin
+                    ? l10n.companyMgmtPickTitle
+                    : l10n.companyMgmtHeading,
+                style: TextStyle(
+                    fontSize: 28,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: -0.5,
+                    color: Theme.of(context).colorScheme.onSurface),
+              ),
+              const SizedBox(height: 6),
+              Text(
+                _isPreLogin
+                    ? l10n.companyMgmtPickSubtitle
+                    : l10n.companyMgmtSubtitle,
+                style: _mutedStyle(15),
+              ),
+            ],
+          ),
+        ),
+        if (canCreate)
+          FilledButton(
+            onPressed: _createCompany,
+            style: FilledButton.styleFrom(
+              backgroundColor: _accent,
+              foregroundColor: Colors.white,
+              minimumSize: const Size(0, 44),
+              padding: const EdgeInsets.symmetric(horizontal: 18),
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10)),
+              textStyle:
+                  const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+            ),
+            child: Text(l10n.companyMgmtNewCompanyButton),
+          ),
+      ],
+    );
+  }
+
+  Widget _sectionLabel(String text) => Padding(
+        padding: const EdgeInsets.only(bottom: 12),
+        child: Text(
+          text.toUpperCase(),
+          style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+              letterSpacing: 1,
+              color: Theme.of(context).colorScheme.onSurfaceVariant),
+        ),
+      );
+
+  /// "Created 02 Mar 2026" — tells same-named companies apart.
+  String _meta(CompanyProfile company, AppLocalizations l10n) =>
+      l10n.companyMgmtCreatedOn(AppFormatters.formatDate(company.createdAt));
+
+  Widget _activeCard(
+      CompanyProfile company, AppLocalizations l10n, bool canManage) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final canDelete = _companies.length > 1;
+    final info = Row(
+      children: [
+        CompanyAvatar(id: company.id, name: company.name, size: 56),
+        const SizedBox(width: 20),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Wrap(
+                spacing: 10,
+                runSpacing: 6,
+                crossAxisAlignment: WrapCrossAlignment.center,
+                children: [
+                  Text(
+                    company.name,
+                    style: TextStyle(
+                        fontSize: 19,
+                        fontWeight: FontWeight.w600,
+                        color: Theme.of(context).colorScheme.onSurface),
+                  ),
+                  Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
+                    decoration: BoxDecoration(
+                      color: _accent.withValues(alpha: isDark ? 0.22 : 0.12),
+                      borderRadius: BorderRadius.circular(99),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Container(
+                          width: 6,
+                          height: 6,
+                          decoration: BoxDecoration(
+                            color: isDark
+                                ? const Color(0xFF7EA6FF)
+                                : const Color(0xFF1D4ED8),
+                            shape: BoxShape.circle,
+                          ),
+                        ),
+                        const SizedBox(width: 6),
+                        Text(
+                          l10n.companyMgmtActiveBadge,
+                          style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                              color: isDark
+                                  ? const Color(0xFFA9C3FF)
+                                  : const Color(0xFF1E3A8A)),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 6),
+              Text(_meta(company, l10n), style: _mutedStyle(13)),
+            ],
+          ),
+        ),
+      ],
+    );
+    final actions = Wrap(
+      spacing: 8,
+      runSpacing: 8,
+      children: [
+        TextButton(
+          onPressed: () => _rename(company),
+          style: _secondaryButtonStyle(),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(Icons.edit_outlined, size: 16),
+              const SizedBox(width: 8),
+              Text(l10n.companyMgmtRenameTooltip),
+            ],
+          ),
+        ),
+        Tooltip(
+          message: canDelete
+              ? l10n.companyMgmtDeleteButton
+              : l10n.companyMgmtOnlyCompanyTooltip,
+          child: TextButton(
+            onPressed: canDelete ? () => _deleteCompany(company) : null,
+            style: _secondaryButtonStyle(color: Colors.red.shade400),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(Icons.delete_outline, size: 16),
+                const SizedBox(width: 8),
+                Text(l10n.actionDelete),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+    return Container(
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        color: isDark ? const Color(0xFF1A1F2B) : const Color(0xFFF1F5FF),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+            color: isDark ? const Color(0xFF2B4A8C) : const Color(0xFF93B4F5)),
+      ),
+      child: !canManage
+          ? info
+          : LayoutBuilder(
+              // Buttons beside the name on desktop, below it on phones.
+              builder: (context, constraints) => constraints.maxWidth >= 560
+                  ? Row(
+                      children: [
+                        Expanded(child: info),
+                        const SizedBox(width: 16),
+                        actions,
+                      ],
+                    )
+                  : Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [info, const SizedBox(height: 16), actions],
+                    ),
+            ),
+    );
+  }
+
+  Widget _companyRow(CompanyProfile company, AppLocalizations l10n,
+      {required Widget trailing, bool selected = false, VoidCallback? onTap}) {
+    final scheme = Theme.of(context).colorScheme;
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 10),
+      child: Material(
+        color: scheme.surfaceContainer,
+        clipBehavior: Clip.antiAlias,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(14),
+          side: BorderSide(
+              color: selected ? _accent : scheme.outlineVariant,
+              width: selected ? 1.5 : 1),
+        ),
+        child: InkWell(
+          onTap: onTap,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+            child: Row(
+              children: [
+                CompanyAvatar(id: company.id, name: company.name, size: 44),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        company.name,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                            fontSize: 15,
+                            fontWeight: FontWeight.w600,
+                            color: scheme.onSurface),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(_meta(company, l10n), style: _mutedStyle(13)),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 12),
+                trailing,
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _selectedPill(AppLocalizations l10n) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final fg = isDark ? const Color(0xFFA9C3FF) : const Color(0xFF1E3A8A);
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
+      decoration: BoxDecoration(
+        color: _accent.withValues(alpha: isDark ? 0.22 : 0.14),
+        borderRadius: BorderRadius.circular(99),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(Icons.check, size: 14, color: fg),
+          const SizedBox(width: 6),
+          Text(l10n.companyMgmtSelected,
+              style: TextStyle(
+                  fontSize: 12, fontWeight: FontWeight.w600, color: fg)),
+        ],
+      ),
+    );
+  }
+
+  Widget _radioDot() => Container(
+        width: 22,
+        height: 22,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          border: Border.all(
+              color: Theme.of(context).colorScheme.outline, width: 2),
+        ),
+      );
+
+  Widget _addAnotherButton(AppLocalizations l10n) => SizedBox(
+        height: 60,
+        child: TextButton.icon(
+          onPressed: _createCompany,
+          icon: const Icon(Icons.add, size: 18),
+          label: Text(l10n.companyMgmtAddAnother),
+          style: TextButton.styleFrom(
+            foregroundColor: Theme.of(context).colorScheme.onSurfaceVariant,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(14),
+              side: BorderSide(
+                  color: Theme.of(context).colorScheme.outlineVariant,
+                  width: 1.5),
+            ),
+          ),
+        ),
+      );
+
+  Widget _continueBar(AppLocalizations l10n, CompanyProfile active) {
+    final scheme = Theme.of(context).colorScheme;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+      decoration: BoxDecoration(
+        color: scheme.surfaceContainer,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: scheme.outlineVariant),
+      ),
+      child: Wrap(
+        alignment: WrapAlignment.spaceBetween,
+        crossAxisAlignment: WrapCrossAlignment.center,
+        spacing: 16,
+        runSpacing: 12,
+        children: [
+          Text(l10n.companyMgmtReadyToSignIn(active.name),
+              style: TextStyle(fontSize: 14, color: scheme.onSurface)),
+          FilledButton(
+            onPressed: () => Navigator.of(context).pop(),
+            style: FilledButton.styleFrom(
+              backgroundColor: _accent,
+              foregroundColor: Colors.white,
+              minimumSize: const Size(0, 44),
+              padding: const EdgeInsets.symmetric(horizontal: 18),
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10)),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(l10n.companyMgmtContinueToSignIn),
+                const SizedBox(width: 8),
+                const Icon(Icons.arrow_forward, size: 18),
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

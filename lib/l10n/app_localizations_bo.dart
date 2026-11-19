@@ -4685,6 +4685,53 @@ class AppLocalizationsBo extends AppLocalizations {
       'འདི་བསུབ་གོང་ཁྱེད་ལ་ཚོང་ལས་གཞན་ཞིག་དགོས།';
 
   @override
+  String get companyMgmtHeading => 'ཚོང་ཁང་།';
+
+  @override
+  String get companyMgmtSubtitle =>
+      'ཚོང་ཁང་རེ་རེས་རང་གི་འཛིན་ཤོག་དང་། ཉོ་མཁན། ཉར་ཚགས། སྒྲིག་འགོད་བཅས་སོ་སོར་ཉར་གྱི་ཡོད།';
+
+  @override
+  String get companyMgmtPickTitle => 'ཚོང་ཁང་གདམ་པ།';
+
+  @override
+  String get companyMgmtPickSubtitle =>
+      'ནང་འཛུལ་བྱེད་པའི་ཚོང་ཁང་གདམ་རོགས། ཚོང་ཁང་རེ་རེར་རང་གི་སྤྱོད་མཁན་དང་གཞི་གྲངས་ཡོད།';
+
+  @override
+  String get companyMgmtSignedInTo => 'ནང་འཛུལ་བྱས་ཡོད།';
+
+  @override
+  String get companyMgmtOtherCompanies => 'ཚོང་ཁང་གཞན།';
+
+  @override
+  String get companyMgmtAddAnother => 'ཚོང་ཁང་གཞན་ཞིག་སྣོན་པ།';
+
+  @override
+  String companyMgmtCreatedOn(String date) {
+    return '$date ལ་བཟོས།';
+  }
+
+  @override
+  String get companyMgmtSwitchSignsOutNote =>
+      'ཚོང་ཁང་བརྗེ་བའམ་གསར་བཟོ་བྱས་ན་ཕྱིར་ཐོན་ནས་ནང་འཛུལ་ངོས་སུ་ལོག་ཡོང་།';
+
+  @override
+  String get companyMgmtSelected => 'གདམ་ཟིན།';
+
+  @override
+  String companyMgmtReadyToSignIn(String name) {
+    return '$name ལ་ནང་འཛུལ་བྱེད་པར་གྲ་སྒྲིག་ཡོད།';
+  }
+
+  @override
+  String get companyMgmtContinueToSignIn => 'ནང་འཛུལ་མུ་མཐུད།';
+
+  @override
+  String get companyMgmtRenameDeleteHint =>
+      'མིང་བསྒྱུར་བའམ་བསུབ་པར་ཚོང་ཁང་གི་དོ་དམ་པའི་ཐོག་ནས་ནང་འཛུལ་གྱིས།';
+
+  @override
   String get loginCompanyGearTooltip => 'ཚོང་ལས་དོ་དམ།';
 
   @override

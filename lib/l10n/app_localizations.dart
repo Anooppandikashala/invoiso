@@ -7956,6 +7956,84 @@ abstract class AppLocalizations {
   /// **'You need at least one other company before you can delete this one'**
   String get companyMgmtOnlyCompanyTooltip;
 
+  /// No description provided for @companyMgmtHeading.
+  ///
+  /// In en, this message translates to:
+  /// **'Companies'**
+  String get companyMgmtHeading;
+
+  /// No description provided for @companyMgmtSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Each company keeps its own invoices, customers, stock and settings separately.'**
+  String get companyMgmtSubtitle;
+
+  /// No description provided for @companyMgmtPickTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose a company'**
+  String get companyMgmtPickTitle;
+
+  /// No description provided for @companyMgmtPickSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Pick the company to sign in to. Each one has its own users and data.'**
+  String get companyMgmtPickSubtitle;
+
+  /// No description provided for @companyMgmtSignedInTo.
+  ///
+  /// In en, this message translates to:
+  /// **'Signed in to'**
+  String get companyMgmtSignedInTo;
+
+  /// No description provided for @companyMgmtOtherCompanies.
+  ///
+  /// In en, this message translates to:
+  /// **'Other companies'**
+  String get companyMgmtOtherCompanies;
+
+  /// No description provided for @companyMgmtAddAnother.
+  ///
+  /// In en, this message translates to:
+  /// **'Add another company'**
+  String get companyMgmtAddAnother;
+
+  /// No description provided for @companyMgmtCreatedOn.
+  ///
+  /// In en, this message translates to:
+  /// **'Created {date}'**
+  String companyMgmtCreatedOn(String date);
+
+  /// No description provided for @companyMgmtSwitchSignsOutNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Switching or creating a company signs you out and returns to the login screen.'**
+  String get companyMgmtSwitchSignsOutNote;
+
+  /// No description provided for @companyMgmtSelected.
+  ///
+  /// In en, this message translates to:
+  /// **'Selected'**
+  String get companyMgmtSelected;
+
+  /// No description provided for @companyMgmtReadyToSignIn.
+  ///
+  /// In en, this message translates to:
+  /// **'Ready to sign in to {name}'**
+  String companyMgmtReadyToSignIn(String name);
+
+  /// No description provided for @companyMgmtContinueToSignIn.
+  ///
+  /// In en, this message translates to:
+  /// **'Continue to sign in'**
+  String get companyMgmtContinueToSignIn;
+
+  /// No description provided for @companyMgmtRenameDeleteHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign in as a company\'s admin to rename or delete it.'**
+  String get companyMgmtRenameDeleteHint;
+
   /// No description provided for @loginCompanyGearTooltip.
   ///
   /// In en, this message translates to:

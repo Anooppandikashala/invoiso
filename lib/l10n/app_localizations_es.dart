@@ -4776,6 +4776,53 @@ class AppLocalizationsEs extends AppLocalizations {
       'Necesita al menos otra empresa antes de poder eliminar esta';
 
   @override
+  String get companyMgmtHeading => 'Empresas';
+
+  @override
+  String get companyMgmtSubtitle =>
+      'Cada empresa guarda por separado sus propias facturas, clientes, inventario y ajustes.';
+
+  @override
+  String get companyMgmtPickTitle => 'Elija una empresa';
+
+  @override
+  String get companyMgmtPickSubtitle =>
+      'Elija la empresa en la que desea iniciar sesión. Cada una tiene sus propios usuarios y datos.';
+
+  @override
+  String get companyMgmtSignedInTo => 'Sesión iniciada en';
+
+  @override
+  String get companyMgmtOtherCompanies => 'Otras empresas';
+
+  @override
+  String get companyMgmtAddAnother => 'Añadir otra empresa';
+
+  @override
+  String companyMgmtCreatedOn(String date) {
+    return 'Creada el $date';
+  }
+
+  @override
+  String get companyMgmtSwitchSignsOutNote =>
+      'Cambiar o crear una empresa cierra su sesión y vuelve a la pantalla de inicio de sesión.';
+
+  @override
+  String get companyMgmtSelected => 'Seleccionada';
+
+  @override
+  String companyMgmtReadyToSignIn(String name) {
+    return 'Listo para iniciar sesión en $name';
+  }
+
+  @override
+  String get companyMgmtContinueToSignIn => 'Continuar al inicio de sesión';
+
+  @override
+  String get companyMgmtRenameDeleteHint =>
+      'Inicie sesión como administrador de una empresa para cambiarle el nombre o eliminarla.';
+
+  @override
   String get loginCompanyGearTooltip => 'Gestionar empresas';
 
   @override

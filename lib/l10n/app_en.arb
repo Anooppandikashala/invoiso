@@ -2562,6 +2562,29 @@
   "companyMgmtDeleteRestartTitle": "Company Deleted",
   "companyMgmtDeleteRestartBody": "The company was deleted and Invoiso switched to another one. Please close and reopen the application to continue.",
   "companyMgmtOnlyCompanyTooltip": "You need at least one other company before you can delete this one",
+  "companyMgmtHeading": "Companies",
+  "companyMgmtSubtitle": "Each company keeps its own invoices, customers, stock and settings separately.",
+  "companyMgmtPickTitle": "Choose a company",
+  "companyMgmtPickSubtitle": "Pick the company to sign in to. Each one has its own users and data.",
+  "companyMgmtSignedInTo": "Signed in to",
+  "companyMgmtOtherCompanies": "Other companies",
+  "companyMgmtAddAnother": "Add another company",
+  "companyMgmtCreatedOn": "Created {date}",
+  "@companyMgmtCreatedOn": {
+    "placeholders": {
+      "date": {"type": "String"}
+    }
+  },
+  "companyMgmtSwitchSignsOutNote": "Switching or creating a company signs you out and returns to the login screen.",
+  "companyMgmtSelected": "Selected",
+  "companyMgmtReadyToSignIn": "Ready to sign in to {name}",
+  "@companyMgmtReadyToSignIn": {
+    "placeholders": {
+      "name": {"type": "String"}
+    }
+  },
+  "companyMgmtContinueToSignIn": "Continue to sign in",
+  "companyMgmtRenameDeleteHint": "Sign in as a company's admin to rename or delete it.",
   "loginCompanyGearTooltip": "Manage companies",
   "loginCompanySelectorLabel": "Company",
   "customizationEyebrowLabel": "CUSTOMIZATION",

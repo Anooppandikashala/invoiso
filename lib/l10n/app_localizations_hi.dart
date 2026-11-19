@@ -4696,6 +4696,53 @@ class AppLocalizationsHi extends AppLocalizations {
       'इसे हटाने से पहले आपके पास कम से कम एक और कंपनी होनी चाहिए';
 
   @override
+  String get companyMgmtHeading => 'कंपनियाँ';
+
+  @override
+  String get companyMgmtSubtitle =>
+      'हर कंपनी अपने इनवॉइस, ग्राहक, स्टॉक और सेटिंग्स अलग से रखती है।';
+
+  @override
+  String get companyMgmtPickTitle => 'कंपनी चुनें';
+
+  @override
+  String get companyMgmtPickSubtitle =>
+      'जिस कंपनी में साइन इन करना है उसे चुनें। हर कंपनी के अपने उपयोगकर्ता और डेटा होते हैं।';
+
+  @override
+  String get companyMgmtSignedInTo => 'साइन इन है';
+
+  @override
+  String get companyMgmtOtherCompanies => 'अन्य कंपनियाँ';
+
+  @override
+  String get companyMgmtAddAnother => 'एक और कंपनी जोड़ें';
+
+  @override
+  String companyMgmtCreatedOn(String date) {
+    return '$date को बनाई गई';
+  }
+
+  @override
+  String get companyMgmtSwitchSignsOutNote =>
+      'कंपनी बदलने या नई बनाने पर आप साइन आउट हो जाते हैं और लॉगिन स्क्रीन पर लौट आते हैं।';
+
+  @override
+  String get companyMgmtSelected => 'चयनित';
+
+  @override
+  String companyMgmtReadyToSignIn(String name) {
+    return '$name में साइन इन के लिए तैयार';
+  }
+
+  @override
+  String get companyMgmtContinueToSignIn => 'साइन इन जारी रखें';
+
+  @override
+  String get companyMgmtRenameDeleteHint =>
+      'नाम बदलने या हटाने के लिए कंपनी के एडमिन के रूप में साइन इन करें।';
+
+  @override
   String get loginCompanyGearTooltip => 'कंपनियाँ प्रबंधित करें';
 
   @override

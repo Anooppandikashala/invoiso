@@ -9,6 +9,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 
 import 'package:invoiso/database/database_helper.dart';
@@ -95,6 +96,8 @@ void main() {
 
   var dbCounter = 0;
   setUp(() async {
+    // LoginScreen remembers the last username in shared_prefs.
+    SharedPreferences.setMockInitialValues({});
     await DatabaseHelper().switchToFile('registry_seam_${dbCounter++}.db');
     registry = _FakeRegistry();
     BackendServices.configure(
