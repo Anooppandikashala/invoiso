@@ -734,6 +734,40 @@ class ReportService {
 
   // ── 5. Tax collected by rate ───────────────────────────────────────────────
 
+  /// Invoices that may carry a taxable additional charge (JSON written by
+  /// [AdditionalCost.toJson]); [taxedCharges] does the exact check.
+  static const _taxableChargeSql =
+      "i.additional_costs LIKE '%\"taxable\":true%'";
+
+  /// Taxed additional charges of one sales document row (columns tax_mode,
+  /// tax_rate, additional_costs) — same rule as the invoice totals.
+  /// Shared with the cloud edition.
+  static List<({double rate, double taxable, double tax, String hsn})>
+      taxedCharges(Map<String, Object?> inv) {
+    final mode = TaxModeExtension.fromKey(inv['tax_mode'] as String?);
+    final globalRate = (inv['tax_rate'] as num?)?.toDouble() ?? 0.0;
+    final out = <({double rate, double taxable, double tax, String hsn})>[];
+    for (final c
+        in AdditionalCost.listFromJson(inv['additional_costs'] as String?)) {
+      if (InvoiceTotalsCalculator.chargeTaxableValue(c, mode, globalRate) ==
+          null) {
+        continue;
+      }
+      final t = InvoiceTotalsCalculator.totals(
+          lines: const [],
+          taxMode: mode,
+          globalTaxRate: globalRate,
+          additionalCosts: [c]);
+      out.add((
+        rate: mode == TaxMode.global ? globalRate * 100 : c.taxRate,
+        taxable: t.taxableChargesTotal,
+        tax: t.chargesTax,
+        hsn: c.hsn.trim(),
+      ));
+    }
+    return out;
+  }
+
   static Future<List<TaxBucket>> getTaxByRate(DateTime from, DateTime to,
       {String? currencyCode}) async {
     final db = await _db.database;
@@ -789,6 +823,30 @@ class ReportService {
           ((r['taxable_amount'] as num?)?.toDouble() ?? 0);
     }
 
+    // Per-item mode taxable charges (global mode gets them via totals()).
+    final chargeInvRows = await db.rawQuery(
+      "SELECT i.type, i.tax_mode, i.tax_rate, i.additional_costs, i.is_interstate "
+      "FROM invoices i "
+      "WHERE i.deleted_at IS NULL AND $salesDocTypes "
+      "AND i.is_draft = 0 "
+      "AND (i.status IS NULL OR i.status != 'declined') "
+      "AND i.tax_mode = 'per_item' AND $_taxableChargeSql "
+      "$ccFilter"
+      "AND i.date >= ? AND i.date <= ?",
+      dateArgs,
+    );
+    for (final inv in chargeInvRows) {
+      final sign = (inv['type'] as String?) == 'Credit Note' ? -1.0 : 1.0;
+      for (final c in taxedCharges(inv)) {
+        if (c.rate <= 0) continue; // like the item query above
+        taxByRate[c.rate] = (taxByRate[c.rate] ?? 0) + sign * c.tax;
+        taxableByRate[c.rate] = (taxableByRate[c.rate] ?? 0) + sign * c.taxable;
+        if ((inv['is_interstate'] as num?) == 1) {
+          igstByRate[c.rate] = (igstByRate[c.rate] ?? 0) + sign * c.tax;
+        }
+      }
+    }
+
     // Global mode: single tax rate applied to the invoice subtotal
     final globalInvRows = await db.rawQuery(
       "SELECT i.id, i.type, i.tax_rate, i.additional_costs, i.is_interstate "
@@ -834,13 +892,15 @@ class ReportService {
           taxMode: TaxMode.global,
           globalTaxRate: taxRate,
           globalTaxRateFormat: TaxRateFormat.fraction,
+          additionalCosts:
+              AdditionalCost.listFromJson(inv['additional_costs'] as String?),
         );
         final tax = totals.tax;
         final ratePercent = taxRate * 100;
         if (tax > 0) {
           taxByRate[ratePercent] = (taxByRate[ratePercent] ?? 0) + sign * tax;
-          taxableByRate[ratePercent] =
-              (taxableByRate[ratePercent] ?? 0) + sign * totals.subtotal;
+          taxableByRate[ratePercent] = (taxableByRate[ratePercent] ?? 0) +
+              sign * (totals.subtotal + totals.taxableChargesTotal);
           if ((inv['is_interstate'] as num?) == 1) {
             igstByRate[ratePercent] = (igstByRate[ratePercent] ?? 0) + sign * tax;
           }
@@ -887,17 +947,57 @@ class ReportService {
         AppDate.dateKeyEnd(to),
       ],
     );
-    return hsnSummaryFromLines(rows);
+    final chargeInvoices = await db.rawQuery(
+      "SELECT i.type, i.tax_mode, i.tax_rate, i.additional_costs, "
+      "i.is_interstate, i.customer_gstin, i.customer_name "
+      "FROM invoices i "
+      "WHERE i.deleted_at IS NULL "
+      "AND i.type IN ('Invoice', 'Credit Note', 'Debit Note') "
+      "AND i.is_draft = 0 "
+      "AND (i.status IS NULL OR i.status != 'declined') "
+      "AND $_taxableChargeSql "
+      "${currencyCode != null ? 'AND (i.currency_code = ? OR i.currency_code IS NULL) ' : ''}"
+      "AND i.date >= ? AND i.date <= ?",
+      [
+        if (currencyCode != null) currencyCode,
+        AppDate.dateKeyStart(from),
+        AppDate.dateKeyEnd(to),
+      ],
+    );
+    return hsnSummaryFromLines(rows, chargeInvoices: chargeInvoices);
   }
 
   /// Groups raw sales lines (columns of the [getHsnSummary] query) into
-  /// HSN rows. Shared with the cloud edition, whose RPC returns the same columns.
+  /// HSN rows; [chargeInvoices] (document rows with additional_costs) add
+  /// one quantity-less line per taxed charge. Shared with the cloud
+  /// edition, whose RPCs return the same columns.
   static List<HsnSummaryRow> hsnSummaryFromLines(
-      List<Map<String, Object?>> rows) {
+      List<Map<String, Object?>> rows,
+      {List<Map<String, Object?>> chargeInvoices = const []}) {
     // key → [qty, taxable, igst, cgst+sgst]
     final sums = <String, List<double>>{};
     final heads = <String, (bool, String, String, double)>{};
     final badGstin = <String, Set<String>>{};
+    void add(Map<String, Object?> doc, String hsn, String unit, double rate,
+        double qty, double taxable, double tax) {
+      final sign = doc['type'] == 'Credit Note' ? -1.0 : 1.0;
+      final b2b = ((doc['customer_gstin'] as String?) ?? '').trim().isNotEmpty;
+      final key = '$b2b|$hsn|$unit|$rate';
+      heads[key] = (b2b, hsn, unit, rate);
+      if (b2b && GstUtils.stateCodeFromGstin(doc['customer_gstin'] as String) == null) {
+        badGstin.putIfAbsent(key, () => {}).add((doc['customer_name'] as String?) ?? '');
+      }
+      final s = sums.putIfAbsent(key, () => [0, 0, 0, 0]);
+      s[0] += sign * qty;
+      s[1] += sign * taxable;
+      s[(doc['is_interstate'] as num?) == 1 ? 2 : 3] += sign * tax;
+    }
+
+    for (final inv in chargeInvoices) {
+      for (final c in taxedCharges(inv)) {
+        add(inv, c.hsn, '', c.rate, 0, c.taxable, c.tax);
+      }
+    }
     for (final r in rows) {
       final perItem = r['tax_mode'] == 'per_item';
       final globalPct = ((r['tax_rate'] as num?)?.toDouble() ?? 0) * 100;
@@ -905,23 +1005,13 @@ class ReportService {
           taxMode: perItem ? TaxMode.perItem : TaxMode.global,
           globalTaxRatePercent: globalPct);
       final rate = perItem ? line.taxRatePercent : globalPct;
-      final sign = r['type'] == 'Credit Note' ? -1.0 : 1.0;
-      final b2b = ((r['customer_gstin'] as String?) ?? '').trim().isNotEmpty;
       final hsn = ((r['product_hsn_code'] as String?) ?? '').trim();
       final lineUnit = ((r['line_unit'] as String?) ?? '').trim();
       final unit = lineUnit.isNotEmpty
           ? lineUnit
           : ((r['product_unit'] as String?) ?? '').trim();
-      final key = '$b2b|$hsn|$unit|$rate';
-      heads[key] = (b2b, hsn, unit, rate);
-      if (b2b && GstUtils.stateCodeFromGstin(r['customer_gstin'] as String) == null) {
-        badGstin.putIfAbsent(key, () => {}).add((r['customer_name'] as String?) ?? '');
-      }
-      final s = sums.putIfAbsent(key, () => [0, 0, 0, 0]);
-      final tax = line.lineTotal * rate / 100;
-      s[0] += sign * ((r['quantity'] as num?)?.toDouble() ?? 0);
-      s[1] += sign * line.lineTotal;
-      s[(r['is_interstate'] as num?) == 1 ? 2 : 3] += sign * tax;
+      add(r, hsn, unit, rate, (r['quantity'] as num?)?.toDouble() ?? 0,
+          line.lineTotal, line.lineTotal * rate / 100);
     }
 
     return [

@@ -10415,7 +10415,7 @@ abstract class AppLocalizations {
   /// No description provided for @gstMissingB2bHsnWarning.
   ///
   /// In en, this message translates to:
-  /// **'Some B2B invoice items have no HSN/SAC (shown as —). HSN is mandatory for B2B in GSTR-1 — add it to those invoices and their products before filing.'**
+  /// **'Some B2B invoice items or taxable charges have no HSN/SAC (shown as —). HSN is mandatory for B2B in GSTR-1 — add it to those invoices, their products and charges before filing.'**
   String get gstMissingB2bHsnWarning;
 
   /// No description provided for @reportsCgstSgstLabel.

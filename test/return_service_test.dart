@@ -10,6 +10,7 @@ import 'package:invoiso/database/payment_service.dart';
 import 'package:invoiso/database/product_service.dart';
 import 'package:invoiso/database/report_service.dart';
 import 'package:invoiso/database/return_service.dart';
+import 'package:invoiso/models/additional_cost.dart';
 import 'package:invoiso/models/customer.dart';
 import 'package:invoiso/models/invoice.dart';
 import 'package:invoiso/models/invoice_item.dart';
@@ -1089,6 +1090,68 @@ void main() {
       expect(b2c.cgst, closeTo(63, 0.01));
       expect(b2c.igst, 0);
       expect(b2b.invalidGstinCustomers, isEmpty);
+    });
+
+    test('tax by rate includes taxable charges, not untaxed ones', () async {
+      final p = _prod(taxRate: 18);
+      await ProductService.insertProduct(p);
+      await InvoiceService.insertInvoice(_invoice(
+          id: 'i1',
+          number: '00000001',
+          customer: _cust(),
+          items: [_item(p, 10)], // per-item: 1000, tax 180
+          date: DateTime(2026, 3, 5))
+        ..additionalCosts = const [
+          AdditionalCost(label: 'Freight', amount: 100, taxable: true, taxRate: 18),
+          AdditionalCost(
+              label: 'Packing', amount: 118, taxable: true, taxRate: 18,
+              inclusive: true),
+          AdditionalCost(label: 'Courier', amount: 50),
+        ]);
+      await InvoiceService.insertInvoice(_invoice(
+          id: 'i2',
+          number: '00000002',
+          customer: _cust(),
+          items: [_item(p, 5)], // global 18 %: 500, tax 90
+          date: DateTime(2026, 3, 6))
+        ..taxMode = TaxMode.global
+        ..taxRate = 0.18
+        ..isInterState = true
+        ..additionalCosts = const [
+          AdditionalCost(label: 'Freight', amount: 100, taxable: true),
+        ]);
+
+      final b = (await ReportService.getTaxByRate(from, to)).single;
+      expect(b.rate, 18);
+      expect(b.taxableAmount, closeTo(1000 + 100 + 100 + 500 + 100, 0.01));
+      expect(b.taxCollected, closeTo(180 + 18 + 18 + 90 + 18, 0.01));
+      expect(b.igst, closeTo(108, 0.01));
+    });
+
+    test('HSN summary adds one row per taxed charge HSN', () async {
+      final p = _prod(taxRate: 18)..hsncode = '8471';
+      await ProductService.insertProduct(p);
+      await InvoiceService.insertInvoice(_invoice(
+          id: 'i1',
+          number: '00000001',
+          customer: _cust(),
+          items: [_item(p, 10)],
+          date: DateTime(2026, 3, 5))
+        ..additionalCosts = const [
+          AdditionalCost(
+              label: 'Freight', amount: 100, taxable: true, taxRate: 18,
+              hsn: '9965'),
+          AdditionalCost(label: 'Courier', amount: 50, hsn: '9968'),
+        ]);
+
+      final rows = await ReportService.getHsnSummary(from, to);
+      expect(rows.map((r) => r.hsn), ['8471', '9965']);
+      final freight = rows.last;
+      expect(freight.quantity, 0);
+      expect(freight.unit, '');
+      expect(freight.rate, 18);
+      expect(freight.taxable, closeTo(100, 0.01));
+      expect(freight.cgst, closeTo(9, 0.01));
     });
 
     test('HSN summary flags B2B customers with a malformed GSTIN', () async {

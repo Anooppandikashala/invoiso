@@ -6111,7 +6111,7 @@ class AppLocalizationsBo extends AppLocalizations {
 
   @override
   String get gstMissingB2bHsnWarning =>
-      'Some B2B invoice items have no HSN/SAC (shown as —). HSN is mandatory for B2B in GSTR-1 — add it to those invoices and their products before filing.';
+      'Some B2B invoice items or taxable charges have no HSN/SAC (shown as —). HSN is mandatory for B2B in GSTR-1 — add it to those invoices, their products and charges before filing.';
 
   @override
   String get reportsCgstSgstLabel => 'CGST + SGST';
