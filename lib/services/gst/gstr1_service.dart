@@ -75,14 +75,16 @@ class Gstr3bService {
     required InvoiceRepository invoices,
     required ReportRepository reports,
     required CompanyInfoRepository companyInfo,
-    required PurchaseBillRepository purchaseBills,
+    PurchaseBillRepository? purchaseBills, // null: purchases off → no ITC
   }) async {
     final sales = await Gstr1Service.load(period,
         invoices: invoices, reports: reports, companyInfo: companyInfo);
     final gstin = (await companyInfo.getCompanyInfo())?.gstin ?? '';
     final purchases = PurchaseGstBuilder.build(
         companyGstin: gstin,
-        bills: await purchaseBills.getPurchaseBillsInRange(period.from, period.to));
+        bills: purchaseBills == null
+            ? const []
+            : await purchaseBills.getPurchaseBillsInRange(period.from, period.to));
     return Gstr3bBuilder.build(
         companyGstin: gstin, sales: sales, purchases: purchases);
   }

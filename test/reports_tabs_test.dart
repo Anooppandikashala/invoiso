@@ -312,7 +312,10 @@ void main() {
     tester.view.devicePixelRatio = 1.0;
     addTearDown(tester.view.reset);
     await tester.pumpWidget(ProviderScope(
-      overrides: sqliteRepositoryOverrides,
+      overrides: [
+        ...sqliteRepositoryOverrides,
+        enablePurchaseBillsAndSuppliersProvider.overrideWith((ref) => true),
+      ],
       child: MaterialApp(
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
@@ -376,5 +379,80 @@ void main() {
     expect(find.text('DUE-9'), findsOneWidget);
     final row = find.ancestor(of: find.text('DUE-9'), matching: find.byType(Row)).first;
     expect(find.descendant(of: row, matching: find.text('31–60 days')), findsOneWidget);
+  });
+
+  testWidgets('Purchases → Supplier statement: pick supplier, running balance',
+      (tester) async {
+    await tester.runAsync(() async {
+      await PurchaseBillService.insertPurchaseBill(PurchaseBill(
+        id: 'ss1', billNumber: 'ST-1', supplierName: 'Statement Traders',
+        billDate: DateTime.now(),
+        items: [PurchaseBillItem(
+            productName: 'Box', quantity: 1, costPerUnit: 700, taxRate: 0)],
+      ));
+    });
+    final onError = FlutterError.onError;
+    FlutterError.onError = (d) {
+      if (!d.exceptionAsString().contains('overflowed')) onError?.call(d);
+    };
+    addTearDown(() => FlutterError.onError = onError);
+    tester.view.physicalSize = const Size(1600, 3000);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.reset);
+    await tester.pumpWidget(ProviderScope(
+      overrides: [
+        ...sqliteRepositoryOverrides,
+        enablePurchaseBillsAndSuppliersProvider.overrideWith((ref) => true),
+      ],
+      child: MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: const Scaffold(body: ReportsScreen()),
+      ),
+    ));
+    await settle(tester);
+    await tester.tap(find.text('Purchases'));
+    await settle(tester);
+    await tester.tap(find.text('Supplier statement'));
+    await settle(tester);
+    expect(find.text('PERIOD'), findsOneWidget); // statement uses the period
+    await tester.tap(find.byType(DropdownMenu<String>));
+    await settle(tester);
+    await tester.tap(find.text('Statement Traders (1)').last);
+    await settle(tester);
+
+    expect(find.text('Billed'), findsOneWidget);
+    expect(find.text('ST-1'), findsOneWidget);
+    final row = find.ancestor(of: find.text('ST-1'), matching: find.byType(Row)).first;
+    expect(find.descendant(of: row, matching: find.textContaining('700')),
+        findsNWidgets(2)); // credit + balance
+  });
+
+  testWidgets('GSTR-3B with purchase bills off: note, no ITC', (tester) async {
+    final onError = FlutterError.onError;
+    FlutterError.onError = (d) {
+      if (!d.exceptionAsString().contains('overflowed')) onError?.call(d);
+    };
+    addTearDown(() => FlutterError.onError = onError);
+    tester.view.physicalSize = const Size(1600, 3000);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.reset);
+    await tester.pumpWidget(ProviderScope(
+      overrides: sqliteRepositoryOverrides,
+      child: MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: const Scaffold(body: ReportsScreen()),
+      ),
+    ));
+    await settle(tester);
+    await tester.tap(find.text('Tax').first);
+    await settle(tester);
+    await tester.tap(find.text('GSTR-3B'));
+    await settle(tester);
+    expect(find.textContaining('Purchase Bills are turned off'), findsOneWidget);
+    // Last month's purchase bill from the earlier GSTR-3B test is ignored.
+    final itc = find.ancestor(of: find.text('C Net ITC available'), matching: find.byType(Row)).first;
+    expect(find.descendant(of: itc, matching: find.textContaining('0.18')), findsNothing);
   });
 }

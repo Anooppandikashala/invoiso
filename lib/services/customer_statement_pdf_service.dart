@@ -14,6 +14,7 @@ class CustomerStatementPdfService {
   static Future<Uint8List> export(
     List<CustomerStatement> statements, {
     bool showFooterBranding = true,
+    bool supplier = false, // supplier statement: bills credit, payments debit
   }) async {
     await AmountFormat.load(); // Number format setting
     final theme = await PdfFontService.loadTheme();
@@ -39,7 +40,9 @@ class CustomerStatementPdfService {
             crossAxisAlignment: pw.CrossAxisAlignment.start,
             children: [
               PdfReportHeader.build(
-                  company: company, title: 'CUSTOMER STATEMENT', generatedOn: generatedOn),
+                  company: company,
+                  title: supplier ? 'SUPPLIER STATEMENT' : 'CUSTOMER STATEMENT',
+                  generatedOn: generatedOn),
               // ── Statement subject + currency/opening balance ───────────
               pw.Row(
                 mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
@@ -127,7 +130,7 @@ class CustomerStatementPdfService {
                 mainAxisAlignment: pw.MainAxisAlignment.end,
                 children: [
                   pw.Text(
-                    'Invoiced: ${money(statement.invoiced)}   Paid: ${money(statement.paid)}   '
+                    '${supplier ? 'Billed' : 'Invoiced'}: ${money(statement.invoiced)}   Paid: ${money(statement.paid)}   '
                     'Closing Balance: ${money(statement.closingBalance)}   Overdue: ${money(statement.overdueBalance)}',
                     style: pw.TextStyle(fontSize: 10, fontWeight: pw.FontWeight.bold),
                   ),

@@ -1800,19 +1800,21 @@ class ReportService {
     ]);
   }
 
+  /// [supplier]: supplier statement (P4) — same layout, billed for invoiced.
   static String exportCustomerStatementsCsv(
-      List<CustomerStatement> statements) {
+      List<CustomerStatement> statements,
+      {bool supplier = false}) {
     final blocks = <String>[];
     for (final statement in statements) {
       blocks.add(buildQuotedCsv([
         [
-          'Customer',
+          supplier ? 'Supplier' : 'Customer',
           statement.customerName,
           'Currency',
           statement.currencyCode
         ],
         ['Opening Balance', statement.openingBalance.toStringAsFixed(2)],
-        ['Invoiced', statement.invoiced.toStringAsFixed(2)],
+        [supplier ? 'Billed' : 'Invoiced', statement.invoiced.toStringAsFixed(2)],
         ['Paid', statement.paid.toStringAsFixed(2)],
         ['Closing Balance', statement.closingBalance.toStringAsFixed(2)],
         ['Overdue Balance', statement.overdueBalance.toStringAsFixed(2)],

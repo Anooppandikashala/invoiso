@@ -6502,6 +6502,19 @@ class AppLocalizationsNe extends AppLocalizations {
   String get purchasePayablesTab => 'Payables';
 
   @override
+  String get purchaseSupplierStatementTab => 'Supplier statement';
+
+  @override
+  String get purchaseSelectSupplierHint => 'Select a supplier';
+
+  @override
+  String get purchaseBilledLabel => 'Billed';
+
+  @override
+  String get gstr3bPurchasesOffNote =>
+      'Purchase Bills are turned off, so input tax credit (tables 4, 5, 3.1(d)) is not included — enable them in Settings → Accessibility, or take ITC from GSTR-2B.';
+
+  @override
   String get purchaseApAgingSummaryTitle =>
       'Payables aging by supplier (as of today)';
 

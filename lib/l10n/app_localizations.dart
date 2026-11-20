@@ -11018,6 +11018,30 @@ abstract class AppLocalizations {
   /// **'Payables'**
   String get purchasePayablesTab;
 
+  /// No description provided for @purchaseSupplierStatementTab.
+  ///
+  /// In en, this message translates to:
+  /// **'Supplier statement'**
+  String get purchaseSupplierStatementTab;
+
+  /// No description provided for @purchaseSelectSupplierHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Select a supplier'**
+  String get purchaseSelectSupplierHint;
+
+  /// No description provided for @purchaseBilledLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Billed'**
+  String get purchaseBilledLabel;
+
+  /// No description provided for @gstr3bPurchasesOffNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Purchase Bills are turned off, so input tax credit (tables 4, 5, 3.1(d)) is not included — enable them in Settings → Accessibility, or take ITC from GSTR-2B.'**
+  String get gstr3bPurchasesOffNote;
+
   /// No description provided for @purchaseApAgingSummaryTitle.
   ///
   /// In en, this message translates to:
