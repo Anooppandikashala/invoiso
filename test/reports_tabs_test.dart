@@ -12,6 +12,10 @@ import 'package:invoiso/common/common.dart';
 import 'package:invoiso/database/company_info_service.dart';
 import 'package:invoiso/database/database_helper.dart';
 import 'package:invoiso/database/invoice_service.dart';
+import 'package:invoiso/providers/purchase_bills_settings_provider.dart';
+import 'package:invoiso/models/purchase_bill_item.dart';
+import 'package:invoiso/models/purchase_bill.dart';
+import 'package:invoiso/database/purchase_bill_service.dart';
 import 'package:invoiso/l10n/app_localizations.dart';
 import 'package:invoiso/models/company_info.dart';
 import 'package:invoiso/models/customer.dart';
@@ -163,6 +167,7 @@ void main() {
     await settle(tester);
 
     expect(find.text('Payment Status Breakdown'), findsOneWidget);
+    expect(find.text('Purchases'), findsNothing); // purchase bills off by default
     expect(find.text('Overdue Co'), findsNothing); // aged list not built yet
 
     await tester.tap(find.text('Aged invoices'));
@@ -224,5 +229,52 @@ void main() {
     final export = tester.widget<FilledButton>(
         find.ancestor(of: find.text('Export Excel'), matching: find.byWidgetPredicate((w) => w is FilledButton)));
     expect(export.onPressed, isNotNull); // valid company GSTIN
+  });
+
+  testWidgets('Purchases tab (purchase bills on): register with ITC flag',
+      (tester) async {
+    await tester.runAsync(() async {
+      final db = await DatabaseHelper().database;
+      await db.delete('company_info');
+      await CompanyInfoService.insertCompanyInfo(CompanyInfo(
+          name: 'Co', address: '', phone: '', email: '', website: '',
+          gstin: '33ABCDE1234F1Z5'));
+      await PurchaseBillService.insertPurchaseBill(PurchaseBill(
+        id: 'pb1', billNumber: 'SUP-77', supplierName: 'Kumar Traders',
+        billDate: DateTime.now(), supplierGstin: '29ABCDE1234F1Z5',
+        items: [PurchaseBillItem(
+            productName: 'Cable', quantity: 2, costPerUnit: 100, taxRate: 18)],
+      ));
+    });
+    final onError = FlutterError.onError;
+    FlutterError.onError = (d) {
+      if (!d.exceptionAsString().contains('overflowed')) onError?.call(d);
+    };
+    addTearDown(() => FlutterError.onError = onError);
+    tester.view.physicalSize = const Size(1600, 3000);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.reset);
+    await tester.pumpWidget(ProviderScope(
+      overrides: [
+        ...sqliteRepositoryOverrides,
+        enablePurchaseBillsAndSuppliersProvider.overrideWith((ref) => true),
+      ],
+      child: MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: const Scaffold(body: ReportsScreen()),
+      ),
+    ));
+    await settle(tester);
+    await tester.tap(find.text('Purchases'));
+    await settle(tester);
+
+    expect(find.text('Purchase register'), findsOneWidget);
+    expect(find.text('SUP-77'), findsOneWidget);
+    expect(find.text('Kumar Traders'), findsOneWidget);
+    final row = find.ancestor(of: find.text('SUP-77'), matching: find.byType(Row)).first;
+    expect(find.descendant(of: row, matching: find.text('Y')), findsOneWidget); // ITC
+    expect(find.text('PERIOD'), findsOneWidget); // uses the side-panel period
+    expect(find.text('CURRENCY'), findsNothing); // purchases have no currency
   });
 }

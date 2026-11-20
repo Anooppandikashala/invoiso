@@ -20,6 +20,10 @@ import 'package:invoiso/models/gstr1_report.dart';
 import 'package:invoiso/services/gst/gstr1_excel_writer.dart';
 import 'package:invoiso/services/gst/gstr1_pdf_writer.dart';
 import 'package:invoiso/services/gst/gstr1_service.dart';
+import 'package:invoiso/models/purchase_gst_report.dart';
+import 'package:invoiso/providers/purchase_bills_settings_provider.dart';
+import 'package:invoiso/services/gst/purchase_gst_builder.dart';
+import 'package:invoiso/services/gst/purchase_register_export.dart';
 
 import '../common/supported_currencies.dart';
 import 'package:invoiso/utils/formatters.dart';
@@ -118,6 +122,16 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
     return (last.year, last.month); // (year, month or quarter)
   }();
   Gstr1Report? _gstr1Report;
+  // Purchases tab (9) — purchase register (PurchaseGstReportsPlan.md P2).
+  PurchaseGstReport? _purchaseReport;
+  String _purchaseFilter = 'all'; // 'all' | 'registered' | 'unregistered'
+  String _purchaseQuery = '';
+  int _purchasePage = 0;
+  int _purchasePageSize = 25;
+  bool _purchasesAdminOnly = false;
+  bool get _showPurchases =>
+      ref.watch(enablePurchaseBillsAndSuppliersProvider) &&
+      (!_purchasesAdminOnly || widget.isAdmin);
   bool get _isGstr1Section =>
       _selectedIndex == 2 && _showGstFields && _taxSection == 3;
   bool _gstr1Loading = false;
@@ -294,6 +308,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
       settingsRepo.getDateFormat(),
       settingsRepo.getProductColumnsConfig(),
       settingsRepo.getSetting(SettingKey.cashUpiExchangeEnabled),
+      settingsRepo.getSetting(SettingKey.purchaseBillsAndSuppliersAdminOnly),
     ]);
     final code = (results[0] as String?) ?? 'INR';
     final currency = SupportedCurrencies.all.firstWhere((c) => c.code == code,
@@ -304,6 +319,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
     if (mounted) {
       setState(() {
         _hideCost = hideCost;
+        _purchasesAdminOnly = results[4] == 'true';
         _cashUpi = results[3] == 'true' && widget.isAdmin;
         _sym = currency.symbol;
         _currencyCode = currency.code;
@@ -540,6 +556,18 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
                 : r[0] as List<DailyPoint>;
             _missingCostItemCount = r[1] as int;
             _dailyPage = 0;
+          });
+        case 9:
+          final bills = await ref
+              .read(purchaseBillRepositoryProvider)
+              .getPurchaseBillsInRange(from, to);
+          final company =
+              await ref.read(companyInfoRepositoryProvider).getCompanyInfo();
+          if (!mounted) return;
+          setState(() {
+            _purchaseReport = PurchaseGstBuilder.build(
+                companyGstin: company?.gstin ?? '', bills: bills);
+            _purchasePage = 0;
           });
         case 8:
           final r = await Future.wait([
@@ -869,6 +897,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
     (Icons.list_alt_outlined, Icons.list_alt),
     (Icons.calendar_today_outlined, Icons.calendar_today),
     (Icons.warehouse_outlined, Icons.warehouse),
+    (Icons.shopping_cart_outlined, Icons.shopping_cart),
   ];
 
   String _presetLabel(_DatePreset preset) {
@@ -895,6 +924,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
       5 => l10n.navQuotations,
       6 => l10n.reportsNavInvoiceStatusLabel,
       7 => l10n.reportsNavDailyReportLabel,
+      9 => l10n.reportsNavPurchasesLabel,
       _ => l10n.reportsNavInventoryLabel,
     };
   }
@@ -963,7 +993,8 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
           const SizedBox(height: 8),
           // ── Nav items ──
           for (int i = 0; i < _navIcons.length; i++)
-            if (!(_hideCost && i == 8)) _navItem(i, primary),
+            if (!(_hideCost && i == 8) && (i != 9 || _showPurchases))
+              _navItem(i, primary),
           Padding(
             padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             child: Divider(
@@ -980,7 +1011,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
                       color: Theme.of(context).colorScheme.onSurfaceVariant)),
             ),
           // ── Currency scope ── (inventory is a single-currency snapshot)
-          if (_selectedIndex != 8 && !_isGstr1Section) ...[
+          if (_selectedIndex != 8 && _selectedIndex != 9 && !_isGstr1Section) ...[
             Padding(
               padding: EdgeInsets.fromLTRB(16, 0, 16, 8),
               child: Text(
@@ -1165,6 +1196,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
       6 => _buildInvoiceStatus(),
       7 => _buildDailyReport(),
       8 => _buildInventoryValuation(),
+      9 => _buildPurchases(),
       _ => const SizedBox.shrink(),
     };
   }
@@ -3104,6 +3136,249 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
             ),
           ],
         ],
+      ),
+    );
+  }
+
+  // ─── Purchases (PurchaseGstReportsPlan.md) ─────────────────────────────────
+
+  Widget _buildPurchases() {
+    final l10n = AppLocalizations.of(context)!;
+    final r = _purchaseReport;
+    if (r == null) return const Center(child: CircularProgressIndicator());
+    final gst = _showGstFields;
+    final rows = [
+      for (final x in r.rows)
+        if ((_purchaseFilter == 'all' ||
+                (_purchaseFilter == 'registered') ==
+                    (x.supplierState != null)) &&
+            ('${x.supplierName} ${x.billNumber}'
+                .toLowerCase()
+                .contains(_purchaseQuery.trim().toLowerCase())))
+          x,
+    ];
+    void setFilter(VoidCallback change) {
+      if (!mounted) return;
+      setState(() {
+        change();
+        _purchasePage = 0;
+      });
+    }
+
+    String rate(double v) => '${v.toStringAsFixed(v % 1 == 0 ? 0 : 2)}%';
+    String issue(PurchaseGstIssue i) {
+      final msg = switch (i.kind) {
+        PurchaseGstIssueKind.invalidSupplierGstin => l10n.purchaseIssueInvalidGstin,
+        PurchaseGstIssueKind.taxWithoutGstin => l10n.purchaseIssueTaxWithoutGstin,
+        PurchaseGstIssueKind.unusualRate => l10n.gstr1IssueUnusualRate(i.detail),
+      };
+      return i.billNumber.isEmpty ? msg : '${i.billNumber} — $msg';
+    }
+
+    final ts = DateTime.now().millisecondsSinceEpoch;
+    final (from, to) = _range;
+    final periodLabel = '${_formatDate(from)} – ${_formatDate(to)}';
+    double sum(double Function(PurchaseGstRow) f) =>
+        r.rows.fold(0.0, (a, x) => a + f(x));
+
+    return SingleChildScrollView(
+      padding: const EdgeInsets.only(bottom: 24),
+      child: Align(
+        alignment: Alignment.topCenter,
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: AppLayout.maxWidthNormal),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+                child: IntrinsicHeight(
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Expanded(
+                          child: _kpiCard(l10n.purchaseKpiTotal,
+                              _money(sum((x) => x.total)),
+                              const Color(0xFF7C3AED), Icons.shopping_cart_outlined)),
+                      const SizedBox(width: 12),
+                      Expanded(
+                          child: _kpiCard(l10n.purchaseKpiTaxable,
+                              _money(sum((x) => x.taxable)),
+                              const Color(0xFF0284C7), Icons.receipt_long_outlined)),
+                      if (gst) ...[
+                        const SizedBox(width: 12),
+                        Expanded(
+                            child: _kpiCard(l10n.purchaseKpiItc,
+                                _money(r.itcRegular.total + r.rcmTax.total),
+                                const Color(0xFF059669), Icons.verified_outlined)),
+                        const SizedBox(width: 12),
+                        Expanded(
+                            child: _kpiCard(l10n.purchaseKpiNotClaimable,
+                                _money(r.ineligibleTax.total),
+                                const Color(0xFFD97706), Icons.block_outlined)),
+                      ],
+                    ],
+                  ),
+                ),
+              ),
+              _sectionCard(
+                padding: EdgeInsets.zero,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(20, 20, 20, 12),
+                      child: _cardTitle(
+                        l10n.purchaseRegisterTitle,
+                        trailing: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            _exportBtn(l10n.reportsExportCsvLabel, () async {
+                              await _saveCsv(
+                                  PurchaseRegisterExport.csv(r.rows,
+                                      datePattern: _datePattern),
+                                  'purchase_register_$ts.csv');
+                            }),
+                            const SizedBox(width: 4),
+                            _exportBtn(l10n.customerMgmtExportPdfMenuLabel,
+                                () async {
+                              final bytes = await PurchaseRegisterExport.pdf(r,
+                                  periodLabel: periodLabel,
+                                  company: await ref
+                                      .read(companyInfoRepositoryProvider)
+                                      .getCompanyInfo(),
+                                  datePattern: _datePattern,
+                                  showFooterBranding: _showFooterBranding);
+                              if (!mounted) return;
+                              await _savePdf(bytes, 'purchase_register_$ts.pdf');
+                            }),
+                          ],
+                        ),
+                      ),
+                    ),
+                    if (r.rows.isEmpty)
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 20),
+                        child: _emptyState(l10n.purchaseRegisterEmpty),
+                      )
+                    else ...[
+                      if (gst && r.warnings.isNotEmpty)
+                        ExpansionTile(
+                          tilePadding: const EdgeInsets.symmetric(horizontal: 20),
+                          leading: const Icon(Icons.warning_amber_rounded,
+                              color: Colors.orange),
+                          title: Text(l10n.gstr1WarningsTitle(r.warnings.length),
+                              style: const TextStyle(fontWeight: FontWeight.w600)),
+                          children: [
+                            for (final i in r.warnings.take(50))
+                              Padding(
+                                padding: const EdgeInsets.fromLTRB(56, 0, 20, 6),
+                                child: Align(
+                                    alignment: Alignment.centerLeft,
+                                    child: Text(issue(i),
+                                        style: const TextStyle(fontSize: 13))),
+                              ),
+                          ],
+                        ),
+                      if (gst) ...[
+                        _gstTableRow([
+                          (l10n.fieldTaxRateLabel, 2, false),
+                          (l10n.reportsTaxableAmountLabel, 3, true),
+                          ('IGST', 2, true),
+                          ('CGST', 2, true),
+                          ('SGST', 2, true),
+                        ], header: true),
+                        for (final b in r.byRate)
+                          _gstTableRow([
+                            (rate(b.rate), 2, false),
+                            (_money(b.taxable), 3, true),
+                            (_money(b.igst), 2, true),
+                            (_money(b.cgst), 2, true),
+                            (_money(b.sgst), 2, true),
+                          ]),
+                        const SizedBox(height: 16),
+                      ],
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(20, 0, 20, 12),
+                        child: Wrap(
+                          spacing: 8,
+                          runSpacing: 8,
+                          crossAxisAlignment: WrapCrossAlignment.center,
+                          children: [
+                            if (gst)
+                              for (final (key, label) in [
+                                ('all', l10n.invoiceMgmtStatusAllLabel),
+                                ('registered', l10n.purchaseFilterRegistered),
+                                ('unregistered', l10n.purchaseFilterUnregistered),
+                              ])
+                                ChoiceChip(
+                                  label: Text(label),
+                                  selected: _purchaseFilter == key,
+                                  onSelected: (_) =>
+                                      setFilter(() => _purchaseFilter = key),
+                                ),
+                            SizedBox(
+                              width: 240,
+                              child: TextField(
+                                decoration: InputDecoration(
+                                  isDense: true,
+                                  prefixIcon: const Icon(Icons.search, size: 18),
+                                  hintText: l10n.purchaseRegisterSearchHint,
+                                  border: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(
+                                          AppBorderRadius.xsmall)),
+                                ),
+                                onChanged: (v) =>
+                                    setFilter(() => _purchaseQuery = v),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      _gstTableRow([
+                        (l10n.invoiceMgmtColDate, 2, false),
+                        (l10n.purchaseRegisterBillNoLabel, 2, false),
+                        (l10n.purchaseRegisterSupplierLabel, 3, false),
+                        if (gst) ('GSTIN', 3, false),
+                        (l10n.reportsTaxableAmountLabel, 2, true),
+                        (l10n.fieldTaxLabel, 2, true),
+                        (l10n.fieldTotalLabel, 2, true),
+                        if (gst) ('ITC', 1, true),
+                      ], header: true),
+                      for (final x in rows
+                          .skip(_purchasePage * _purchasePageSize)
+                          .take(_purchasePageSize))
+                        _gstTableRow([
+                          (_formatDate(x.date), 2, false),
+                          (x.billNumber.isEmpty ? '—' : x.billNumber, 2, false),
+                          (x.supplierName, 3, false),
+                          if (gst)
+                            (x.supplierGstin.isEmpty ? '—' : x.supplierGstin, 3, false),
+                          (_money(x.taxable), 2, true),
+                          (_money(x.tax), 2, true),
+                          (_money(x.total), 2, true),
+                          if (gst)
+                            (x.reverseCharge
+                                ? 'RCM'
+                                : x.itcEligible ? 'Y' : 'N', 1, true),
+                        ]),
+                      _buildReportPagination(
+                        currentPage: _purchasePage,
+                        pageSize: _purchasePageSize,
+                        total: rows.length,
+                        onPageChange: (p) {
+                          if (!mounted) return;
+                          setState(() => _purchasePage = p);
+                        },
+                        onSizeChange: (n) => setFilter(() => _purchasePageSize = n),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }

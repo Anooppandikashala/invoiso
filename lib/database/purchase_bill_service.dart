@@ -1,6 +1,7 @@
 import 'package:uuid/uuid.dart';
 
 import 'package:invoiso/database/product_service.dart';
+import 'package:invoiso/utils/app_date.dart';
 import 'package:invoiso/models/purchase_bill.dart';
 import 'package:invoiso/models/purchase_bill_item.dart';
 import 'package:invoiso/models/stock_transaction.dart';
@@ -266,6 +267,19 @@ class PurchaseBillService {
       'purchase_bills',
       where: 'deleted_at IS NULL',
       orderBy: 'id DESC',
+    );
+    return _buildPurchaseBillList(maps);
+  }
+
+  /// Non-deleted bills dated [from]–[to] (whole days), for the reports.
+  static Future<List<PurchaseBill>> getPurchaseBillsInRange(
+      DateTime from, DateTime to) async {
+    final db = await dbHelper.database;
+    final maps = await db.query(
+      'purchase_bills',
+      where: 'deleted_at IS NULL AND bill_date >= ? AND bill_date <= ?',
+      whereArgs: [AppDate.dateKeyStart(from), AppDate.dateKeyEnd(to)],
+      orderBy: 'bill_date ASC, id ASC',
     );
     return _buildPurchaseBillList(maps);
   }

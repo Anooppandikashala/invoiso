@@ -6317,6 +6317,50 @@ class AppLocalizationsEn extends AppLocalizations {
       'Tax (reverse charge — you pay, not in total)';
 
   @override
+  String get reportsNavPurchasesLabel => 'Purchases';
+
+  @override
+  String get purchaseRegisterTitle => 'Purchase register';
+
+  @override
+  String get purchaseRegisterEmpty => 'No purchase bills in this period.';
+
+  @override
+  String get purchaseRegisterSearchHint => 'Search supplier or bill no…';
+
+  @override
+  String get purchaseRegisterBillNoLabel => 'Bill no.';
+
+  @override
+  String get purchaseRegisterSupplierLabel => 'Supplier';
+
+  @override
+  String get purchaseKpiTotal => 'Total purchases';
+
+  @override
+  String get purchaseKpiTaxable => 'Taxable value';
+
+  @override
+  String get purchaseKpiItc => 'ITC available';
+
+  @override
+  String get purchaseKpiNotClaimable => 'Tax not claimable';
+
+  @override
+  String get purchaseFilterRegistered => 'Registered';
+
+  @override
+  String get purchaseFilterUnregistered => 'Unregistered';
+
+  @override
+  String get purchaseIssueInvalidGstin =>
+      'Supplier GSTIN format is invalid — no ITC';
+
+  @override
+  String get purchaseIssueTaxWithoutGstin =>
+      'Tax on a bill without a valid supplier GSTIN — not claimable';
+
+  @override
   String get purchaseBillReverseChargeHint =>
       'You pay the GST on this purchase (e.g. goods transport, legal fees) — the supplier charged none.';
 

@@ -10778,6 +10778,90 @@ abstract class AppLocalizations {
   /// **'Tax (reverse charge — you pay, not in total)'**
   String get purchaseBillRcmTaxLabel;
 
+  /// No description provided for @reportsNavPurchasesLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Purchases'**
+  String get reportsNavPurchasesLabel;
+
+  /// No description provided for @purchaseRegisterTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Purchase register'**
+  String get purchaseRegisterTitle;
+
+  /// No description provided for @purchaseRegisterEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No purchase bills in this period.'**
+  String get purchaseRegisterEmpty;
+
+  /// No description provided for @purchaseRegisterSearchHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Search supplier or bill no…'**
+  String get purchaseRegisterSearchHint;
+
+  /// No description provided for @purchaseRegisterBillNoLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Bill no.'**
+  String get purchaseRegisterBillNoLabel;
+
+  /// No description provided for @purchaseRegisterSupplierLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Supplier'**
+  String get purchaseRegisterSupplierLabel;
+
+  /// No description provided for @purchaseKpiTotal.
+  ///
+  /// In en, this message translates to:
+  /// **'Total purchases'**
+  String get purchaseKpiTotal;
+
+  /// No description provided for @purchaseKpiTaxable.
+  ///
+  /// In en, this message translates to:
+  /// **'Taxable value'**
+  String get purchaseKpiTaxable;
+
+  /// No description provided for @purchaseKpiItc.
+  ///
+  /// In en, this message translates to:
+  /// **'ITC available'**
+  String get purchaseKpiItc;
+
+  /// No description provided for @purchaseKpiNotClaimable.
+  ///
+  /// In en, this message translates to:
+  /// **'Tax not claimable'**
+  String get purchaseKpiNotClaimable;
+
+  /// No description provided for @purchaseFilterRegistered.
+  ///
+  /// In en, this message translates to:
+  /// **'Registered'**
+  String get purchaseFilterRegistered;
+
+  /// No description provided for @purchaseFilterUnregistered.
+  ///
+  /// In en, this message translates to:
+  /// **'Unregistered'**
+  String get purchaseFilterUnregistered;
+
+  /// No description provided for @purchaseIssueInvalidGstin.
+  ///
+  /// In en, this message translates to:
+  /// **'Supplier GSTIN format is invalid — no ITC'**
+  String get purchaseIssueInvalidGstin;
+
+  /// No description provided for @purchaseIssueTaxWithoutGstin.
+  ///
+  /// In en, this message translates to:
+  /// **'Tax on a bill without a valid supplier GSTIN — not claimable'**
+  String get purchaseIssueTaxWithoutGstin;
+
   /// No description provided for @purchaseBillReverseChargeHint.
   ///
   /// In en, this message translates to:

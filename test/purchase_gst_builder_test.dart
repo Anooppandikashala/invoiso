@@ -5,6 +5,7 @@ import 'package:invoiso/models/purchase_bill.dart';
 import 'package:invoiso/models/purchase_bill_item.dart';
 import 'package:invoiso/models/purchase_gst_report.dart';
 import 'package:invoiso/services/gst/purchase_gst_builder.dart';
+import 'package:invoiso/services/gst/purchase_register_export.dart';
 
 const _company = '33ABCDE1234F1Z5'; // Tamil Nadu
 
@@ -95,5 +96,19 @@ void main() {
       (PurchaseGstIssueKind.unusualRate, '15'),
       (PurchaseGstIssueKind.taxWithoutGstin, ''),
     });
+  });
+
+  test('purchase register CSV', () {
+    final r = _build([
+      _bill('1', gstin: '29ABCDE1234F1Z5', items: [_item(100, 18)]),
+      _bill('2', rcm: true, items: [_item(1000, 5)]),
+    ]);
+    final lines = PurchaseRegisterExport.csv(r.rows, datePattern: 'dd/MM/yyyy')
+        .trim()
+        .split(RegExp(r'\r?\n'));
+    expect(lines.first, startsWith('"Date","Bill No","Supplier","Supplier GSTIN"'));
+    expect(lines[1],
+        '"01/11/2026","PB-1","Supplier 1","29ABCDE1234F1Z5","29-Karnataka","100.00","18.00","0.00","0.00","118.00","Y","N"');
+    expect(lines[2], endsWith('"1000.00","Y","Y"')); // RCM: total excludes tax
   });
 }

@@ -16,4 +16,16 @@ abstract class PurchaseBillRepository {
   Future<void> softDeletePurchaseBill(String id);
   Future<void> restorePurchaseBill(String id);
   Future<List<PurchaseBill>> getDeletedPurchaseBills();
+
+  /// Non-deleted bills dated [from]–[to] (whole days), for the purchase
+  /// reports. Default filters [getAllPurchaseBills]; SQLite overrides it.
+  Future<List<PurchaseBill>> getPurchaseBillsInRange(
+      DateTime from, DateTime to) async {
+    final start = DateTime(from.year, from.month, from.day);
+    final end = DateTime(to.year, to.month, to.day + 1);
+    return [
+      for (final b in await getAllPurchaseBills())
+        if (!b.billDate.isBefore(start) && b.billDate.isBefore(end)) b,
+    ];
+  }
 }

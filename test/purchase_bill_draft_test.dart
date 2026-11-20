@@ -231,4 +231,20 @@ void main() {
     expect([saved.dueDate, saved.reverseCharge, saved.supplierGstin],
         [null, false, '33AAAAA1111A1Z5']);
   });
+
+  test('bills in a date range: whole days, deleted bills left out', () async {
+    for (final (id, day) in [('r1', 1), ('r2', 15), ('r3', 30)]) {
+      await PurchaseBillService.insertPurchaseBill(
+          bill(id, date: DateTime(2026, 11, day, 18, 30)));
+    }
+    await PurchaseBillService.softDeletePurchaseBill('r2');
+    final ids = (await PurchaseBillService.getPurchaseBillsInRange(
+            DateTime(2026, 11, 1), DateTime(2026, 11, 30)))
+        .map((b) => b.id)
+        .toList();
+    expect(ids, ['r1', 'r3']); // time of day on the end date still counts
+    final none = await PurchaseBillService.getPurchaseBillsInRange(
+        DateTime(2026, 12, 1), DateTime(2026, 12, 31));
+    expect(none, isEmpty);
+  });
 }

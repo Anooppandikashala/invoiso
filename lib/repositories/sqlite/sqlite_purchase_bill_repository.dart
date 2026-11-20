@@ -35,4 +35,8 @@ class SqlitePurchaseBillRepository implements PurchaseBillRepository {
   Future<void> restorePurchaseBill(String id) => PurchaseBillService.restorePurchaseBill(id);
   @override
   Future<List<PurchaseBill>> getDeletedPurchaseBills() => PurchaseBillService.getDeletedPurchaseBills();
+
+  @override
+  Future<List<PurchaseBill>> getPurchaseBillsInRange(DateTime from, DateTime to) =>
+      PurchaseBillService.getPurchaseBillsInRange(from, to);
 }
