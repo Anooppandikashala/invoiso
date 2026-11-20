@@ -199,7 +199,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get navDashboard => 'Dashboard';
 
   @override
-  String get navNewInvoice => 'New Invoice';
+  String get navNewInvoice => 'New Document';
 
   @override
   String get navInvoices => 'Invoices';
@@ -868,7 +868,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get createInvoiceCreateNewInvoiceButton =>
-      'Create New Invoice (Shortcut: Ctrl+q)';
+      'Create New Document (Shortcut: Ctrl+q)';
 
   @override
   String createInvoiceAppBarTitle(String invoiceTypeLabel) {
@@ -902,7 +902,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get createInvoiceNewInvoiceShortcutLabel =>
-      'New Invoice (Shortcut: Ctrl+q)';
+      'New Document (Shortcut: Ctrl+q)';
 
   @override
   String get createInvoiceSavingEllipsisLabel => 'Saving...';
@@ -4937,7 +4937,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get accessibilityCashExchangeSubtitle =>
-      'Adds a Cash Exchange Services menu after New Invoice to record UPI ↔ Cash exchanges, service fees and cash movements, with Cash and UPI/Bank balances.';
+      'Adds a Cash Exchange Services menu after New Document to record UPI ↔ Cash exchanges, service fees and cash movements, with Cash and UPI/Bank balances.';
 
   @override
   String get accessibilityReportsAdminOnlyLabel => 'Reports: Admins Only';
@@ -5219,7 +5219,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get shortcutNewInvoiceDescription =>
-      'New Invoice (from Dashboard) / Reset form (in Create Invoice)';
+      'New Document (from Dashboard) / Reset form (in Create Invoice)';
 
   @override
   String get shortcutSaveInvoiceDescription => 'Save / create the invoice';

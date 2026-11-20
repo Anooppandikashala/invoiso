@@ -459,7 +459,7 @@ abstract class AppLocalizations {
   /// No description provided for @navNewInvoice.
   ///
   /// In en, this message translates to:
-  /// **'New Invoice'**
+  /// **'New Document'**
   String get navNewInvoice;
 
   /// No description provided for @navInvoices.
@@ -1581,7 +1581,7 @@ abstract class AppLocalizations {
   /// No description provided for @createInvoiceCreateNewInvoiceButton.
   ///
   /// In en, this message translates to:
-  /// **'Create New Invoice (Shortcut: Ctrl+q)'**
+  /// **'Create New Document (Shortcut: Ctrl+q)'**
   String get createInvoiceCreateNewInvoiceButton;
 
   /// No description provided for @createInvoiceAppBarTitle.
@@ -1629,7 +1629,7 @@ abstract class AppLocalizations {
   /// No description provided for @createInvoiceNewInvoiceShortcutLabel.
   ///
   /// In en, this message translates to:
-  /// **'New Invoice (Shortcut: Ctrl+q)'**
+  /// **'New Document (Shortcut: Ctrl+q)'**
   String get createInvoiceNewInvoiceShortcutLabel;
 
   /// No description provided for @createInvoiceSavingEllipsisLabel.
@@ -8403,7 +8403,7 @@ abstract class AppLocalizations {
   /// No description provided for @accessibilityCashExchangeSubtitle.
   ///
   /// In en, this message translates to:
-  /// **'Adds a Cash Exchange Services menu after New Invoice to record UPI ↔ Cash exchanges, service fees and cash movements, with Cash and UPI/Bank balances.'**
+  /// **'Adds a Cash Exchange Services menu after New Document to record UPI ↔ Cash exchanges, service fees and cash movements, with Cash and UPI/Bank balances.'**
   String get accessibilityCashExchangeSubtitle;
 
   /// No description provided for @accessibilityReportsAdminOnlyLabel.
@@ -8919,7 +8919,7 @@ abstract class AppLocalizations {
   /// No description provided for @shortcutNewInvoiceDescription.
   ///
   /// In en, this message translates to:
-  /// **'New Invoice (from Dashboard) / Reset form (in Create Invoice)'**
+  /// **'New Document (from Dashboard) / Reset form (in Create Invoice)'**
   String get shortcutNewInvoiceDescription;
 
   /// No description provided for @shortcutSaveInvoiceDescription.
