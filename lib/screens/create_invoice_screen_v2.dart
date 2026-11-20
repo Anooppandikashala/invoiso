@@ -7382,61 +7382,67 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
         ),
         if (_isTaxEnabled) ...[
           const SizedBox(height: 10),
-          SegmentedButton<bool>(
-            segments: [
-              ButtonSegment<bool>(
-                  value: false,
-                  icon: const Icon(Icons.percent, size: 15),
-                  tooltip: AppLocalizations.of(context)!.createInvoiceGlobalRateTooltip),
-              ButtonSegment<bool>(
-                  value: true,
-                  icon: const Icon(Icons.list_alt, size: 15),
-                  tooltip: AppLocalizations.of(context)!.createInvoicePerItemRateTooltip),
-            ],
-            selected: {_isPerItem},
-            onSelectionChanged: (selection) {
-              if (!mounted) return;
-              setState(() => _isPerItem = selection.first);
-            },
-          ),
-          const SizedBox(height: 10),
-          if (!_isPerItem)
-            TextField(
-              controller: taxRateController,
-              decoration:
-                  _flatFieldDecorationV2(AppLocalizations.of(context)!.createInvoiceDefaultTaxRateLabel).copyWith(suffixText: '%'),
-              keyboardType: TextInputType.number,
-              onChanged: (value) {
-                if (!mounted) return;
-                setState(() {
-                  taxRate =
-                      (double.tryParse(value) ?? (taxRate * 100)) / 100;
-                });
-              },
-            )
-          else
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(AppBorderRadius.xsmall),
-                border: Border.all(
-                    color: Theme.of(context).colorScheme.outlineVariant),
-              ),
-              child: Row(
-                children: [
-                  Icon(Icons.info_outline,
-                      size: 14,
-                      color: Theme.of(context).colorScheme.onSurfaceVariant),
-                  const SizedBox(width: 6),
-                  Expanded(
-                    child: Text(AppLocalizations.of(context)!.createInvoiceTaxRateFromProductMessage,
-                        style: TextStyle(
-                            fontSize: 12,
-                            color: Theme.of(context).colorScheme.onSurfaceVariant)),
-                  ),
+          // Tax type (global / per item) and the rate on one row.
+          Row(
+            children: [
+              SegmentedButton<bool>(
+                segments: [
+                  ButtonSegment<bool>(
+                      value: false,
+                      icon: const Icon(Icons.percent, size: 15),
+                      tooltip: AppLocalizations.of(context)!.createInvoiceGlobalRateTooltip),
+                  ButtonSegment<bool>(
+                      value: true,
+                      icon: const Icon(Icons.list_alt, size: 15),
+                      tooltip: AppLocalizations.of(context)!.createInvoicePerItemRateTooltip),
                 ],
+                selected: {_isPerItem},
+                onSelectionChanged: (selection) {
+                  if (!mounted) return;
+                  setState(() => _isPerItem = selection.first);
+                },
               ),
-            ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: !_isPerItem
+                    ? TextField(
+                        controller: taxRateController,
+                        decoration:
+                            _flatFieldDecorationV2(AppLocalizations.of(context)!.createInvoiceDefaultTaxRateLabel).copyWith(suffixText: '%'),
+                        keyboardType: TextInputType.number,
+                        onChanged: (value) {
+                          if (!mounted) return;
+                          setState(() {
+                            taxRate =
+                                (double.tryParse(value) ?? (taxRate * 100)) / 100;
+                          });
+                        },
+                      )
+                    : Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(AppBorderRadius.xsmall),
+                          border: Border.all(
+                              color: Theme.of(context).colorScheme.outlineVariant),
+                        ),
+                        child: Row(
+                          children: [
+                            Icon(Icons.info_outline,
+                                size: 14,
+                                color: Theme.of(context).colorScheme.onSurfaceVariant),
+                            const SizedBox(width: 6),
+                            Expanded(
+                              child: Text(AppLocalizations.of(context)!.createInvoiceTaxRateFromProductMessage,
+                                  style: TextStyle(
+                                      fontSize: 12,
+                                      color: Theme.of(context).colorScheme.onSurfaceVariant)),
+                            ),
+                          ],
+                        ),
+                      ),
+              ),
+            ],
+          ),
           if (_showGstFields) ...[
             const SizedBox(height: 6),
             Row(
