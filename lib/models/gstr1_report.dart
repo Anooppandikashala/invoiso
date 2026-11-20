@@ -102,6 +102,31 @@ class Gstr1HsnRow {
   double get totalValue => taxable + igst + cgst + sgst;
 }
 
+/// One exported document, for the optional "Invoices" register sheet.
+class Gstr1RegisterRow {
+  final String type; // 'Invoice' | 'Credit Note' | 'Debit Note'
+  final String number;
+  final DateTime date;
+  final String name;
+  final String gstin;
+  final String pos;
+  final double taxable; // all rates incl. 0 %
+  final double tax;
+  final double total; // as printed
+
+  const Gstr1RegisterRow({
+    required this.type,
+    required this.number,
+    required this.date,
+    required this.name,
+    required this.gstin,
+    required this.pos,
+    required this.taxable,
+    required this.tax,
+    required this.total,
+  });
+}
+
 enum Gstr1IssueKind {
   /// Excluded: invoice not in INR (exports aren't supported).
   nonInr,
@@ -147,6 +172,7 @@ class Gstr1Report {
   final List<Gstr1HsnRow> hsnB2b;
   final List<Gstr1HsnRow> hsnB2c;
   final List<DocumentIssuedRow> docs;
+  final List<Gstr1RegisterRow> register; // every exported document
   final List<Gstr1Issue> excluded;
   final List<Gstr1Issue> warnings;
 
@@ -163,6 +189,7 @@ class Gstr1Report {
     required this.hsnB2b,
     required this.hsnB2c,
     required this.docs,
+    required this.register,
     required this.excluded,
     required this.warnings,
     required this.companyGstinValid,

@@ -53,6 +53,7 @@ class Gstr1Builder {
     final b2csSums = <String, List<double>>{}; // 'pos|rate' → [taxable, igst, cgst]
     final excluded = <Gstr1Issue>[];
     final warnings = <Gstr1Issue>[];
+    final register = <Gstr1RegisterRow>[];
     // Table 8: 'interState|registered' → [nil, exempt, nonGst]
     final exemp = {
       for (final k in ['true|true', 'false|true', 'true|false', 'false|false'])
@@ -84,9 +85,24 @@ class Gstr1Builder {
             Gstr1Issue(Gstr1IssueKind.missingPlaceOfSupply, inv.id, number));
         continue;
       }
+      final fullSplit = rateSplit(inv);
       // 0 % supplies go to the nil / exempt table, not the rate sections.
-      final split = rateSplit(inv)..remove(0.0);
+      final split = {...fullSplit}..remove(0.0);
       final gstin = inv.customer.gstin.trim();
+      final name = inv.customer.businessName.trim().isNotEmpty
+          ? inv.customer.businessName.trim()
+          : inv.customer.name;
+      register.add(Gstr1RegisterRow(
+        type: inv.type,
+        number: number,
+        date: inv.date,
+        name: name,
+        gstin: gstin,
+        pos: pos,
+        taxable: _r(fullSplit.values.fold(0.0, (a, v) => a + v.taxable)),
+        tax: _r(fullSplit.values.fold(0.0, (a, v) => a + v.tax)),
+        total: _r(inv.total),
+      ));
       final sign = inv.type == 'Credit Note' ? -1.0 : 1.0;
       final registered = gstin.isNotEmpty;
 
@@ -135,9 +151,7 @@ class Gstr1Builder {
           rows.add(Gstr1DocRow(
             invoiceId: inv.id,
             gstin: gstin,
-            name: inv.customer.businessName.trim().isNotEmpty
-                ? inv.customer.businessName.trim()
-                : inv.customer.name,
+            name: name,
             number: number,
             date: inv.date,
             value: _r(inv.total),
@@ -201,6 +215,7 @@ class Gstr1Builder {
       hsnB2b: _hsnRows(hsnSums, hsnNames, registered: true),
       hsnB2c: _hsnRows(hsnSums, hsnNames, registered: false),
       docs: input.documentsIssued,
+      register: register,
       excluded: excluded,
       warnings: warnings,
       companyGstinValid: companyState != null,
