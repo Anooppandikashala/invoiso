@@ -82,6 +82,7 @@ jobs:
           find dist -name "invoiso-*-windows-setup.exe"
 
       - name: Upload unsigned Windows Installer
+        if: ${{ vars.SIGN_PATH_SIGN == 'true' }}
         id: upload-unsigned
         uses: actions/upload-artifact@v4
         with:
@@ -89,6 +90,7 @@ jobs:
           path: dist/*/invoiso-*-windows-setup.exe
 
       - name: Sign Windows Installer with SignPath
+        if: ${{ vars.SIGN_PATH_SIGN == 'true' }}
         uses: signpath/github-action-submit-signing-request@v3
         with:
           api-token: ${{ secrets.SIGNPATH_API_TOKEN }}
@@ -104,7 +106,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: Invoiso-Windows-Installer
-          path: signed/*/*.exe
+          path: ${{ vars.SIGN_PATH_SIGN == 'true' && 'signed/*/*.exe' || 'dist/*/invoiso-*-windows-setup.exe' }}
 
   # ─────────────────────────────────────────────────────────────
   # Linux — build .deb package
