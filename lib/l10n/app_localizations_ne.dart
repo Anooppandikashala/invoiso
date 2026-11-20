@@ -2619,6 +2619,13 @@ class AppLocalizationsNe extends AppLocalizations {
   String get productMgmtConfigureAction => 'कन्फिगर गर्नुहोस्';
 
   @override
+  String get customerMgmtDetailsBannerTitle => 'New: Customize customer fields';
+
+  @override
+  String get customerMgmtDetailsBannerSubtitle =>
+      'Add shipping address, date of birth, age, gender or your own fields. Settings > Customer Details.';
+
+  @override
   String productMgmtAddNewItemTitle(String type) {
     return 'नयाँ $type थप्नुहोस्';
   }

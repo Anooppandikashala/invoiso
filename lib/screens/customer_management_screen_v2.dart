@@ -14,6 +14,8 @@ import 'package:invoiso/models/customer_list_stats.dart';
 import 'package:invoiso/models/company_info.dart';
 import 'package:invoiso/models/user.dart';
 import 'package:invoiso/widgets/copyable_text.dart';
+import 'package:invoiso/widgets/discovery_banner.dart';
+import 'package:invoiso/screens/settings/customer_details_settings_screen.dart';
 import 'package:invoiso/widgets/apply_customer_payment_dialog.dart';
 import 'package:invoiso/models/customer_field_settings.dart';
 import 'package:invoiso/widgets/customer_extra_fields.dart';
@@ -93,11 +95,30 @@ class _CustomerManagementScreenV2State extends ConsumerState<CustomerManagementS
     _loadCustomers();
     _loadStatsCardsVisibilityV2();
     _loadFieldSettings();
+    _loadDetailsBannerDismissed();
   }
 
   Future<void> _loadFieldSettings() async {
     final s = await CustomerFieldSettings.load(ref.read(settingsRepositoryProvider));
     if (mounted) setState(() => _fieldSettings = s);
+  }
+
+  // "New: Customize customer fields" banner (like Products) → Settings →
+  // Customer Details. Admins only; hidden for good once dismissed.
+  bool _showDetailsBanner = false;
+
+  Future<void> _loadDetailsBannerDismissed() async {
+    final dismissed = await ref
+        .read(settingsRepositoryProvider)
+        .getSetting(SettingKey.customerDetailsBannerDismissed);
+    if (mounted) setState(() => _showDetailsBanner = dismissed != '1');
+  }
+
+  Future<void> _dismissDetailsBanner() async {
+    await ref
+        .read(settingsRepositoryProvider)
+        .setSetting(SettingKey.customerDetailsBannerDismissed, '1');
+    if (mounted) setState(() => _showDetailsBanner = false);
   }
 
   Future<void> _loadStatsCardsVisibilityV2() async {
@@ -2182,6 +2203,35 @@ class _CustomerManagementScreenV2State extends ConsumerState<CustomerManagementS
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
+                            if (widget.user.isAdmin())
+                              DiscoveryBanner(
+                                visible: _showDetailsBanner,
+                                margin: const EdgeInsets.only(bottom: 16),
+                                icon: Icons.tune,
+                                iconColor: const Color(0xFF2563EB),
+                                backgroundColor: const Color(0xFFEFF6FF),
+                                borderColor: const Color(0xFFBFDBFE),
+                                title: Text(
+                                  AppLocalizations.of(context)!.customerMgmtDetailsBannerTitle,
+                                  style: const TextStyle(
+                                      fontWeight: FontWeight.w600,
+                                      fontSize: 13,
+                                      color: Color(0xFF1E40AF)),
+                                ),
+                                subtitle: Text(
+                                  AppLocalizations.of(context)!.customerMgmtDetailsBannerSubtitle,
+                                  style: const TextStyle(fontSize: 12, color: Color(0xFF3B82F6)),
+                                ),
+                                actionLabel: AppLocalizations.of(context)!.productMgmtConfigureAction,
+                                onAction: () async {
+                                  await Navigator.of(context).push(MaterialPageRoute(
+                                      builder: (_) => const CustomerDetailsSettingsScreen()));
+                                  _loadFieldSettings();
+                                },
+                                actionColor: const Color(0xFF2563EB),
+                                onDismiss: _dismissDetailsBanner,
+                                dismissIconColor: const Color(0xFF93C5FD),
+                              ),
                             _headerBarV2(),
                             const SizedBox(height: 12),
                             if (_showStatsCardsV2) ...[

@@ -4332,6 +4332,18 @@ abstract class AppLocalizations {
   /// **'Configure'**
   String get productMgmtConfigureAction;
 
+  /// No description provided for @customerMgmtDetailsBannerTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'New: Customize customer fields'**
+  String get customerMgmtDetailsBannerTitle;
+
+  /// No description provided for @customerMgmtDetailsBannerSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Add shipping address, date of birth, age, gender or your own fields. Settings > Customer Details.'**
+  String get customerMgmtDetailsBannerSubtitle;
+
   /// No description provided for @productMgmtAddNewItemTitle.
   ///
   /// In en, this message translates to:

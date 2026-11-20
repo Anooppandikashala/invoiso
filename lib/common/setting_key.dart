@@ -122,6 +122,7 @@ enum SettingKey {
   paymentQrSource, // 'upi' (default, QR generated from UPI ID) | 'image' (uploaded QR images)
   paymentQrEntries, // JSON list of PaymentQrEntry objects (uploaded payment QR images, base64)
   chargesIncludeTax, // 'true' = new taxable additional charges are entered tax-inclusive (default false); stamped per charge
+  customerDetailsBannerDismissed, // '1' once user dismisses the customer-fields discovery banner on Customers
 }
 
 extension SettingKeyExtension on SettingKey {
@@ -373,6 +374,8 @@ extension SettingKeyExtension on SettingKey {
         return 'payment_qr_entries';
       case SettingKey.chargesIncludeTax:
         return 'charges_include_tax';
+      case SettingKey.customerDetailsBannerDismissed:
+        return 'customer_details_banner_dismissed';
 
     }
   }

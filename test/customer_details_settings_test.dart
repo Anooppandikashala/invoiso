@@ -13,6 +13,8 @@ import 'package:invoiso/database/database_helper.dart';
 import 'package:invoiso/l10n/app_localizations.dart';
 import 'package:invoiso/providers/sqlite_repository_overrides.dart';
 import 'package:invoiso/repositories/sqlite/sqlite_settings_repository.dart';
+import 'package:invoiso/models/user.dart';
+import 'package:invoiso/screens/customer_management_screen_v2.dart';
 import 'package:invoiso/screens/settings/customer_details_settings_screen.dart';
 
 void main() {
@@ -82,5 +84,52 @@ void main() {
         ]));
     expect(saved, ['true', 'true', 'false']);
     expect(find.text('Customer details saved.'), findsOneWidget);
+  });
+
+  testWidgets('Customers banner: admin sees it, Configure opens, × hides for good',
+      (tester) async {
+    final onError = FlutterError.onError;
+    FlutterError.onError = (d) {
+      if (!d.exceptionAsString().contains('overflowed')) onError?.call(d);
+    };
+    addTearDown(() => FlutterError.onError = onError);
+    tester.view.physicalSize = const Size(1600, 1200);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.reset);
+    Widget app(String type) => ProviderScope(
+          overrides: sqliteRepositoryOverrides,
+          child: MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: Scaffold(
+                body: CustomerManagementScreenV2(
+                    key: ValueKey(type),
+                    user: User(id: type, username: type, password: '', userType: type))),
+          ),
+        );
+
+    await tester.pumpWidget(app('user'));
+    await settle(tester);
+    expect(find.text('New: Customize customer fields'), findsNothing); // staff
+
+    await tester.pumpWidget(app('admin'));
+    await settle(tester);
+    expect(find.text('New: Customize customer fields'), findsOneWidget);
+    await tester.pump(const Duration(milliseconds: 300)); // banner slides open
+    await tester.tap(find.text('Configure'));
+    await settle(tester);
+    await tester.pump(const Duration(milliseconds: 400)); // page transition
+    expect(find.text('Customize Customer Details'), findsOneWidget);
+    await tester.pageBack();
+    await settle(tester);
+    await tester.pump(const Duration(milliseconds: 400));
+
+    await tester.tap(find.byTooltip('Dismiss'));
+    await settle(tester);
+    await tester.pump(const Duration(milliseconds: 300)); // banner slides closed
+    expect(find.text('New: Customize customer fields'), findsNothing);
+    final dismissed = await tester.runAsync(
+        () => repo.getSetting(SettingKey.customerDetailsBannerDismissed));
+    expect(dismissed, '1');
   });
 }

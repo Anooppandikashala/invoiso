@@ -1632,6 +1632,8 @@
   "productMgmtColumnsBannerTitle": "New: Customize product fields",
   "productMgmtColumnsBannerSubtitle": "Choose which fields show for a simpler catalog. Settings > Customize Product Details.",
   "productMgmtConfigureAction": "Configure",
+  "customerMgmtDetailsBannerTitle": "New: Customize customer fields",
+  "customerMgmtDetailsBannerSubtitle": "Add shipping address, date of birth, age, gender or your own fields. Settings > Customer Details.",
   "productMgmtAddNewItemTitle": "Add New {type}",
   "@productMgmtAddNewItemTitle": {
     "placeholders": {
