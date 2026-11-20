@@ -269,7 +269,7 @@ void main() {
     await tester.tap(find.text('Purchases'));
     await settle(tester);
 
-    expect(find.text('Purchase register'), findsOneWidget);
+    expect(find.text('Purchase register'), findsNWidgets(2)); // sub-tab + card
     expect(find.text('SUP-77'), findsOneWidget);
     expect(find.text('Kumar Traders'), findsOneWidget);
     final row = find.ancestor(of: find.text('SUP-77'), matching: find.byType(Row)).first;
@@ -332,5 +332,49 @@ void main() {
     final igst = find.ancestor(of: find.text('IGST').last, matching: find.byType(Row)).first;
     expect(find.descendant(of: igst, matching: find.textContaining('0.18')),
         findsOneWidget); // paid via ITC
+  });
+
+  testWidgets('Purchases → Payables: aging by supplier, period hidden',
+      (tester) async {
+    await tester.runAsync(() async {
+      await PurchaseBillService.insertPurchaseBill(PurchaseBill(
+        id: 'pay1', billNumber: 'DUE-9', supplierName: 'Late Supplies',
+        billDate: DateTime.now().subtract(const Duration(days: 60)),
+        dueDate: DateTime.now().subtract(const Duration(days: 45)),
+        items: [PurchaseBillItem(
+            productName: 'Box', quantity: 1, costPerUnit: 500, taxRate: 0)],
+      ));
+    });
+    final onError = FlutterError.onError;
+    FlutterError.onError = (d) {
+      if (!d.exceptionAsString().contains('overflowed')) onError?.call(d);
+    };
+    addTearDown(() => FlutterError.onError = onError);
+    tester.view.physicalSize = const Size(1600, 3000);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.reset);
+    await tester.pumpWidget(ProviderScope(
+      overrides: [
+        ...sqliteRepositoryOverrides,
+        enablePurchaseBillsAndSuppliersProvider.overrideWith((ref) => true),
+      ],
+      child: MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: const Scaffold(body: ReportsScreen()),
+      ),
+    ));
+    await settle(tester);
+    await tester.tap(find.text('Purchases'));
+    await settle(tester);
+    expect(find.text('PERIOD'), findsOneWidget); // register uses the period
+    await tester.tap(find.text('Payables'));
+    await settle(tester);
+
+    expect(find.text('PERIOD'), findsNothing); // aging is as of today
+    expect(find.text('Payables aging by supplier (as of today)'), findsOneWidget);
+    expect(find.text('DUE-9'), findsOneWidget);
+    final row = find.ancestor(of: find.text('DUE-9'), matching: find.byType(Row)).first;
+    expect(find.descendant(of: row, matching: find.text('31–60 days')), findsOneWidget);
   });
 }

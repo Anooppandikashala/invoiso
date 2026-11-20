@@ -6499,6 +6499,21 @@ class AppLocalizationsNe extends AppLocalizations {
   String get purchaseKpiNotClaimable => 'Tax not claimable';
 
   @override
+  String get purchasePayablesTab => 'Payables';
+
+  @override
+  String get purchaseApAgingSummaryTitle =>
+      'Payables aging by supplier (as of today)';
+
+  @override
+  String purchaseAgedBillsTitle(int count) {
+    return 'Unpaid bills ($count)';
+  }
+
+  @override
+  String get purchaseNoPayablesMessage => 'No unpaid purchase bills.';
+
+  @override
   String get purchaseFilterRegistered => 'Registered';
 
   @override

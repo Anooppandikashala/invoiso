@@ -26,6 +26,7 @@ import 'package:invoiso/models/purchase_gst_report.dart';
 import 'package:invoiso/providers/purchase_bills_settings_provider.dart';
 import 'package:invoiso/services/gst/purchase_gst_builder.dart';
 import 'package:invoiso/services/gst/purchase_register_export.dart';
+import 'package:invoiso/domain/payables_aging.dart';
 
 import '../common/supported_currencies.dart';
 import 'package:invoiso/utils/formatters.dart';
@@ -133,6 +134,11 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
   int _purchasePage = 0;
   int _purchasePageSize = 25;
   bool _purchasesAdminOnly = false;
+  int _purchaseSection = 0; // 0 register, 1 payables
+  ({List<AgedReceivable> detail, List<AgedReceivableSummaryRow> summary})?
+      _payables; // as of today, all bills (not period-bound)
+  int _payablesPage = 0;
+  int _payablesPageSize = 25;
   bool get _showPurchases =>
       ref.watch(enablePurchaseBillsAndSuppliersProvider) &&
       (!_purchasesAdminOnly || widget.isAdmin);
@@ -425,6 +431,17 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
     }
   }
 
+  /// Purchases → Payables: unpaid bills aged by due date, as of today.
+  Future<void> _loadPayables() async {
+    final bills =
+        await ref.read(purchaseBillRepositoryProvider).getAllPurchaseBills();
+    if (!mounted) return;
+    setState(() {
+      _payables = PayablesAging.build(bills);
+      _payablesPage = 0;
+    });
+  }
+
   Future<void> _loadGstr1() async {
     if (_gstr1Loading) return;
     setState(() => _gstr1Loading = true);
@@ -596,7 +613,9 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
             _purchaseReport = PurchaseGstBuilder.build(
                 companyGstin: company?.gstin ?? '', bills: bills);
             _purchasePage = 0;
+            _payables = null;
           });
+          if (_purchaseSection == 1) await _loadPayables();
         case 8:
           final r = await Future.wait([
             ref.read(reportRepositoryProvider).getInventoryValuationSummary(),
@@ -1056,6 +1075,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
           if (_selectedIndex != 6 &&
               _selectedIndex != 7 &&
               _selectedIndex != 8 &&
+              !(_selectedIndex == 9 && _purchaseSection == 1) &&
               !_isGstr1Section) ...[
             Padding(
               padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -2224,15 +2244,23 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
     );
   }
 
-  Widget _agedHeader() {
+  Widget _agedHeader({bool payables = false}) {
     final l10n = AppLocalizations.of(context)!;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
       color: Theme.of(context).colorScheme.surfaceContainerHighest,
       child: Row(
         children: [
-          Expanded(flex: 3, child: _TableHead(l10n.labelCustomer)),
-          Expanded(flex: 3, child: _TableHead(l10n.reportsInvoiceIdLabel)),
+          Expanded(
+              flex: 3,
+              child: _TableHead(payables
+                  ? l10n.purchaseRegisterSupplierLabel
+                  : l10n.labelCustomer)),
+          Expanded(
+              flex: 3,
+              child: _TableHead(payables
+                  ? l10n.purchaseRegisterBillNoLabel
+                  : l10n.reportsInvoiceIdLabel)),
           Expanded(
               flex: 2,
               child: _TableHead(l10n.dashboardOutstandingLabel, right: true)),
@@ -2327,14 +2355,18 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
     );
   }
 
-  Widget _agedSummaryHeader() {
+  Widget _agedSummaryHeader({bool payables = false}) {
     final l10n = AppLocalizations.of(context)!;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
       color: Theme.of(context).colorScheme.surfaceContainerHighest,
       child: Row(
         children: [
-          Expanded(flex: 3, child: _TableHead(l10n.labelCustomer)),
+          Expanded(
+              flex: 3,
+              child: _TableHead(payables
+                  ? l10n.purchaseRegisterSupplierLabel
+                  : l10n.labelCustomer)),
           Expanded(
               flex: 2,
               child: _TableHead(l10n.reportsCurrentBucketLabel, right: true)),
@@ -2403,10 +2435,10 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
     );
   }
 
-  Widget _agedSummaryTotalsRow() {
+  Widget _agedSummaryTotalsRow([List<AgedReceivableSummaryRow>? rows]) {
     final l10n = AppLocalizations.of(context)!;
     double c = 0, a30 = 0, a60 = 0, a90 = 0, a90p = 0, nd = 0, t = 0;
-    for (final r in _agedSummary) {
+    for (final r in rows ?? _agedSummary) {
       c += r.current;
       a30 += r.d0to30;
       a60 += r.d31to60;
@@ -2443,9 +2475,9 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
     );
   }
 
-  Widget _agedDetailTotalsRow() {
+  Widget _agedDetailTotalsRow([List<AgedReceivable>? rows]) {
     final l10n = AppLocalizations.of(context)!;
-    final total = _aged.fold<double>(0, (a, r) => a + r.outstanding);
+    final total = (rows ?? _aged).fold<double>(0, (a, r) => a + r.outstanding);
     return Container(
       decoration: BoxDecoration(
         color: Theme.of(context).colorScheme.surfaceContainerHighest,
@@ -2942,6 +2974,123 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
 
   /// Reports → Tax → GSTR-1: period picker, preview (blocking / sections /
   /// excluded / warnings) and Excel export (Gstr1ExportPlan.md Part D2).
+  /// Purchases → Payables: aging summary by supplier + detail by bill.
+  Widget _payablesSection(int ts) {
+    final l10n = AppLocalizations.of(context)!;
+    final p = _payables;
+    if (p == null) {
+      return const Padding(
+        padding: EdgeInsets.all(32),
+        child: Center(child: CircularProgressIndicator()),
+      );
+    }
+    Future<void> pdf() async {
+      final bytes = await ReportService.exportAgedReceivablesPdf(
+        p.summary,
+        p.detail,
+        currencySymbol: _sym,
+        showFooterBranding: _showFooterBranding,
+        asOfLabel: _formatDate(DateTime.now()),
+        payables: true,
+      );
+      await _savePdf(bytes, 'ap_aging_$ts.pdf');
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _sectionCard(
+          padding: EdgeInsets.zero,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(20, 20, 20, 12),
+                child: _cardTitle(
+                  l10n.purchaseApAgingSummaryTitle,
+                  trailing: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      _exportBtn(l10n.reportsExportCsvLabel, () async {
+                        await _saveCsv(
+                            ReportService.exportAgedReceivableSummaryCsv(
+                                p.summary,
+                                payables: true),
+                            'ap_aging_summary_$ts.csv');
+                      }),
+                      const SizedBox(width: 4),
+                      _exportBtn(l10n.customerMgmtExportPdfMenuLabel, pdf),
+                    ],
+                  ),
+                ),
+              ),
+              if (p.summary.isEmpty)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 20),
+                  child: _emptyState(l10n.purchaseNoPayablesMessage),
+                )
+              else ...[
+                _agedSummaryHeader(payables: true),
+                ...p.summary.map(_agedSummaryRow),
+                _agedSummaryTotalsRow(p.summary),
+              ],
+            ],
+          ),
+        ),
+        if (p.detail.isNotEmpty)
+          _sectionCard(
+            padding: EdgeInsets.zero,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(20, 20, 20, 12),
+                  child: _cardTitle(
+                    l10n.purchaseAgedBillsTitle(p.detail.length),
+                    trailing: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        _exportBtn(l10n.reportsExportCsvLabel, () async {
+                          await _saveCsv(
+                              ReportService.exportAgedReceivablesCsv(p.detail,
+                                  payables: true),
+                              'aged_payables_$ts.csv');
+                        }),
+                        const SizedBox(width: 4),
+                        _exportBtn(l10n.customerMgmtExportPdfMenuLabel, pdf),
+                      ],
+                    ),
+                  ),
+                ),
+                _agedHeader(payables: true),
+                ...p.detail
+                    .skip(_payablesPage * _payablesPageSize)
+                    .take(_payablesPageSize)
+                    .map(_agedRow),
+                _agedDetailTotalsRow(p.detail),
+                _buildReportPagination(
+                  currentPage: _payablesPage,
+                  pageSize: _payablesPageSize,
+                  total: p.detail.length,
+                  onPageChange: (n) {
+                    if (!mounted) return;
+                    setState(() => _payablesPage = n);
+                  },
+                  onSizeChange: (n) {
+                    if (!mounted) return;
+                    setState(() {
+                      _payablesPageSize = n;
+                      _payablesPage = 0;
+                    });
+                  },
+                ),
+              ],
+            ),
+          ),
+      ],
+    );
+  }
+
   /// Return period shared by the GSTR-1 and GSTR-3B sub-tabs.
   String _returnPeriodLabel() {
     final ml = MaterialLocalizations.of(context);
@@ -3243,6 +3392,30 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
             children: [
               Padding(
                 padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+                child: SegmentedButton<int>(
+                  showSelectedIcon: false,
+                  segments: [
+                    ButtonSegment(
+                        value: 0,
+                        icon: const Icon(Icons.receipt_long_outlined, size: 16),
+                        label: Text(l10n.purchaseRegisterTitle)),
+                    ButtonSegment(
+                        value: 1,
+                        icon: const Icon(Icons.schedule, size: 16),
+                        label: Text(l10n.purchasePayablesTab)),
+                  ],
+                  selected: {_purchaseSection},
+                  onSelectionChanged: (v) {
+                    if (!mounted) return;
+                    setState(() => _purchaseSection = v.first);
+                    if (v.first == 1 && _payables == null) _loadPayables();
+                  },
+                ),
+              ),
+              if (_purchaseSection == 1) _payablesSection(ts),
+              if (_purchaseSection == 0)
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
                 child: IntrinsicHeight(
                   child: Row(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -3272,6 +3445,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
                   ),
                 ),
               ),
+              if (_purchaseSection == 0)
               _sectionCard(
                 padding: EdgeInsets.zero,
                 child: Column(

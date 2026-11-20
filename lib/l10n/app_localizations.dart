@@ -11012,6 +11012,30 @@ abstract class AppLocalizations {
   /// **'Tax not claimable'**
   String get purchaseKpiNotClaimable;
 
+  /// No description provided for @purchasePayablesTab.
+  ///
+  /// In en, this message translates to:
+  /// **'Payables'**
+  String get purchasePayablesTab;
+
+  /// No description provided for @purchaseApAgingSummaryTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Payables aging by supplier (as of today)'**
+  String get purchaseApAgingSummaryTitle;
+
+  /// No description provided for @purchaseAgedBillsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Unpaid bills ({count})'**
+  String purchaseAgedBillsTitle(int count);
+
+  /// No description provided for @purchaseNoPayablesMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'No unpaid purchase bills.'**
+  String get purchaseNoPayablesMessage;
+
   /// No description provided for @purchaseFilterRegistered.
   ///
   /// In en, this message translates to:

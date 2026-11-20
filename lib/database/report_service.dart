@@ -1870,10 +1870,14 @@ class ReportService {
     ]);
   }
 
-  static String exportAgedReceivablesCsv(List<AgedReceivable> list) {
+  /// [payables]: same layout for aged purchase bills (bill no. / supplier).
+  static String exportAgedReceivablesCsv(List<AgedReceivable> list,
+      {bool payables = false}) {
     final total = list.fold<double>(0, (a, r) => a + r.outstanding);
     return buildQuotedCsv([
-      ['Invoice ID', 'Customer', 'Outstanding', 'Days Overdue'],
+      payables
+          ? ['Bill No', 'Supplier', 'Outstanding', 'Days Overdue']
+          : ['Invoice ID', 'Customer', 'Outstanding', 'Days Overdue'],
       for (final r in list)
         [
           r.invoiceId,
@@ -1886,7 +1890,8 @@ class ReportService {
   }
 
   static String exportAgedReceivableSummaryCsv(
-      List<AgedReceivableSummaryRow> list) {
+      List<AgedReceivableSummaryRow> list,
+      {bool payables = false}) {
     double c = 0, a30 = 0, a60 = 0, a90 = 0, a90p = 0, nd = 0, t = 0;
     for (final r in list) {
       c += r.current;
@@ -1899,7 +1904,7 @@ class ReportService {
     }
     return buildQuotedCsv([
       [
-        'Customer',
+        payables ? 'Supplier' : 'Customer',
         'Current',
         '0-30',
         '31-60',
@@ -2343,12 +2348,14 @@ class ReportService {
     required String currencySymbol,
     required String asOfLabel,
     bool showFooterBranding = true,
+    bool payables = false, // aged purchase bills: supplier / bill no.
   }) async {
     final theme = await PdfFontService.loadTheme();
     final doc = pw.Document(theme: theme);
     final company = await BackendServices.companyInfo.getCompanyInfo();
     final dateFmt = (await BackendServices.settings.getDateFormat()).key;
     final generatedOn = DateFormat(dateFmt).format(DateTime.now());
+    final party = payables ? 'Supplier' : 'Customer';
 
     String money(double v) => '$currencySymbol ${v.toStringAsFixed(2)}';
 
@@ -2373,7 +2380,9 @@ class ReportService {
           children: [
             PdfReportHeader.build(
                 company: company,
-                title: 'ACCOUNTS RECEIVABLE AGING',
+                title: payables
+                    ? 'ACCOUNTS PAYABLE AGING'
+                    : 'ACCOUNTS RECEIVABLE AGING',
                 generatedOn: generatedOn),
             pw.Text(asOfLabel,
                 style: const pw.TextStyle(
@@ -2394,12 +2403,12 @@ class ReportService {
           ),
         ),
         build: (context) => [
-          pw.Text('Summary by customer',
+          pw.Text('Summary by ${party.toLowerCase()}',
               style: pw.TextStyle(fontSize: 11, fontWeight: pw.FontWeight.bold)),
           pw.SizedBox(height: 6),
           pw.TableHelper.fromTextArray(
             headers: [
-              'Customer',
+              party,
               'Current',
               '0-30',
               '31-60',
@@ -2447,11 +2456,16 @@ class ReportService {
                 const pw.BoxDecoration(color: PdfColor.fromInt(0xFFF8FAFC)),
           ),
           pw.SizedBox(height: 18),
-          pw.Text('Detail by invoice',
+          pw.Text(payables ? 'Detail by bill' : 'Detail by invoice',
               style: pw.TextStyle(fontSize: 11, fontWeight: pw.FontWeight.bold)),
           pw.SizedBox(height: 6),
           pw.TableHelper.fromTextArray(
-            headers: ['Customer', 'Invoice ID', 'Outstanding', 'Days Overdue'],
+            headers: [
+              party,
+              payables ? 'Bill No' : 'Invoice ID',
+              'Outstanding',
+              'Days Overdue'
+            ],
             data: [
               for (final r in detail)
                 [
