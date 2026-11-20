@@ -1,0 +1,256 @@
+import 'dart:typed_data';
+
+import 'package:intl/intl.dart';
+import 'package:invoiso/common/constants.dart';
+import 'package:invoiso/common/gst_utils.dart';
+import 'package:invoiso/models/company_info.dart';
+import 'package:invoiso/models/gstr1_report.dart';
+import 'package:invoiso/services/gst/gstr1_excel_writer.dart';
+import 'package:invoiso/services/pdf/pdf_font_service.dart';
+import 'package:invoiso/services/pdf/pdf_report_header.dart';
+import 'package:pdf/pdf.dart';
+import 'package:pdf/widgets.dart' as pw;
+
+/// Printable GSTR-1 for review / the CA: summary page (section totals,
+/// excluded, warnings) followed by every section's rows. English, like the
+/// other report PDFs. A4 landscape — the B2B / HSN tables are wide.
+class Gstr1PdfWriter {
+  const Gstr1PdfWriter._();
+
+  static Future<Uint8List> build(
+    Gstr1Report r, {
+    required String periodLabel,
+    required CompanyInfo? company,
+    required String datePattern,
+    bool showFooterBranding = true,
+    pw.ThemeData? theme, // tests pass a font theme; app loads the bundled one
+  }) async {
+    final doc = pw.Document(theme: theme ?? await PdfFontService.loadTheme());
+    final date = DateFormat(datePattern);
+    String n(num v) => v.toStringAsFixed(2);
+    String rate(double v) => '${v.toStringAsFixed(v % 1 == 0 ? 0 : 2)}%';
+    String pos(String c) => GstUtils.stateLabel(c);
+    double sum<T>(Iterable<T> xs, double Function(T) f) =>
+        xs.fold(0.0, (a, x) => a + f(x));
+    int docCount(List<Gstr1DocRow> rows) =>
+        rows.map((x) => x.invoiceId).toSet().length;
+
+    pw.Widget heading(String text) => pw.Padding(
+          padding: const pw.EdgeInsets.only(top: 14, bottom: 6),
+          child: pw.Text(text,
+              style: pw.TextStyle(fontSize: 11, fontWeight: pw.FontWeight.bold)),
+        );
+    // Columns from [firstNumber] on are right-aligned amounts.
+    pw.Widget table(List<String> headers, List<List<String>> rows,
+            {required int firstNumber}) =>
+        pw.TableHelper.fromTextArray(
+          headers: headers,
+          data: rows,
+          headerStyle: pw.TextStyle(
+              fontWeight: pw.FontWeight.bold, fontSize: 8, color: PdfColors.white),
+          cellStyle: const pw.TextStyle(fontSize: 8),
+          headerDecoration:
+              const pw.BoxDecoration(color: PdfReportHeader.accentColor),
+          cellAlignments: {
+            for (var c = 0; c < headers.length; c++)
+              c: c >= firstNumber
+                  ? pw.Alignment.centerRight
+                  : pw.Alignment.centerLeft,
+          },
+          cellHeight: 18,
+          oddRowDecoration:
+              const pw.BoxDecoration(color: PdfColor.fromInt(0xFFF8FAFC)),
+        );
+    List<String> taxCols(double igst, double cgst) =>
+        [n(igst), n(cgst), n(cgst)];
+
+    final docRowsHeader = [
+      'GSTIN', 'Receiver', 'Number', 'Date', 'Value', 'Place of supply', 'RC',
+      'Rate', 'Taxable', 'IGST', 'CGST', 'SGST',
+    ];
+    List<String> docRow(Gstr1DocRow x) => [
+          x.gstin, x.name,
+          x.noteType == null ? x.number : '${x.number} (${x.noteType})',
+          date.format(x.date), n(x.value), pos(x.pos),
+          x.reverseCharge ? 'Y' : 'N', rate(x.rate), n(x.taxable),
+          ...taxCols(x.igst, x.cgst),
+        ];
+    final hsnHeader = [
+      'HSN', 'Description', 'UQC', 'Qty', 'Rate', 'Taxable', 'IGST', 'CGST',
+      'SGST', 'Total',
+    ];
+    List<String> hsnRow(Gstr1HsnRow x) => [
+          x.hsn.isEmpty ? '—' : x.hsn, x.description, x.uqc, n(x.quantity),
+          rate(x.rate), n(x.taxable), ...taxCols(x.igst, x.cgst), n(x.totalValue),
+        ];
+
+    final sections = [
+      ('B2B (4A, 4B, 6B, 6C)', docCount(r.b2b), r.b2b),
+      ('B2C Large (5)', docCount(r.b2cl), r.b2cl),
+      ('Credit / debit notes — registered (9B)', docCount(r.cdnr), r.cdnr),
+      ('Credit / debit notes — unregistered (9B)', docCount(r.cdnur), r.cdnur),
+    ];
+
+    doc.addPage(pw.MultiPage(
+      pageFormat: PdfPageFormat.a4.landscape,
+      margin: const pw.EdgeInsets.all(24),
+      header: (context) => pw.Column(
+        crossAxisAlignment: pw.CrossAxisAlignment.start,
+        children: [
+          PdfReportHeader.build(
+              company: company,
+              title: 'GSTR-1',
+              generatedOn: date.format(DateTime.now())),
+          pw.Text('Return period: $periodLabel',
+              style: const pw.TextStyle(fontSize: 10, color: PdfColors.grey700)),
+          pw.Text(
+              'Amounts as printed on the documents. Review copy — file using the '
+              'Excel export and the GST Offline Tool.',
+              style: const pw.TextStyle(fontSize: 8, color: PdfColors.grey600)),
+          pw.SizedBox(height: 8),
+        ],
+      ),
+      footer: (context) => pw.Container(
+        alignment: pw.Alignment.centerRight,
+        margin: const pw.EdgeInsets.only(top: 12),
+        child: pw.Text(
+          showFooterBranding
+              ? 'Page ${context.pageNumber} of ${context.pagesCount}  -  Generated by Invoiso'
+              : 'Page ${context.pageNumber} of ${context.pagesCount}',
+          style: pw.TextStyle(
+              fontSize: PdfLayout.footerBrandingFontSize, color: PdfColors.grey600),
+        ),
+      ),
+      build: (context) => [
+        heading('Summary'),
+        table(
+          ['Section', 'Documents / rows', 'Taxable', 'IGST', 'CGST', 'SGST'],
+          [
+            for (final (name, count, rows) in sections)
+              [
+                name, '$count', n(sum(rows, (Gstr1DocRow x) => x.taxable)),
+                ...taxCols(sum(rows, (Gstr1DocRow x) => x.igst),
+                    sum(rows, (Gstr1DocRow x) => x.cgst)),
+              ],
+            [
+              'B2C Small (7)', '${r.b2cs.length}',
+              n(sum(r.b2cs, (Gstr1B2csRow x) => x.taxable)),
+              ...taxCols(sum(r.b2cs, (Gstr1B2csRow x) => x.igst),
+                  sum(r.b2cs, (Gstr1B2csRow x) => x.cgst)),
+            ],
+            [
+              'Nil / exempt / non-GST (8)', '4',
+              n(sum(r.exemp, (Gstr1ExempRow x) => x.nil + x.exempt + x.nonGst)),
+              '', '', '',
+            ],
+            for (final (name, rows) in [
+              ('HSN summary — B2B (12)', r.hsnB2b),
+              ('HSN summary — B2C (12)', r.hsnB2c),
+            ])
+              [
+                name, '${rows.length}', n(sum(rows, (Gstr1HsnRow x) => x.taxable)),
+                ...taxCols(sum(rows, (Gstr1HsnRow x) => x.igst),
+                    sum(rows, (Gstr1HsnRow x) => x.cgst)),
+              ],
+            [
+              'Documents issued (13)',
+              '${r.docs.fold(0, (a, d) => a + d.total)}', '', '', '', '',
+            ],
+          ],
+          firstNumber: 1,
+        ),
+        if (!r.companyGstinValid)
+          pw.Padding(
+            padding: const pw.EdgeInsets.only(top: 8),
+            child: pw.Text(
+                'Company GSTIN is missing or invalid — the return cannot be filed.',
+                style: const pw.TextStyle(fontSize: 9, color: PdfColors.red800)),
+          ),
+        for (final (title, list) in [
+          ('Not included (${r.excluded.length})', r.excluded),
+          ('Check before filing (${r.warnings.length})', r.warnings),
+        ])
+          if (list.isNotEmpty) ...[
+            heading(title),
+            for (final i in list)
+              pw.Text(
+                  i.number.isEmpty
+                      ? issueText(i)
+                      : '${i.number} — ${issueText(i)}',
+                  style: const pw.TextStyle(fontSize: 8)),
+          ],
+        for (final (title, _, rows) in sections)
+          if (rows.isNotEmpty) ...[
+            heading(title),
+            table(docRowsHeader, [for (final x in rows) docRow(x)], firstNumber: 4),
+          ],
+        if (r.b2cs.isNotEmpty) ...[
+          heading('B2C Small (7)'),
+          table(
+            ['Type', 'Place of supply', 'Rate', 'Taxable', 'IGST', 'CGST', 'SGST'],
+            [
+              for (final x in r.b2cs)
+                ['OE', pos(x.pos), rate(x.rate), n(x.taxable),
+                  ...taxCols(x.igst, x.cgst)],
+            ],
+            firstNumber: 2,
+          ),
+        ],
+        heading('Nil rated, exempted and non-GST supplies (8)'),
+        table(
+          ['Description', 'Nil rated', 'Exempted', 'Non-GST'],
+          [
+            for (final x in r.exemp)
+              [Gstr1ExcelWriter.exempDescription(x), n(x.nil), n(x.exempt),
+                n(x.nonGst)],
+          ],
+          firstNumber: 1,
+        ),
+        for (final (title, rows) in [
+          ('HSN summary — B2B (12)', r.hsnB2b),
+          ('HSN summary — B2C (12)', r.hsnB2c),
+        ])
+          if (rows.isNotEmpty) ...[
+            heading(title),
+            table(hsnHeader, [for (final x in rows) hsnRow(x)], firstNumber: 3),
+          ],
+        if (r.docs.isNotEmpty) ...[
+          heading('Documents issued (13)'),
+          table(
+            ['Nature of document', 'From', 'To', 'Total', 'Cancelled', 'Net issued'],
+            [
+              for (final d in r.docs)
+                [
+                  switch (d.type) {
+                    'Credit Note' => 'Credit Note',
+                    'Debit Note' => 'Debit Note',
+                    _ => 'Invoices for outward supply',
+                  },
+                  d.from, d.to, '${d.total}', '${d.cancelled}',
+                  '${d.netIssued}',
+                ],
+            ],
+            firstNumber: 3,
+          ),
+        ],
+      ],
+    ));
+    return doc.save();
+  }
+
+  /// English issue text for the PDF (the screen uses the localized one).
+  static String issueText(Gstr1Issue i) => switch (i.kind) {
+        Gstr1IssueKind.nonInr => "Not in INR — exports aren't supported",
+        Gstr1IssueKind.missingPlaceOfSupply =>
+          'No place of supply — set it on the invoice',
+        Gstr1IssueKind.invalidCustomerGstin => 'Customer GSTIN format is invalid',
+        Gstr1IssueKind.missingHsn => 'Item without HSN/SAC on a B2B document',
+        Gstr1IssueKind.unusualRate => 'Rate ${i.detail}% is not a GST rate',
+        Gstr1IssueKind.invoiceDiscount =>
+          'Invoice discount — taxable value reported before the discount',
+        Gstr1IssueKind.negativeB2cs =>
+          'B2C small total is negative for '
+              '${GstUtils.stateLabel(i.detail.split('|').first)} at '
+              '${i.detail.split('|').last}%',
+      };
+}

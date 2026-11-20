@@ -6223,6 +6223,94 @@ class AppLocalizationsEn extends AppLocalizations {
   String get reportsAgedInvoicesTab => 'Aged invoices';
 
   @override
+  String get reportsGstr1Tab => 'GSTR-1';
+
+  @override
+  String get reportsGstr1Title => 'GSTR-1 export';
+
+  @override
+  String get reportsGstr1Subtitle =>
+      'Excel in the GST Offline Tool format — import it in the Offline Tool to create the GSTR-1 JSON, or share it with your CA.';
+
+  @override
+  String get gstr1Monthly => 'Monthly';
+
+  @override
+  String get gstr1Quarterly => 'Quarterly';
+
+  @override
+  String get gstr1CompanyGstinMissing =>
+      'Add a valid company GSTIN in Settings → Company Info to export GSTR-1.';
+
+  @override
+  String get gstr1SectionLabel => 'Section';
+
+  @override
+  String get gstr1RowsLabel => 'Rows';
+
+  @override
+  String get gstr1NotesRegistered => 'Credit/debit notes — registered';
+
+  @override
+  String get gstr1NotesUnregistered => 'Credit/debit notes — unregistered';
+
+  @override
+  String get gstr1NilExempt => 'Nil / exempt / non-GST';
+
+  @override
+  String gstr1ExcludedTitle(int count) {
+    return 'Not included ($count)';
+  }
+
+  @override
+  String gstr1WarningsTitle(int count) {
+    return 'Check before filing ($count)';
+  }
+
+  @override
+  String gstr1MoreIssues(int count) {
+    return '…and $count more';
+  }
+
+  @override
+  String get gstr1IssueNonInr => 'Not in INR — exports aren\'t supported';
+
+  @override
+  String get gstr1IssueMissingPos =>
+      'No place of supply — set it on the invoice';
+
+  @override
+  String get gstr1IssueInvalidGstin => 'Customer GSTIN format is invalid';
+
+  @override
+  String get gstr1IssueMissingHsn => 'Item without HSN/SAC on a B2B document';
+
+  @override
+  String gstr1IssueUnusualRate(String rate) {
+    return 'Rate $rate% is not a GST rate';
+  }
+
+  @override
+  String get gstr1IssueInvoiceDiscount =>
+      'Invoice discount — taxable value is reported before the discount, as printed';
+
+  @override
+  String gstr1IssueNegativeB2cs(String pos, String rate) {
+    return 'B2C small total is negative for $pos at $rate%';
+  }
+
+  @override
+  String get gstr1IncludeRegister =>
+      'Include an Invoices sheet (list of documents, for your CA)';
+
+  @override
+  String get gstr1ExportExcel => 'Export Excel';
+
+  @override
+  String get reportsGstr1PanelNote =>
+      'GSTR-1 uses its own return period (picked in the GSTR-1 tab) and INR invoices only.';
+
+  @override
   String get reportsNoDocumentsIssuedMessage =>
       'No invoices, credit notes or debit notes in this period';
 

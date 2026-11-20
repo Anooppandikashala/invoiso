@@ -15,6 +15,11 @@ import 'package:invoiso/l10n/app_localizations.dart';
 import 'package:invoiso/services/customer_statement_pdf_service.dart';
 import 'package:invoiso/providers/app_config_provider.dart';
 import 'package:invoiso/providers/repositories.dart';
+import 'package:invoiso/common/gst_utils.dart';
+import 'package:invoiso/models/gstr1_report.dart';
+import 'package:invoiso/services/gst/gstr1_excel_writer.dart';
+import 'package:invoiso/services/gst/gstr1_pdf_writer.dart';
+import 'package:invoiso/services/gst/gstr1_service.dart';
 
 import '../common/supported_currencies.dart';
 import 'package:invoiso/utils/formatters.dart';
@@ -106,6 +111,17 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
   String _hsnQuery = '';
   int _hsnPage = 0;
   int _hsnPageSize = 25;
+  // GSTR-1 sub-tab (3): own period — returns are filed per month / quarter.
+  bool _gstr1Quarterly = false;
+  late (int, int) _gstr1Period = () {
+    final last = DateTime(DateTime.now().year, DateTime.now().month - 1);
+    return (last.year, last.month); // (year, month or quarter)
+  }();
+  Gstr1Report? _gstr1Report;
+  bool get _isGstr1Section =>
+      _selectedIndex == 2 && _showGstFields && _taxSection == 3;
+  bool _gstr1Loading = false;
+  bool _gstr1IncludeRegister = false;
   List<TopCustomer> _topCustomers = [];
   List<TopProduct> _topProducts = [];
   List<CustomerStatementCustomer> _statementCustomers = [];
@@ -361,6 +377,27 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
     } else if (_taxSection == 2 && _docRows == null) {
       final rows = await repo.getDocumentsIssued(from, to);
       if (mounted) setState(() => _docRows = rows);
+    } else if (_taxSection == 3 && _gstr1Report == null) {
+      await _loadGstr1();
+    }
+  }
+
+  Future<void> _loadGstr1() async {
+    if (_gstr1Loading) return;
+    setState(() => _gstr1Loading = true);
+    final (year, n) = _gstr1Period;
+    try {
+      final report = await Gstr1Service.load(
+        _gstr1Quarterly
+            ? Gstr1Period.quarter(year, n)
+            : Gstr1Period.month(year, n),
+        invoices: ref.read(invoiceRepositoryProvider),
+        reports: ref.read(reportRepositoryProvider),
+        companyInfo: ref.read(companyInfoRepositoryProvider),
+      );
+      if (mounted) setState(() => _gstr1Report = report);
+    } finally {
+      if (mounted) setState(() => _gstr1Loading = false);
     }
   }
 
@@ -408,6 +445,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
             _taxBuckets = buckets;
             _hsnRows = null; // reload on next view (period / currency changed)
             _docRows = null;
+            _gstr1Report = null;
             _hsnPage = 0;
           });
           _loadTaxSection();
@@ -783,15 +821,19 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
     );
   }
 
-  Future<void> _savePdf(Uint8List bytes, String filename) async {
+  Future<void> _savePdf(Uint8List bytes, String filename) => _saveBytes(
+      bytes, filename, 'pdf', AppLocalizations.of(context)!.reportsSavePdfReportTitle);
+
+  Future<void> _saveBytes(
+      Uint8List bytes, String filename, String extension, String title) async {
     final l10n = AppLocalizations.of(context)!;
     String? savePath;
     try {
       savePath = await FilePicker.platform.saveFile(
-        dialogTitle: l10n.reportsSavePdfReportTitle,
+        dialogTitle: title,
         fileName: filename,
         type: FileType.custom,
-        allowedExtensions: ['pdf'],
+        allowedExtensions: [extension],
         bytes: Platform.isAndroid ? bytes : null,
       );
     } catch (_) {
@@ -927,8 +969,18 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
             child: Divider(
                 height: 1, color: Theme.of(context).colorScheme.outlineVariant),
           ),
+          // GSTR-1 has its own return period and is always INR → the panel's
+          // currency / period don't apply (hidden like other tabs do).
+          if (_isGstr1Section)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+              child: Text(AppLocalizations.of(context)!.reportsGstr1PanelNote,
+                  style: TextStyle(
+                      fontSize: 12,
+                      color: Theme.of(context).colorScheme.onSurfaceVariant)),
+            ),
           // ── Currency scope ── (inventory is a single-currency snapshot)
-          if (_selectedIndex != 8) ...[
+          if (_selectedIndex != 8 && !_isGstr1Section) ...[
             Padding(
               padding: EdgeInsets.fromLTRB(16, 0, 16, 8),
               child: Text(
@@ -942,7 +994,10 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
             _currencyScopeItem(_CurrencyScope.selected, primary),
             _currencyScopeItem(_CurrencyScope.all, primary),
           ],
-          if (_selectedIndex != 6 && _selectedIndex != 7 && _selectedIndex != 8) ...[
+          if (_selectedIndex != 6 &&
+              _selectedIndex != 7 &&
+              _selectedIndex != 8 &&
+              !_isGstr1Section) ...[
             Padding(
               padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
               child: Divider(
@@ -2442,6 +2497,10 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
                           value: 2,
                           icon: const Icon(Icons.numbers, size: 16),
                           label: Text(l10n.reportsDocumentsIssuedTab)),
+                      ButtonSegment(
+                          value: 3,
+                          icon: const Icon(Icons.upload_file, size: 16),
+                          label: Text(l10n.reportsGstr1Tab)),
                     ],
                     selected: {_taxSection},
                     onSelectionChanged: (s) {
@@ -2453,6 +2512,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
                 ),
               if (_showGstFields && _taxSection == 1) _hsnSummaryCard(ts),
               if (_showGstFields && _taxSection == 2) _docsIssuedCard(ts),
+              if (_showGstFields && _taxSection == 3) _gstr1Card(),
               // Tax breakdown table
               if (!_showGstFields || _taxSection == 0)
               _sectionCard(
@@ -2808,6 +2868,239 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
                 setState(() => _hsnPage = p);
               },
               onSizeChange: (n) => setFilter(() => _hsnPageSize = n),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  /// Reports → Tax → GSTR-1: period picker, preview (blocking / sections /
+  /// excluded / warnings) and Excel export (Gstr1ExportPlan.md Part D2).
+  Widget _gstr1Card() {
+    final l10n = AppLocalizations.of(context)!;
+    final ml = MaterialLocalizations.of(context);
+    final r = _gstr1Report;
+    final now = DateTime.now();
+    // Recent periods, newest first: 24 months or 8 quarters.
+    final periods = <(int, int)>[
+      if (_gstr1Quarterly)
+        for (var i = 0; i < 8; i++)
+          () {
+            final q = (now.month - 1) ~/ 3 + 1 - i;
+            final y = now.year + ((q - 1) / 4).floor();
+            return (y, (q - 1) % 4 + 1);
+          }()
+      else
+        for (var i = 0; i < 24; i++)
+          (DateTime(now.year, now.month - i).year,
+              DateTime(now.year, now.month - i).month),
+    ];
+    String label((int, int) p) => _gstr1Quarterly
+        ? '${ml.formatMonthYear(DateTime(p.$1, p.$2 * 3 - 2))} – '
+            '${ml.formatMonthYear(DateTime(p.$1, p.$2 * 3))}'
+        : ml.formatMonthYear(DateTime(p.$1, p.$2));
+    void setPeriod(void Function() change) {
+      setState(() {
+        change();
+        _gstr1Report = null;
+      });
+      _loadGstr1();
+    }
+
+    String issue(Gstr1Issue i) {
+      final msg = switch (i.kind) {
+        Gstr1IssueKind.nonInr => l10n.gstr1IssueNonInr,
+        Gstr1IssueKind.missingPlaceOfSupply => l10n.gstr1IssueMissingPos,
+        Gstr1IssueKind.invalidCustomerGstin => l10n.gstr1IssueInvalidGstin,
+        Gstr1IssueKind.missingHsn => l10n.gstr1IssueMissingHsn,
+        Gstr1IssueKind.unusualRate => l10n.gstr1IssueUnusualRate(i.detail),
+        Gstr1IssueKind.invoiceDiscount => l10n.gstr1IssueInvoiceDiscount,
+        Gstr1IssueKind.negativeB2cs => l10n.gstr1IssueNegativeB2cs(
+            GstUtils.stateLabel(i.detail.split('|').first),
+            i.detail.split('|').last),
+      };
+      return i.number.isEmpty ? msg : '${i.number} — $msg';
+    }
+
+    Widget issueList(String title, List<Gstr1Issue> list, Color color) =>
+        ExpansionTile(
+          tilePadding: const EdgeInsets.symmetric(horizontal: 20),
+          leading: Icon(Icons.warning_amber_rounded, color: color),
+          title: Text(title, style: const TextStyle(fontWeight: FontWeight.w600)),
+          children: [
+            for (final i in list.take(50))
+              Padding(
+                padding: const EdgeInsets.fromLTRB(56, 0, 20, 6),
+                child: Align(
+                    alignment: Alignment.centerLeft,
+                    child: Text(issue(i), style: const TextStyle(fontSize: 13))),
+              ),
+            if (list.length > 50)
+              Padding(
+                padding: const EdgeInsets.fromLTRB(56, 0, 20, 10),
+                child: Align(
+                    alignment: Alignment.centerLeft,
+                    child: Text(l10n.gstr1MoreIssues(list.length - 50))),
+              ),
+          ],
+        );
+
+    double taxable(Iterable<double> v) => v.fold(0.0, (a, b) => a + b);
+    int docs(List<Gstr1DocRow> rows) => rows.map((x) => x.invoiceId).toSet().length;
+
+    return _sectionCard(
+      padding: EdgeInsets.zero,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(20, 20, 20, 4),
+            child: _cardTitle(l10n.reportsGstr1Title),
+          ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(20, 0, 20, 12),
+            child: Text(l10n.reportsGstr1Subtitle,
+                style: TextStyle(
+                    fontSize: 12,
+                    color: Theme.of(context).colorScheme.onSurfaceVariant)),
+          ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(20, 0, 20, 12),
+            child: Wrap(
+              spacing: 12,
+              runSpacing: 8,
+              crossAxisAlignment: WrapCrossAlignment.center,
+              children: [
+                SegmentedButton<bool>(
+                  showSelectedIcon: false,
+                  segments: [
+                    ButtonSegment(value: false, label: Text(l10n.gstr1Monthly)),
+                    ButtonSegment(value: true, label: Text(l10n.gstr1Quarterly)),
+                  ],
+                  selected: {_gstr1Quarterly},
+                  onSelectionChanged: (v) => setPeriod(() {
+                    _gstr1Quarterly = v.first;
+                    final last = DateTime(now.year, now.month - (v.first ? 3 : 1));
+                    _gstr1Period = v.first
+                        ? (last.year, (last.month - 1) ~/ 3 + 1)
+                        : (last.year, last.month);
+                  }),
+                ),
+                DropdownButton<(int, int)>(
+                  value: periods.contains(_gstr1Period) ? _gstr1Period : null,
+                  items: [
+                    for (final p in periods)
+                      DropdownMenuItem(value: p, child: Text(label(p))),
+                  ],
+                  onChanged: (p) {
+                    if (p != null) setPeriod(() => _gstr1Period = p);
+                  },
+                ),
+              ],
+            ),
+          ),
+          if (r == null)
+            const Padding(
+              padding: EdgeInsets.only(bottom: 24),
+              child: Center(child: CircularProgressIndicator()),
+            )
+          else ...[
+            if (!r.companyGstinValid)
+              Padding(
+                padding: const EdgeInsets.fromLTRB(20, 0, 20, 12),
+                child: _missingCostBanner(l10n.gstr1CompanyGstinMissing),
+              ),
+            _gstTableRow([
+              (l10n.gstr1SectionLabel, 5, false),
+              (l10n.gstr1RowsLabel, 2, true),
+              (l10n.reportsTaxableAmountLabel, 3, true),
+            ], header: true),
+            for (final (name, count, value) in [
+              ('B2B (4A)', docs(r.b2b), taxable(r.b2b.map((x) => x.taxable))),
+              ('B2C Large (5)', docs(r.b2cl), taxable(r.b2cl.map((x) => x.taxable))),
+              ('B2C Small (7)', r.b2cs.length, taxable(r.b2cs.map((x) => x.taxable))),
+              ('${l10n.gstr1NotesRegistered} (9B)', docs(r.cdnr),
+                  taxable(r.cdnr.map((x) => x.taxable))),
+              ('${l10n.gstr1NotesUnregistered} (9B)', docs(r.cdnur),
+                  taxable(r.cdnur.map((x) => x.taxable))),
+              ('${l10n.gstr1NilExempt} (8)', 4,
+                  taxable(r.exemp.map((x) => x.nil + x.exempt + x.nonGst))),
+              ('HSN B2B (12)', r.hsnB2b.length, taxable(r.hsnB2b.map((x) => x.taxable))),
+              ('HSN B2C (12)', r.hsnB2c.length, taxable(r.hsnB2c.map((x) => x.taxable))),
+            ])
+              _gstTableRow([
+                (name, 5, false),
+                ('$count', 2, true),
+                (_money(value), 3, true),
+              ]),
+            _gstTableRow([
+              ('${l10n.reportsDocumentsIssuedTab} (13)', 5, false),
+              ('${r.docs.fold(0, (a, d) => a + d.total)}', 2, true),
+              ('', 3, true),
+            ]),
+            if (r.excluded.isNotEmpty)
+              issueList(l10n.gstr1ExcludedTitle(r.excluded.length), r.excluded,
+                  Theme.of(context).colorScheme.error),
+            if (r.warnings.isNotEmpty)
+              issueList(l10n.gstr1WarningsTitle(r.warnings.length), r.warnings,
+                  Colors.orange),
+            CheckboxListTile(
+              contentPadding: const EdgeInsets.symmetric(horizontal: 12),
+              controlAffinity: ListTileControlAffinity.leading,
+              value: _gstr1IncludeRegister,
+              onChanged: (v) =>
+                  setState(() => _gstr1IncludeRegister = v ?? false),
+              title: Text(l10n.gstr1IncludeRegister),
+            ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 4, 20, 20),
+              child: Wrap(
+                spacing: 12,
+                runSpacing: 8,
+                children: [
+              OutlinedButton.icon(
+                icon: const Icon(Icons.picture_as_pdf_outlined),
+                label: Text(l10n.customerMgmtExportPdfMenuLabel),
+                onPressed: _gstr1Loading
+                    ? null
+                    : () async {
+                        final (y, n) = _gstr1Period;
+                        final bytes = await Gstr1PdfWriter.build(r,
+                            periodLabel: label(_gstr1Period),
+                            company: await ref
+                                .read(companyInfoRepositoryProvider)
+                                .getCompanyInfo(),
+                            datePattern: _datePattern,
+                            showFooterBranding: _showFooterBranding);
+                        if (!mounted) return;
+                        await _savePdf(
+                            bytes,
+                            _gstr1Quarterly
+                                ? 'gstr1_$y-Q$n.pdf'
+                                : 'gstr1_$y-${n.toString().padLeft(2, '0')}.pdf');
+                      },
+              ),
+              FilledButton.icon(
+                icon: const Icon(Icons.table_view_outlined),
+                label: Text(l10n.gstr1ExportExcel),
+                onPressed: !r.companyGstinValid || _gstr1Loading
+                    ? null
+                    : () async {
+                        final (y, n) = _gstr1Period;
+                        final name = _gstr1Quarterly
+                            ? 'gstr1_$y-Q$n.xlsx'
+                            : 'gstr1_$y-${n.toString().padLeft(2, '0')}.xlsx';
+                        await _saveBytes(
+                            Gstr1ExcelWriter.build(r,
+                                includeRegister: _gstr1IncludeRegister),
+                            name,
+                            'xlsx',
+                            l10n.gstr1ExportExcel);
+                      },
+              ),
+                ],
+              ),
             ),
           ],
         ],

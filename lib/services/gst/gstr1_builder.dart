@@ -115,7 +115,9 @@ class Gstr1Builder {
         warn(Gstr1IssueKind.missingHsn);
       }
       for (final rate in split.keys) {
-        if (!gstRates.contains(rate)) warn(Gstr1IssueKind.unusualRate, '$rate');
+        if (!gstRates.contains(rate)) {
+          warn(Gstr1IssueKind.unusualRate, _rateText(rate));
+        }
       }
       if (!isNote && inv.invoiceDiscountAmount > 0) {
         warn(Gstr1IssueKind.invoiceDiscount);
@@ -181,7 +183,9 @@ class Gstr1Builder {
 
     for (final e in b2csSums.entries) {
       if (_r(e.value[0]) < 0) {
-        warnings.add(Gstr1Issue(Gstr1IssueKind.negativeB2cs, '', '', e.key));
+        final (pos, rate) = (e.key.split('|')[0], double.parse(e.key.split('|')[1]));
+        warnings.add(Gstr1Issue(
+            Gstr1IssueKind.negativeB2cs, '', '', '$pos|${_rateText(rate)}'));
       }
     }
 
@@ -355,4 +359,8 @@ class Gstr1Builder {
   }
 
   static double _r(double v) => (v * 100).round() / 100;
+
+  /// 18 → "18", 0.25 → "0.25" (issue details shown to the user).
+  static String _rateText(double r) =>
+      r % 1 == 0 ? '${r.toInt()}' : '$r';
 }

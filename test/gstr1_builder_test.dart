@@ -311,7 +311,7 @@ void main() {
       expect({for (final w in r.warnings) (w.kind, w.number, w.detail)}, {
         (Gstr1IssueKind.invalidCustomerGstin, 'INV-1', ''),
         (Gstr1IssueKind.missingHsn, 'INV-1', ''),
-        (Gstr1IssueKind.unusualRate, 'INV-1', '15.0'),
+        (Gstr1IssueKind.unusualRate, 'INV-1', '15'),
         (Gstr1IssueKind.invoiceDiscount, 'INV-2', ''),
       });
       expect(r.b2b, hasLength(2)); // warnings don't drop rows
@@ -324,7 +324,7 @@ void main() {
       ]);
       expect(r.b2cs.single.taxable, -100);
       expect(r.warnings.single.kind, Gstr1IssueKind.negativeB2cs);
-      expect(r.warnings.single.detail, '33|18.0');
+      expect(r.warnings.single.detail, '33|18');
     });
 
     test('declined invoices skipped; bad company GSTIN blocks export', () {

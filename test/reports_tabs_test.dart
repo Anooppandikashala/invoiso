@@ -9,9 +9,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 import 'package:invoiso/common/common.dart';
+import 'package:invoiso/database/company_info_service.dart';
 import 'package:invoiso/database/database_helper.dart';
 import 'package:invoiso/database/invoice_service.dart';
 import 'package:invoiso/l10n/app_localizations.dart';
+import 'package:invoiso/models/company_info.dart';
 import 'package:invoiso/models/customer.dart';
 import 'package:invoiso/models/invoice.dart';
 import 'package:invoiso/models/invoice_item.dart';
@@ -171,5 +173,56 @@ void main() {
     await tester.tap(find.text('Aging summary'));
     await settle(tester);
     expect(find.text('A/R Aging Summary'), findsOneWidget);
+  });
+
+  testWidgets('GSTR-1 sub-tab: last month preview and export gate', (tester) async {
+    await tester.runAsync(() async {
+      final db = await DatabaseHelper().database;
+      await db.delete('company_info');
+      await CompanyInfoService.insertCompanyInfo(CompanyInfo(
+          name: 'Co', address: '', phone: '', email: '', website: '',
+          gstin: '33ABCDE1234F1Z5'));
+      final now = DateTime.now();
+      await InvoiceService.insertInvoice(Invoice(
+        id: 'g1', invoiceNumber: '00000201',
+        customer: Customer(id: 'cg', name: 'Reg Co', email: '', phone: '',
+            address: '', gstin: '29ABCDE1234F1Z5'),
+        items: [InvoiceItem(product: p('8471'), quantity: 1)],
+        date: DateTime(now.year, now.month - 1, 10),
+        type: 'Invoice', taxMode: TaxMode.perItem,
+        isInterState: true, placeOfSupply: '29'));
+    });
+    final onError = FlutterError.onError;
+    FlutterError.onError = (d) {
+      if (!d.exceptionAsString().contains('overflowed')) onError?.call(d);
+    };
+    addTearDown(() => FlutterError.onError = onError);
+    tester.view.physicalSize = const Size(1600, 3000);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.reset);
+    await tester.pumpWidget(ProviderScope(
+      overrides: sqliteRepositoryOverrides,
+      child: MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: const Scaffold(body: ReportsScreen()),
+      ),
+    ));
+    await settle(tester);
+    await tester.tap(find.text('Tax').first);
+    await settle(tester);
+    expect(find.text('PERIOD'), findsOneWidget); // side panel, By rate
+    await tester.tap(find.text('GSTR-1'));
+    await settle(tester);
+
+    // Panel period / currency don't apply to GSTR-1 → hidden, note instead.
+    expect(find.text('PERIOD'), findsNothing);
+    expect(find.textContaining('GSTR-1 uses its own return period'), findsOneWidget);
+    expect(find.text('B2B (4A)'), findsOneWidget);
+    final b2bRow = find.ancestor(of: find.text('B2B (4A)'), matching: find.byType(Row)).first;
+    expect(find.descendant(of: b2bRow, matching: find.text('1')), findsOneWidget);
+    final export = tester.widget<FilledButton>(
+        find.ancestor(of: find.text('Export Excel'), matching: find.byWidgetPredicate((w) => w is FilledButton)));
+    expect(export.onPressed, isNotNull); // valid company GSTIN
   });
 }

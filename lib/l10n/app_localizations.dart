@@ -10622,6 +10622,150 @@ abstract class AppLocalizations {
   /// **'Aged invoices'**
   String get reportsAgedInvoicesTab;
 
+  /// No description provided for @reportsGstr1Tab.
+  ///
+  /// In en, this message translates to:
+  /// **'GSTR-1'**
+  String get reportsGstr1Tab;
+
+  /// No description provided for @reportsGstr1Title.
+  ///
+  /// In en, this message translates to:
+  /// **'GSTR-1 export'**
+  String get reportsGstr1Title;
+
+  /// No description provided for @reportsGstr1Subtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Excel in the GST Offline Tool format — import it in the Offline Tool to create the GSTR-1 JSON, or share it with your CA.'**
+  String get reportsGstr1Subtitle;
+
+  /// No description provided for @gstr1Monthly.
+  ///
+  /// In en, this message translates to:
+  /// **'Monthly'**
+  String get gstr1Monthly;
+
+  /// No description provided for @gstr1Quarterly.
+  ///
+  /// In en, this message translates to:
+  /// **'Quarterly'**
+  String get gstr1Quarterly;
+
+  /// No description provided for @gstr1CompanyGstinMissing.
+  ///
+  /// In en, this message translates to:
+  /// **'Add a valid company GSTIN in Settings → Company Info to export GSTR-1.'**
+  String get gstr1CompanyGstinMissing;
+
+  /// No description provided for @gstr1SectionLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Section'**
+  String get gstr1SectionLabel;
+
+  /// No description provided for @gstr1RowsLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Rows'**
+  String get gstr1RowsLabel;
+
+  /// No description provided for @gstr1NotesRegistered.
+  ///
+  /// In en, this message translates to:
+  /// **'Credit/debit notes — registered'**
+  String get gstr1NotesRegistered;
+
+  /// No description provided for @gstr1NotesUnregistered.
+  ///
+  /// In en, this message translates to:
+  /// **'Credit/debit notes — unregistered'**
+  String get gstr1NotesUnregistered;
+
+  /// No description provided for @gstr1NilExempt.
+  ///
+  /// In en, this message translates to:
+  /// **'Nil / exempt / non-GST'**
+  String get gstr1NilExempt;
+
+  /// No description provided for @gstr1ExcludedTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Not included ({count})'**
+  String gstr1ExcludedTitle(int count);
+
+  /// No description provided for @gstr1WarningsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Check before filing ({count})'**
+  String gstr1WarningsTitle(int count);
+
+  /// No description provided for @gstr1MoreIssues.
+  ///
+  /// In en, this message translates to:
+  /// **'…and {count} more'**
+  String gstr1MoreIssues(int count);
+
+  /// No description provided for @gstr1IssueNonInr.
+  ///
+  /// In en, this message translates to:
+  /// **'Not in INR — exports aren\'t supported'**
+  String get gstr1IssueNonInr;
+
+  /// No description provided for @gstr1IssueMissingPos.
+  ///
+  /// In en, this message translates to:
+  /// **'No place of supply — set it on the invoice'**
+  String get gstr1IssueMissingPos;
+
+  /// No description provided for @gstr1IssueInvalidGstin.
+  ///
+  /// In en, this message translates to:
+  /// **'Customer GSTIN format is invalid'**
+  String get gstr1IssueInvalidGstin;
+
+  /// No description provided for @gstr1IssueMissingHsn.
+  ///
+  /// In en, this message translates to:
+  /// **'Item without HSN/SAC on a B2B document'**
+  String get gstr1IssueMissingHsn;
+
+  /// No description provided for @gstr1IssueUnusualRate.
+  ///
+  /// In en, this message translates to:
+  /// **'Rate {rate}% is not a GST rate'**
+  String gstr1IssueUnusualRate(String rate);
+
+  /// No description provided for @gstr1IssueInvoiceDiscount.
+  ///
+  /// In en, this message translates to:
+  /// **'Invoice discount — taxable value is reported before the discount, as printed'**
+  String get gstr1IssueInvoiceDiscount;
+
+  /// No description provided for @gstr1IssueNegativeB2cs.
+  ///
+  /// In en, this message translates to:
+  /// **'B2C small total is negative for {pos} at {rate}%'**
+  String gstr1IssueNegativeB2cs(String pos, String rate);
+
+  /// No description provided for @gstr1IncludeRegister.
+  ///
+  /// In en, this message translates to:
+  /// **'Include an Invoices sheet (list of documents, for your CA)'**
+  String get gstr1IncludeRegister;
+
+  /// No description provided for @gstr1ExportExcel.
+  ///
+  /// In en, this message translates to:
+  /// **'Export Excel'**
+  String get gstr1ExportExcel;
+
+  /// No description provided for @reportsGstr1PanelNote.
+  ///
+  /// In en, this message translates to:
+  /// **'GSTR-1 uses its own return period (picked in the GSTR-1 tab) and INR invoices only.'**
+  String get reportsGstr1PanelNote;
+
   /// No description provided for @reportsNoDocumentsIssuedMessage.
   ///
   /// In en, this message translates to:
