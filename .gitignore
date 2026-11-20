@@ -82,3 +82,13 @@ lib/screens/test_old_screens/
 android/build/
 
 gh_actions_cleanup.py
+
+assets/images/grid_classic_additional_fields2.png
+assets/images/grid_classic_additional_fields_1.png
+invoiso-data-backup-pr120/
+mobile_ui_create_invoice_screen.png
+mobile_ui_with_navigation.png
+new-dashboard-design.png
+sample_layout.json
+supabase/
+thermal_printer_test/
