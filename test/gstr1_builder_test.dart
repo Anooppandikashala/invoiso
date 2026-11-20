@@ -8,19 +8,32 @@ import 'package:invoiso/models/gstr1_report.dart';
 import 'package:invoiso/models/invoice.dart';
 import 'package:invoiso/models/invoice_item.dart';
 import 'package:invoiso/models/product.dart';
+import 'package:invoiso/models/report_models.dart';
 import 'package:invoiso/services/gst/gstr1_builder.dart';
 
 const _company = '33ABCDE1234F1Z5'; // Tamil Nadu
 
-Product _p(double price, double rate, {bool incl = false}) => Product(
-    id: 'p$price-$rate',
-    name: 'Item $rate',
-    description: '',
-    price: price,
-    stock: 0,
-    hsncode: '8471',
-    tax_rate: rate,
-    priceIncludesTax: incl);
+Product _p(double price, double rate,
+        {bool incl = false,
+        String hsn = '8471',
+        String unit = '',
+        String uqc = '',
+        String category = '',
+        String type = 'product',
+        String name = ''}) =>
+    Product(
+        id: 'p$price-$rate-$hsn',
+        name: name.isEmpty ? 'Item $rate' : name,
+        description: '',
+        price: price,
+        stock: 0,
+        hsncode: hsn,
+        tax_rate: rate,
+        priceIncludesTax: incl,
+        unit: unit,
+        uqc: uqc,
+        gstCategory: category,
+        type: type);
 
 Invoice _inv(
   String id, {
@@ -203,6 +216,79 @@ void main() {
       ], originals: [orig]);
       expect(r.excluded, isEmpty);
       expect([r.b2cs.single.pos, r.b2cs.single.taxable], ['29', -100]);
+    });
+  });
+
+  group('nil / exempt / HSN / documents', () {
+    test('0 % lines go to Table 8 by GST type, inter/intra × registered', () {
+      final r = _build([
+        _inv('1', pos: '33', items: [
+          InvoiceItem(product: _p(40, 0), quantity: 1), // nil (default)
+          InvoiceItem(product: _p(60, 0, category: 'exempt'), quantity: 1),
+          InvoiceItem(product: _p(100, 18), quantity: 1), // taxed → not here
+        ]),
+        _inv('2', gstin: '29ABCDE1234F1Z5', pos: '29', inter: true,
+            items: [InvoiceItem(product: _p(25, 0, category: 'non_gst'), quantity: 1)]),
+        _inv('cn', type: 'Credit Note', pos: '33',
+            items: [InvoiceItem(product: _p(10, 0), quantity: 1)]),
+      ]);
+      expect(r.exemp, hasLength(4));
+      final intraUnreg = r.exemp.firstWhere((e) => !e.interState && !e.registered);
+      expect([intraUnreg.nil, intraUnreg.exempt, intraUnreg.nonGst], [30, 60, 0]);
+      final interReg = r.exemp.firstWhere((e) => e.interState && e.registered);
+      expect(interReg.nonGst, 25);
+    });
+
+    test('no-tax invoice counts as nil-rated', () {
+      final r = _build([
+        _inv('1', mode: TaxMode.none, pos: '33',
+            items: [InvoiceItem(product: _p(100, 18), quantity: 2)]),
+      ]);
+      expect(r.b2cs, isEmpty);
+      expect(r.exemp.firstWhere((e) => !e.interState && !e.registered).nil, 200);
+    });
+
+    test('HSN summary: B2B / B2C split, UQC from unit, SAC → NA qty 0, CN nets', () {
+      final r = _build([
+        _inv('1', gstin: '33PQRST6789L1ZQ', pos: '33', items: [
+          InvoiceItem(product: _p(100, 18, unit: 'pcs', name: 'Mouse'), quantity: 2),
+          InvoiceItem(product: _p(100, 18, unit: 'pcs'), quantity: 3),
+          InvoiceItem(
+              product: _p(500, 18, hsn: '998314', type: 'service', unit: 'hrs'),
+              quantity: 2),
+        ]),
+        _inv('2', pos: '33', items: [
+          InvoiceItem(product: _p(50, 5, hsn: '1006', uqc: 'KGS'), quantity: 4),
+        ], charges: const [
+          AdditionalCost(
+              label: 'Freight', amount: 100, taxable: true, taxRate: 5, hsn: '9965'),
+        ]),
+        _inv('cn', type: 'Credit Note', pos: '33',
+            items: [InvoiceItem(product: _p(50, 5, hsn: '1006', uqc: 'KGS'), quantity: 1)]),
+      ]);
+      final goods = r.hsnB2b.firstWhere((h) => h.hsn == '8471');
+      expect([goods.uqc, goods.quantity, goods.taxable, goods.cgst],
+          ['PCS', 5, 500, 45]);
+      expect(goods.description, 'Mouse'); // first product name for the HSN
+      final service = r.hsnB2b.firstWhere((h) => h.hsn == '998314');
+      expect([service.uqc, service.quantity, service.taxable], ['NA', 0, 1000]);
+      final rice = r.hsnB2c.firstWhere((h) => h.hsn == '1006');
+      expect([rice.uqc, rice.quantity, rice.taxable], ['KGS', 3, 150]); // 4 − 1
+      final freight = r.hsnB2c.firstWhere((h) => h.hsn == '9965');
+      expect([freight.uqc, freight.quantity, freight.taxable], ['NA', 0, 100]);
+    });
+
+    test('documents issued are passed through', () {
+      const docs = [
+        DocumentIssuedRow(
+            type: 'Invoice', from: 'INV-1', to: 'INV-9', total: 9, cancelled: 1),
+      ];
+      final r = Gstr1Builder.build(Gstr1Input(
+          companyGstin: _company,
+          documents: const [],
+          numberOf: (i) => i.id,
+          documentsIssued: docs));
+      expect(r.docs, docs);
     });
   });
 }

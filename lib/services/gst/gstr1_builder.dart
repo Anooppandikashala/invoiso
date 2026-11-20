@@ -3,6 +3,7 @@ import 'package:invoiso/common/gst_utils.dart';
 import 'package:invoiso/domain/invoice_totals_calculator.dart';
 import 'package:invoiso/models/gstr1_report.dart';
 import 'package:invoiso/models/invoice.dart';
+import 'package:invoiso/models/report_models.dart';
 
 /// What the GSTR-1 builder needs; loaded by the caller (SQLite or cloud).
 class Gstr1Input {
@@ -18,11 +19,15 @@ class Gstr1Input {
   /// from an earlier period) — decides whether a B2C note is cdnur.
   final Map<String, Invoice> originals;
 
+  /// Documents issued (Table 13) for the period — from the reports.
+  final List<DocumentIssuedRow> documentsIssued;
+
   const Gstr1Input({
     required this.companyGstin,
     required this.documents,
     required this.numberOf,
     this.originals = const {},
+    this.documentsIssued = const [],
   });
 }
 
@@ -43,6 +48,14 @@ class Gstr1Builder {
     final cdnur = <Gstr1DocRow>[];
     final b2csSums = <String, List<double>>{}; // 'pos|rate' → [taxable, igst, cgst]
     final excluded = <Gstr1Issue>[];
+    // Table 8: 'interState|registered' → [nil, exempt, nonGst]
+    final exemp = {
+      for (final k in ['true|true', 'false|true', 'true|false', 'false|false'])
+        k: [0.0, 0.0, 0.0],
+    };
+    // Table 12: 'registered|hsn|uqc|rate' → [qty, taxable, igst, cgst]
+    final hsnSums = <String, List<double>>{};
+    final hsnNames = <String, String>{};
 
     bool isB2cl(Invoice inv, String? pos) =>
         inv.customer.gstin.trim().isEmpty &&
@@ -68,6 +81,25 @@ class Gstr1Builder {
       // 0 % supplies go to the nil / exempt table, not the rate sections.
       final split = rateSplit(inv)..remove(0.0);
       final gstin = inv.customer.gstin.trim();
+      final sign = inv.type == 'Credit Note' ? -1.0 : 1.0;
+      final registered = gstin.isNotEmpty;
+
+      final ex = exemp['${inv.isInterState}|$registered']!;
+      for (final z in zeroRated(inv).entries) {
+        ex[z.key == 'exempt' ? 1 : z.key == 'non_gst' ? 2 : 0] += sign * z.value;
+      }
+      for (final l in hsnLines(inv)) {
+        final key = '$registered|${l.hsn}|${l.uqc}|${l.rate}';
+        hsnNames.putIfAbsent(key, () => l.description);
+        final h = hsnSums.putIfAbsent(key, () => [0, 0, 0, 0]);
+        h[0] += sign * l.quantity;
+        h[1] += sign * l.taxable;
+        if (inv.isInterState) {
+          h[2] += sign * l.tax;
+        } else {
+          h[3] += sign * l.tax / 2;
+        }
+      }
 
       final List<Gstr1DocRow>? rows = !isNote
           ? (gstin.isNotEmpty ? b2b : isB2cl(inv, pos) ? b2cl : null)
@@ -129,8 +161,110 @@ class Gstr1Builder {
           : a.rate.compareTo(b.rate)),
       cdnr: cdnr,
       cdnur: cdnur,
+      exemp: [
+        for (final e in exemp.entries)
+          Gstr1ExempRow(
+            interState: e.key.startsWith('true'),
+            registered: e.key.endsWith('true'),
+            nil: _r(e.value[0]),
+            exempt: _r(e.value[1]),
+            nonGst: _r(e.value[2]),
+          ),
+      ],
+      hsnB2b: _hsnRows(hsnSums, hsnNames, registered: true),
+      hsnB2c: _hsnRows(hsnSums, hsnNames, registered: false),
+      docs: input.documentsIssued,
       excluded: excluded,
     );
+  }
+
+  static List<Gstr1HsnRow> _hsnRows(Map<String, List<double>> sums,
+      Map<String, String> names, {required bool registered}) {
+    return [
+      for (final e in sums.entries)
+        if (e.key.startsWith('$registered|'))
+          Gstr1HsnRow(
+            hsn: e.key.split('|')[1],
+            uqc: e.key.split('|')[2],
+            rate: double.parse(e.key.split('|')[3]),
+            description: names[e.key]!,
+            quantity: _r(e.value[0]),
+            taxable: _r(e.value[1]),
+            igst: _r(e.value[2]),
+            cgst: _r(e.value[3]),
+          ),
+    ]..sort((a, b) =>
+        a.hsn != b.hsn ? a.hsn.compareTo(b.hsn) : a.rate.compareTo(b.rate));
+  }
+
+  /// Rate (%) a line is taxed at on this invoice.
+  static double _lineRate(Invoice inv, InvoiceLineAmount l) =>
+      switch (inv.taxMode) {
+        TaxMode.none => 0.0,
+        TaxMode.global => inv.taxRate * 100,
+        TaxMode.perItem => l.taxRatePercent,
+      };
+
+  /// 0 % taxable value by product GST type ('' nil | 'exempt' | 'non_gst');
+  /// 0 % taxable charges count as nil-rated.
+  static Map<String, double> zeroRated(Invoice inv) {
+    final out = <String, double>{};
+    final lines = inv.lineAmounts;
+    for (var i = 0; i < lines.length; i++) {
+      if (_lineRate(inv, lines[i]) != 0) continue;
+      final cat = inv.items[i].product.gstCategory;
+      out[cat] = (out[cat] ?? 0) + lines[i].lineTotal;
+    }
+    for (final c in InvoiceTotalsCalculator.taxedCharges(
+        inv.additionalCosts, inv.taxMode, inv.taxRate)) {
+      if (c.rate == 0) out[''] = (out[''] ?? 0) + c.taxable;
+    }
+    return out;
+  }
+
+  /// HSN summary lines of one invoice (items + taxable charges). UQC: the
+  /// item's saved code, else derived from unit / HSN, else OTH; NA → qty 0.
+  static List<
+      ({String hsn, String description, String uqc, double quantity,
+        double rate, double taxable, double tax})> hsnLines(Invoice inv) {
+    final lines = inv.lineAmounts;
+    return [
+      for (var i = 0; i < lines.length; i++)
+        () {
+          final item = inv.items[i];
+          final l = lines[i];
+          final hsn = item.product.hsncode.trim();
+          final uqc = item.product.uqc.isNotEmpty
+              ? item.product.uqc
+              : GstUtils.suggestUqc(item.effectiveUnit,
+                      hsn: hsn, isService: item.product.type == 'service') ??
+                  'OTH';
+          return (
+            hsn: hsn,
+            description: item.product.name,
+            uqc: uqc,
+            quantity: uqc == 'NA' ? 0.0 : item.quantity,
+            rate: _lineRate(inv, l),
+            taxable: l.lineTotal,
+            tax: switch (inv.taxMode) {
+              TaxMode.none => 0.0,
+              TaxMode.global => l.lineTotal * inv.taxRate,
+              TaxMode.perItem => l.itemTax,
+            },
+          );
+        }(),
+      for (final c in InvoiceTotalsCalculator.taxedCharges(
+          inv.additionalCosts, inv.taxMode, inv.taxRate))
+        (
+          hsn: c.hsn,
+          description: '',
+          uqc: 'NA',
+          quantity: 0.0,
+          rate: c.rate,
+          taxable: c.taxable,
+          tax: c.tax,
+        ),
+    ];
   }
 
   /// Taxable value and tax per rate (%) as printed: lines in the invoice's
