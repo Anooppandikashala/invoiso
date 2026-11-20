@@ -1443,6 +1443,8 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
       address: address,
       gstin: gstin,
       businessName: businessName,
+      stateCode: GstUtils.stateCodeFromGstin(gstin) ??
+          (matchesSelected ? sel!.stateCode : ''),
     ), _customerFieldSettings);
   }
 
@@ -3017,6 +3019,7 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
           address: addressController.text.trim(),
           gstin: gstinController.text.trim(),
           businessName: businessNameController.text.trim(),
+          stateCode: GstUtils.stateCodeFromGstin(gstinController.text) ?? sel.stateCode,
         ), _customerFieldSettings);
         await ref.read(customerRepositoryProvider).updateCustomer(updated);
         if (!mounted) return;
@@ -3119,6 +3122,7 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
         address: addressController.text.trim(),
         gstin: gstinController.text.trim(),
         businessName: businessNameController.text.trim(),
+        stateCode: GstUtils.stateCodeFromGstin(gstinController.text) ?? existing.stateCode,
       ), _customerFieldSettings, keepFrom: existing);
       await ref.read(customerRepositoryProvider).updateCustomer(updated);
       if(!mounted) return;
@@ -3145,6 +3149,7 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
         address: addressController.text.trim(),
         gstin: gstinController.text.trim(),
         businessName: businessNameController.text.trim(),
+        stateCode: GstUtils.stateCodeFromGstin(gstinController.text) ?? '',
       ), _customerFieldSettings);
       await ref.read(customerRepositoryProvider).insertCustomer(newCustomer);
       if(!mounted) return;
@@ -4585,6 +4590,9 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
                                   gstin: gstinController.text.trim(),
                                   businessName:
                                       businessNameController.text.trim(),
+                                  stateCode: GstUtils.stateCodeFromGstin(
+                                          gstinController.text) ??
+                                      '',
                                 ), _customerFieldSettings);
                             if (existing == null) {
                               await ref.read(customerRepositoryProvider).insertCustomer(newCustomer);

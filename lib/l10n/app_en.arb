@@ -3451,6 +3451,8 @@
   "gstPrefixTooLongWarning": "GST: prefix + 8-digit number must be 16 characters or less (max 7 prefix characters)",
   "gstHsnFormatWarning": "GST: HSN/SAC should be 4, 6 or 8 digits",
   "chargeTaxableLabel": "Taxable",
+  "gstStateLabel": "State (GST)",
+  "gstStateNotSetLabel": "Not set",
   "chargeInclTaxSuffix": "incl. tax",
   "invoiceSettingsChargesTaxLabel": "Taxable charges (freight, packing…)",
   "invoiceSettingsChargesTaxSubtitle": "Whether the amount typed for a taxable charge already includes tax. Applies to charges added from now on — saved invoices don't change.",

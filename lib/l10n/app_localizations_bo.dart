@@ -6131,6 +6131,12 @@ class AppLocalizationsBo extends AppLocalizations {
   String get chargeTaxableLabel => 'Taxable';
 
   @override
+  String get gstStateLabel => 'State (GST)';
+
+  @override
+  String get gstStateNotSetLabel => 'Not set';
+
+  @override
   String get chargeInclTaxSuffix => 'incl. tax';
 
   @override

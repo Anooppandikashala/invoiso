@@ -10448,6 +10448,18 @@ abstract class AppLocalizations {
   /// **'Taxable'**
   String get chargeTaxableLabel;
 
+  /// No description provided for @gstStateLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'State (GST)'**
+  String get gstStateLabel;
+
+  /// No description provided for @gstStateNotSetLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Not set'**
+  String get gstStateNotSetLabel;
+
   /// No description provided for @chargeInclTaxSuffix.
   ///
   /// In en, this message translates to:

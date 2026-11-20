@@ -16,6 +16,8 @@ import 'package:invoiso/models/user.dart';
 import 'package:invoiso/widgets/apply_customer_payment_dialog.dart';
 import 'package:invoiso/models/customer_field_settings.dart';
 import 'package:invoiso/widgets/customer_extra_fields.dart';
+import 'package:invoiso/widgets/gst_state_dropdown.dart';
+import 'package:invoiso/common/gst_utils.dart';
 import 'package:invoiso/l10n/app_localizations.dart';
 import 'package:uuid/uuid.dart';
 import 'package:csv/csv.dart';
@@ -65,6 +67,7 @@ class _CustomerManagementScreenV2State extends ConsumerState<CustomerManagementS
   final _phoneController = TextEditingController();
   final _addressController = TextEditingController();
   final _gstinController = TextEditingController();
+  String _stateCode = ''; // GST state when the GSTIN doesn't give it
   final _businessNameController = TextEditingController();
   final _extraFields = CustomerExtraFieldsController();
   CustomerFieldSettings _fieldSettings = const CustomerFieldSettings();
@@ -299,6 +302,7 @@ class _CustomerManagementScreenV2State extends ConsumerState<CustomerManagementS
         address: _addressController.text.trim(),
         gstin: _gstinController.text.trim(),
         businessName: _businessNameController.text.trim(),
+        stateCode: GstUtils.stateCodeFromGstin(_gstinController.text) ?? _stateCode,
       ), _fieldSettings);
 
       if (customer == null) {
@@ -326,6 +330,7 @@ class _CustomerManagementScreenV2State extends ConsumerState<CustomerManagementS
     _addressController.clear();
     _gstinController.clear();
     _businessNameController.clear();
+    _stateCode = '';
     _extraFields.load(null);
   }
 
@@ -358,6 +363,7 @@ class _CustomerManagementScreenV2State extends ConsumerState<CustomerManagementS
     final phoneCtrl = TextEditingController(text: customer.phone);
     final addressCtrl = TextEditingController(text: customer.address);
     final gstinCtrl = TextEditingController(text: customer.gstin);
+    var stateCode = customer.stateCode;
     final businessNameCtrl = TextEditingController(text: customer.businessName);
     final extraFields = CustomerExtraFieldsController()..load(customer);
     final dialogFormKey = GlobalKey<FormState>();
@@ -406,6 +412,11 @@ class _CustomerManagementScreenV2State extends ConsumerState<CustomerManagementS
                   _buildDialogTextField(gstinCtrl, AppLocalizations.of(context)!.fieldTaxVatNumberLabel(_taxWord), Icons.receipt_long,
                       readOnly: !isEdit, maxLength: 50),
                   const SizedBox(height: 16),
+                  if (isIndiaCountry(_companyCountry)) ...[
+                    _gstStateField(gstinCtrl, stateCode,
+                        isEdit ? (v) => setDialogState(() => stateCode = v) : null),
+                    const SizedBox(height: 16),
+                  ],
                   _buildDialogTextField(addressCtrl, AppLocalizations.of(context)!.fieldAddressLabel, Icons.location_on,
                       readOnly: !isEdit, maxLines: 3, maxLength: 100),
                   CustomerExtraFields(
@@ -441,6 +452,7 @@ class _CustomerManagementScreenV2State extends ConsumerState<CustomerManagementS
                     address: addressCtrl.text.trim(),
                     gstin: gstinCtrl.text.trim(),
                     businessName: businessNameCtrl.text.trim(),
+                    stateCode: GstUtils.stateCodeFromGstin(gstinCtrl.text) ?? stateCode,
                   ), _fieldSettings);
 
                   await ref.read(customerRepositoryProvider).updateCustomer(updatedCustomer);
@@ -461,6 +473,22 @@ class _CustomerManagementScreenV2State extends ConsumerState<CustomerManagementS
         ],
         );
         });
+      },
+    );
+  }
+
+  /// State follows a valid GSTIN (locked); otherwise picked by hand.
+  Widget _gstStateField(TextEditingController gstin, String picked,
+      ValueChanged<String>? onChanged) {
+    return ValueListenableBuilder<TextEditingValue>(
+      valueListenable: gstin,
+      builder: (context, value, _) {
+        final fromGstin = GstUtils.stateCodeFromGstin(value.text);
+        return GstStateDropdown(
+          value: fromGstin ?? picked,
+          label: AppLocalizations.of(context)!.gstStateLabel,
+          onChanged: fromGstin == null ? onChanged : null,
+        );
       },
     );
   }
@@ -813,6 +841,8 @@ class _CustomerManagementScreenV2State extends ConsumerState<CustomerManagementS
           address: getField(row, 'address'),
           gstin: getField(row, 'tax_number'),
           businessName: getField(row, 'business_name'),
+          stateCode: GstUtils.stateCodeFromGstin(getField(row, 'tax_number')) ??
+              existing?.stateCode ?? '',
         );
         applyCustomerCsvExtraFields(customer, headers, (col) => getField(row, col),
             existing, _fieldSettings.customFieldDefs);
@@ -2038,6 +2068,11 @@ class _CustomerManagementScreenV2State extends ConsumerState<CustomerManagementS
                           Icons.receipt_long, false,
                           maxLength: 50),
                       const SizedBox(height: 16),
+                      if (isIndiaCountry(_companyCountry)) ...[
+                        _gstStateField(_gstinController, _stateCode,
+                            (v) => setState(() => _stateCode = v)),
+                        const SizedBox(height: 16),
+                      ],
                       _buildFormField(_addressController, AppLocalizations.of(context)!.fieldAddressLabel, Icons.location_on,
                           false,
                           maxLines: 3, maxLength: 500),

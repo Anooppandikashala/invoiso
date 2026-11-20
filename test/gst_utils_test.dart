@@ -18,4 +18,13 @@ void main() {
     expect(GstUtils.stateCodeFromGstin(null), isNull);
     expect(GstUtils.stateCodeFromGstin('33ABCDE1234F1X5'), isNull); // 14th char must be Z
   });
+
+  test('state list matches the GSTR-1 template', () {
+    expect(GstUtils.states, hasLength(39));
+    expect(GstUtils.states.containsKey('28'), isFalse);
+    expect(GstUtils.stateLabel('33'), '33-Tamil Nadu');
+    expect(GstUtils.stateLabel('31'), '31-Lakshdweep'); // template spelling
+    expect(GstUtils.stateLabel('26'), '26-Dadra & Nagar Haveli & Daman & Diu');
+    expect(GstUtils.stateLabel('99'), '99');
+  });
 }
