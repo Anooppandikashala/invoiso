@@ -108,6 +108,23 @@ enum Gstr1IssueKind {
 
   /// Excluded: no place of supply saved and none can be derived.
   missingPlaceOfSupply,
+
+  /// Warning: customer GSTIN fails the format check (portal will reject).
+  invalidCustomerGstin,
+
+  /// Warning: B2B / registered-note line without HSN/SAC.
+  missingHsn,
+
+  /// Warning: tax rate not in the GST rate list ([detail] = rate).
+  unusualRate,
+
+  /// Warning: invoice-level discount — taxable value reported as printed
+  /// (before the discount).
+  invoiceDiscount,
+
+  /// Warning: b2cs row went negative (more returns than sales);
+  /// [detail] = "pos|rate", no document.
+  negativeB2cs,
 }
 
 /// A document left out of the return, or exported with a warning.
@@ -115,8 +132,9 @@ class Gstr1Issue {
   final Gstr1IssueKind kind;
   final String invoiceId;
   final String number;
+  final String detail;
 
-  const Gstr1Issue(this.kind, this.invoiceId, this.number);
+  const Gstr1Issue(this.kind, this.invoiceId, this.number, [this.detail = '']);
 }
 
 class Gstr1Report {
@@ -130,6 +148,10 @@ class Gstr1Report {
   final List<Gstr1HsnRow> hsnB2c;
   final List<DocumentIssuedRow> docs;
   final List<Gstr1Issue> excluded;
+  final List<Gstr1Issue> warnings;
+
+  /// False → company GSTIN missing / invalid: the return can't be exported.
+  final bool companyGstinValid;
 
   const Gstr1Report({
     required this.b2b,
@@ -142,5 +164,7 @@ class Gstr1Report {
     required this.hsnB2c,
     required this.docs,
     required this.excluded,
+    required this.warnings,
+    required this.companyGstinValid,
   });
 }

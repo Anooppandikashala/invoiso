@@ -47,6 +47,8 @@ Invoice _inv(
   List<AdditionalCost> charges = const [],
   String type = 'Invoice',
   String? original,
+  String? status,
+  double invoiceDiscount = 0,
 }) =>
     Invoice(
       id: id,
@@ -57,6 +59,9 @@ Invoice _inv(
       date: DateTime(2026, 11, 5),
       type: type,
       originalInvoiceId: original,
+      status: status,
+      invoiceDiscountType: InvoiceDiscountType.amount,
+      invoiceDiscountValue: invoiceDiscount,
       taxMode: mode,
       taxRate: globalRate,
       isInterState: inter,
@@ -289,6 +294,49 @@ void main() {
           numberOf: (i) => i.id,
           documentsIssued: docs));
       expect(r.docs, docs);
+    });
+  });
+
+  group('checks', () {
+    test('warnings: bad GSTIN, missing HSN, unusual rate, invoice discount', () {
+      final r = _build([
+        _inv('1', gstin: '123', pos: '33', items: [
+          InvoiceItem(product: _p(100, 18, hsn: ''), quantity: 1),
+          InvoiceItem(product: _p(100, 15), quantity: 1),
+        ]),
+        _inv('2', pos: '33', invoiceDiscount: 10,
+            items: [InvoiceItem(product: _p(100, 18), quantity: 1)]),
+      ]);
+      expect(r.companyGstinValid, isTrue);
+      expect({for (final w in r.warnings) (w.kind, w.number, w.detail)}, {
+        (Gstr1IssueKind.invalidCustomerGstin, 'INV-1', ''),
+        (Gstr1IssueKind.missingHsn, 'INV-1', ''),
+        (Gstr1IssueKind.unusualRate, 'INV-1', '15.0'),
+        (Gstr1IssueKind.invoiceDiscount, 'INV-2', ''),
+      });
+      expect(r.b2b, hasLength(2)); // warnings don't drop rows
+    });
+
+    test('negative b2cs row is flagged', () {
+      final r = _build([
+        _inv('cn', type: 'Credit Note', pos: '33',
+            items: [InvoiceItem(product: _p(100, 18), quantity: 1)]),
+      ]);
+      expect(r.b2cs.single.taxable, -100);
+      expect(r.warnings.single.kind, Gstr1IssueKind.negativeB2cs);
+      expect(r.warnings.single.detail, '33|18.0');
+    });
+
+    test('declined invoices skipped; bad company GSTIN blocks export', () {
+      final r = Gstr1Builder.build(Gstr1Input(
+          companyGstin: '',
+          documents: [
+            _inv('1', status: 'declined', pos: '33',
+                items: [InvoiceItem(product: _p(100, 18), quantity: 1)]),
+          ],
+          numberOf: (i) => i.id));
+      expect(r.companyGstinValid, isFalse);
+      expect([r.b2b, r.b2cs, r.excluded], [isEmpty, isEmpty, isEmpty]);
     });
   });
 }

@@ -40,6 +40,10 @@ class Gstr1Builder {
   /// B2C inter-state invoices above this value are B2C Large (from 1 Aug 2024).
   static const b2clLimit = 100000.0;
 
+  /// GST rates (%) — anything else is flagged. 12 / 28 stay for periods
+  /// before the Sep 2025 rate change.
+  static const gstRates = [0.0, 0.1, 0.25, 1.0, 1.5, 3.0, 5.0, 6.0, 7.5, 12.0, 18.0, 28.0, 40.0];
+
   static Gstr1Report build(Gstr1Input input) {
     final companyState = GstUtils.stateCodeFromGstin(input.companyGstin);
     final b2b = <Gstr1DocRow>[];
@@ -48,6 +52,7 @@ class Gstr1Builder {
     final cdnur = <Gstr1DocRow>[];
     final b2csSums = <String, List<double>>{}; // 'pos|rate' → [taxable, igst, cgst]
     final excluded = <Gstr1Issue>[];
+    final warnings = <Gstr1Issue>[];
     // Table 8: 'interState|registered' → [nil, exempt, nonGst]
     final exemp = {
       for (final k in ['true|true', 'false|true', 'true|false', 'false|false'])
@@ -65,6 +70,7 @@ class Gstr1Builder {
     for (final inv in input.documents) {
       final isNote = inv.type == 'Credit Note' || inv.type == 'Debit Note';
       if (inv.type != 'Invoice' && !isNote) continue;
+      if (inv.status == 'declined') continue; // not a supply, like the reports
       final number = input.numberOf(inv);
       if (inv.currencyCode != 'INR') {
         excluded.add(Gstr1Issue(Gstr1IssueKind.nonInr, inv.id, number));
@@ -83,6 +89,21 @@ class Gstr1Builder {
       final gstin = inv.customer.gstin.trim();
       final sign = inv.type == 'Credit Note' ? -1.0 : 1.0;
       final registered = gstin.isNotEmpty;
+
+      void warn(Gstr1IssueKind k, [String detail = '']) =>
+          warnings.add(Gstr1Issue(k, inv.id, number, detail));
+      if (registered && GstUtils.stateCodeFromGstin(gstin) == null) {
+        warn(Gstr1IssueKind.invalidCustomerGstin);
+      }
+      if (registered && inv.items.any((i) => i.product.hsncode.trim().isEmpty)) {
+        warn(Gstr1IssueKind.missingHsn);
+      }
+      for (final rate in split.keys) {
+        if (!gstRates.contains(rate)) warn(Gstr1IssueKind.unusualRate, '$rate');
+      }
+      if (!isNote && inv.invoiceDiscountAmount > 0) {
+        warn(Gstr1IssueKind.invoiceDiscount);
+      }
 
       final ex = exemp['${inv.isInterState}|$registered']!;
       for (final z in zeroRated(inv).entries) {
@@ -144,6 +165,12 @@ class Gstr1Builder {
       }
     }
 
+    for (final e in b2csSums.entries) {
+      if (_r(e.value[0]) < 0) {
+        warnings.add(Gstr1Issue(Gstr1IssueKind.negativeB2cs, '', '', e.key));
+      }
+    }
+
     return Gstr1Report(
       b2b: b2b,
       b2cl: b2cl,
@@ -175,6 +202,8 @@ class Gstr1Builder {
       hsnB2c: _hsnRows(hsnSums, hsnNames, registered: false),
       docs: input.documentsIssued,
       excluded: excluded,
+      warnings: warnings,
+      companyGstinValid: companyState != null,
     );
   }
 

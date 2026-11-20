@@ -1058,25 +1058,33 @@ class ReportService {
 
   /// Formats per-type number ranges (type, lo, hi, total, cancelled) with the
   /// PDF prefix rules. Shared with the cloud edition's RPC.
-  static Future<List<DocumentIssuedRow>> documentsIssuedFromRows(
-      List<Map<String, Object?>> rows) async {
+  /// Printed number prefix per document type + the leading-zeros setting —
+  /// same rules as the PDF (PdfService). Shared with the GSTR-1 export.
+  static Future<({Map<String, String> prefixes, bool leadingZeros})>
+      documentNumbering() async {
     final settings = BackendServices.settings;
-    final leadingZeros =
-        (await settings.getSetting(SettingKey.invoiceLeadingZeros)) != 'false';
-    // Same prefix rules as the PDF (PdfService).
     String dashed(String raw) {
       final p = raw.replaceFirst(RegExp(r'-+$'), '');
       return p.isNotEmpty ? '$p-' : '';
     }
     final invPrefix =
         (await settings.getSetting(SettingKey.invoicePrefix)) ?? 'INV';
-    final prefixes = {
-      'Invoice': invPrefix.isNotEmpty ? '$invPrefix-' : '',
-      'Credit Note': dashed(
-          (await settings.getSetting(SettingKey.creditNotePrefix)) ?? 'CN'),
-      'Debit Note': dashed(
-          (await settings.getSetting(SettingKey.debitNotePrefix)) ?? 'DN'),
-    };
+    return (
+      prefixes: {
+        'Invoice': invPrefix.isNotEmpty ? '$invPrefix-' : '',
+        'Credit Note': dashed(
+            (await settings.getSetting(SettingKey.creditNotePrefix)) ?? 'CN'),
+        'Debit Note': dashed(
+            (await settings.getSetting(SettingKey.debitNotePrefix)) ?? 'DN'),
+      },
+      leadingZeros:
+          (await settings.getSetting(SettingKey.invoiceLeadingZeros)) != 'false',
+    );
+  }
+
+  static Future<List<DocumentIssuedRow>> documentsIssuedFromRows(
+      List<Map<String, Object?>> rows) async {
+    final (:prefixes, :leadingZeros) = await documentNumbering();
     String number(String type, Object? n) {
       final s = '${(n as num?)?.toInt() ?? 0}';
       return '${prefixes[type]}${leadingZeros ? s.padLeft(8, '0') : s}';
