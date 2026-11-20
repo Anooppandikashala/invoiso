@@ -222,7 +222,7 @@ void main() {
 
     // Panel period / currency don't apply to GSTR-1 → hidden, note instead.
     expect(find.text('PERIOD'), findsNothing);
-    expect(find.textContaining('GSTR-1 uses its own return period'), findsOneWidget);
+    expect(find.textContaining('use their own return period'), findsOneWidget);
     expect(find.text('B2B (4A)'), findsOneWidget);
     final b2bRow = find.ancestor(of: find.text('B2B (4A)'), matching: find.byType(Row)).first;
     expect(find.descendant(of: b2bRow, matching: find.text('1')), findsOneWidget);
@@ -276,5 +276,61 @@ void main() {
     expect(find.descendant(of: row, matching: find.text('Y')), findsOneWidget); // ITC
     expect(find.text('PERIOD'), findsOneWidget); // uses the side-panel period
     expect(find.text('CURRENCY'), findsNothing); // purchases have no currency
+  });
+
+  testWidgets('GSTR-3B sub-tab: sales from GSTR-1 + purchase ITC, set-off',
+      (tester) async {
+    await tester.runAsync(() async {
+      final db = await DatabaseHelper().database;
+      await db.delete('company_info');
+      await CompanyInfoService.insertCompanyInfo(CompanyInfo(
+          name: 'Co', address: '', phone: '', email: '', website: '',
+          gstin: '33ABCDE1234F1Z5'));
+      final now = DateTime.now();
+      final lastMonth = DateTime(now.year, now.month - 1, 10);
+      await InvoiceService.insertInvoice(Invoice(
+        id: 'g3', invoiceNumber: '00000301',
+        customer: Customer(id: 'cg3', name: 'Reg Co', email: '', phone: '',
+            address: '', gstin: '29ABCDE1234F1Z5'),
+        items: [InvoiceItem(product: p('8471'), quantity: 1)],
+        date: lastMonth,
+        type: 'Invoice', taxMode: TaxMode.perItem,
+        isInterState: true, placeOfSupply: '29'));
+      await PurchaseBillService.insertPurchaseBill(PurchaseBill(
+        id: 'pb3', billNumber: 'SUP-3', supplierName: 'S', billDate: lastMonth,
+        supplierGstin: '29PQRST6789L1ZQ',
+        items: [PurchaseBillItem(
+            productName: 'X', quantity: 1, costPerUnit: 1, taxRate: 18)],
+      ));
+    });
+    final onError = FlutterError.onError;
+    FlutterError.onError = (d) {
+      if (!d.exceptionAsString().contains('overflowed')) onError?.call(d);
+    };
+    addTearDown(() => FlutterError.onError = onError);
+    tester.view.physicalSize = const Size(1600, 3000);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.reset);
+    await tester.pumpWidget(ProviderScope(
+      overrides: sqliteRepositoryOverrides,
+      child: MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: const Scaffold(body: ReportsScreen()),
+      ),
+    ));
+    await settle(tester);
+    await tester.tap(find.text('Tax').first);
+    await settle(tester);
+    await tester.tap(find.text('GSTR-3B'));
+    await settle(tester);
+
+    expect(find.text('PERIOD'), findsNothing); // own return period
+    expect(find.text('GSTR-3B summary'), findsOneWidget);
+    expect(find.text('6.1 Payment of tax'), findsOneWidget);
+    // Purchase ITC (IGST 0.18) is used against the sale's IGST.
+    final igst = find.ancestor(of: find.text('IGST').last, matching: find.byType(Row)).first;
+    expect(find.descendant(of: igst, matching: find.textContaining('0.18')),
+        findsOneWidget); // paid via ITC
   });
 }

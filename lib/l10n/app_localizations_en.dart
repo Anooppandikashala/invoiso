@@ -6320,6 +6320,105 @@ class AppLocalizationsEn extends AppLocalizations {
   String get reportsNavPurchasesLabel => 'Purchases';
 
   @override
+  String get reportsGstr3bTab => 'GSTR-3B';
+
+  @override
+  String get gstr3bTitle => 'GSTR-3B summary';
+
+  @override
+  String get gstr3bSubtitle =>
+      'Figures to enter on the GST portal (GSTR-3B has no upload file). Sales match the GSTR-1 tab; input tax credit comes from purchase bills.';
+
+  @override
+  String get gstr3bNature => 'Nature of supplies';
+
+  @override
+  String get gstr3b31Title =>
+      '3.1 Outward supplies and inward supplies liable to reverse charge';
+
+  @override
+  String get gstr3bOutwardTaxable =>
+      '(a) Outward taxable supplies (other than zero rated, nil rated and exempted)';
+
+  @override
+  String get gstr3bZeroRated => '(b) Outward taxable supplies (zero rated)';
+
+  @override
+  String get gstr3bNilExempt =>
+      '(c) Other outward supplies (nil rated, exempted)';
+
+  @override
+  String get gstr3bInwardRcm =>
+      '(d) Inward supplies (liable to reverse charge)';
+
+  @override
+  String get gstr3bNonGst => '(e) Non-GST outward supplies';
+
+  @override
+  String get gstr3b32Title =>
+      '3.2 Inter-state supplies to unregistered persons';
+
+  @override
+  String get gstr3bPlaceOfSupply => 'Place of supply';
+
+  @override
+  String get gstr3b4Title => '4 Eligible ITC';
+
+  @override
+  String get gstr3bItcRcm => 'A(3) Inward supplies liable to reverse charge';
+
+  @override
+  String get gstr3bItcOther => 'A(5) All other ITC';
+
+  @override
+  String get gstr3bItcNet => 'C Net ITC available';
+
+  @override
+  String get gstr3bNotClaimable =>
+      'Not claimable — purchases without a valid supplier GSTIN (for information)';
+
+  @override
+  String get gstr3bBlockedNote =>
+      'ITC assumes every bill from a registered supplier is eligible — check blocked credits (Sec 17(5)) before claiming.';
+
+  @override
+  String get gstr3b5Title => '5 Exempt, nil rated and non-GST inward supplies';
+
+  @override
+  String get gstr3bExemptInward => 'Nil rated / exempt purchases (0% lines)';
+
+  @override
+  String get gstr3bInterState => 'Inter-state';
+
+  @override
+  String get gstr3bIntraState => 'Intra-state';
+
+  @override
+  String get gstr3b61Title => '6.1 Payment of tax';
+
+  @override
+  String get gstr3bPayable => 'Payable';
+
+  @override
+  String get gstr3bPaidItc => 'Paid via ITC';
+
+  @override
+  String get gstr3bPaidCash => 'Paid in cash';
+
+  @override
+  String get gstr3bItcLeft => 'ITC carried forward';
+
+  @override
+  String gstr3bSalesIssues(int excluded, int warnings) {
+    return 'Sales: $excluded documents not included, $warnings warnings — see the GSTR-1 tab.';
+  }
+
+  @override
+  String gstr3bPurchaseIssues(int count) {
+    return 'Purchases: $count warnings — see Reports → Purchases.';
+  }
+
+  @override
   String get purchaseRegisterTitle => 'Purchase register';
 
   @override
@@ -6366,7 +6465,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get reportsGstr1PanelNote =>
-      'GSTR-1 uses its own return period (picked in the GSTR-1 tab) and INR invoices only.';
+      'GSTR-1 and GSTR-3B use their own return period (picked in the tab) and INR invoices only.';
 
   @override
   String get reportsNoDocumentsIssuedMessage =>

@@ -3,6 +3,10 @@ import 'package:invoiso/models/gstr1_report.dart';
 import 'package:invoiso/models/invoice.dart';
 import 'package:invoiso/repositories/company_info_repository.dart';
 import 'package:invoiso/repositories/invoice_repository.dart';
+import 'package:invoiso/repositories/purchase_bill_repository.dart';
+import 'package:invoiso/models/gstr3b_summary.dart';
+import 'package:invoiso/services/gst/gstr3b_builder.dart';
+import 'package:invoiso/services/gst/purchase_gst_builder.dart';
 import 'package:invoiso/repositories/report_repository.dart';
 import 'package:invoiso/services/gst/gstr1_builder.dart';
 
@@ -58,5 +62,28 @@ class Gstr1Service {
       originals: originals,
       documentsIssued: await reports.getDocumentsIssued(period.from, period.to),
     ));
+  }
+}
+
+/// GSTR-3B summary for a period: sales via [Gstr1Service] (same numbers as
+/// the GSTR-1 export) + the period's purchase bills (PurchaseGstReportsPlan.md P5).
+class Gstr3bService {
+  const Gstr3bService._();
+
+  static Future<Gstr3bSummary> load(
+    Gstr1Period period, {
+    required InvoiceRepository invoices,
+    required ReportRepository reports,
+    required CompanyInfoRepository companyInfo,
+    required PurchaseBillRepository purchaseBills,
+  }) async {
+    final sales = await Gstr1Service.load(period,
+        invoices: invoices, reports: reports, companyInfo: companyInfo);
+    final gstin = (await companyInfo.getCompanyInfo())?.gstin ?? '';
+    final purchases = PurchaseGstBuilder.build(
+        companyGstin: gstin,
+        bills: await purchaseBills.getPurchaseBillsInRange(period.from, period.to));
+    return Gstr3bBuilder.build(
+        companyGstin: gstin, sales: sales, purchases: purchases);
   }
 }

@@ -10784,6 +10784,180 @@ abstract class AppLocalizations {
   /// **'Purchases'**
   String get reportsNavPurchasesLabel;
 
+  /// No description provided for @reportsGstr3bTab.
+  ///
+  /// In en, this message translates to:
+  /// **'GSTR-3B'**
+  String get reportsGstr3bTab;
+
+  /// No description provided for @gstr3bTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'GSTR-3B summary'**
+  String get gstr3bTitle;
+
+  /// No description provided for @gstr3bSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Figures to enter on the GST portal (GSTR-3B has no upload file). Sales match the GSTR-1 tab; input tax credit comes from purchase bills.'**
+  String get gstr3bSubtitle;
+
+  /// No description provided for @gstr3bNature.
+  ///
+  /// In en, this message translates to:
+  /// **'Nature of supplies'**
+  String get gstr3bNature;
+
+  /// No description provided for @gstr3b31Title.
+  ///
+  /// In en, this message translates to:
+  /// **'3.1 Outward supplies and inward supplies liable to reverse charge'**
+  String get gstr3b31Title;
+
+  /// No description provided for @gstr3bOutwardTaxable.
+  ///
+  /// In en, this message translates to:
+  /// **'(a) Outward taxable supplies (other than zero rated, nil rated and exempted)'**
+  String get gstr3bOutwardTaxable;
+
+  /// No description provided for @gstr3bZeroRated.
+  ///
+  /// In en, this message translates to:
+  /// **'(b) Outward taxable supplies (zero rated)'**
+  String get gstr3bZeroRated;
+
+  /// No description provided for @gstr3bNilExempt.
+  ///
+  /// In en, this message translates to:
+  /// **'(c) Other outward supplies (nil rated, exempted)'**
+  String get gstr3bNilExempt;
+
+  /// No description provided for @gstr3bInwardRcm.
+  ///
+  /// In en, this message translates to:
+  /// **'(d) Inward supplies (liable to reverse charge)'**
+  String get gstr3bInwardRcm;
+
+  /// No description provided for @gstr3bNonGst.
+  ///
+  /// In en, this message translates to:
+  /// **'(e) Non-GST outward supplies'**
+  String get gstr3bNonGst;
+
+  /// No description provided for @gstr3b32Title.
+  ///
+  /// In en, this message translates to:
+  /// **'3.2 Inter-state supplies to unregistered persons'**
+  String get gstr3b32Title;
+
+  /// No description provided for @gstr3bPlaceOfSupply.
+  ///
+  /// In en, this message translates to:
+  /// **'Place of supply'**
+  String get gstr3bPlaceOfSupply;
+
+  /// No description provided for @gstr3b4Title.
+  ///
+  /// In en, this message translates to:
+  /// **'4 Eligible ITC'**
+  String get gstr3b4Title;
+
+  /// No description provided for @gstr3bItcRcm.
+  ///
+  /// In en, this message translates to:
+  /// **'A(3) Inward supplies liable to reverse charge'**
+  String get gstr3bItcRcm;
+
+  /// No description provided for @gstr3bItcOther.
+  ///
+  /// In en, this message translates to:
+  /// **'A(5) All other ITC'**
+  String get gstr3bItcOther;
+
+  /// No description provided for @gstr3bItcNet.
+  ///
+  /// In en, this message translates to:
+  /// **'C Net ITC available'**
+  String get gstr3bItcNet;
+
+  /// No description provided for @gstr3bNotClaimable.
+  ///
+  /// In en, this message translates to:
+  /// **'Not claimable — purchases without a valid supplier GSTIN (for information)'**
+  String get gstr3bNotClaimable;
+
+  /// No description provided for @gstr3bBlockedNote.
+  ///
+  /// In en, this message translates to:
+  /// **'ITC assumes every bill from a registered supplier is eligible — check blocked credits (Sec 17(5)) before claiming.'**
+  String get gstr3bBlockedNote;
+
+  /// No description provided for @gstr3b5Title.
+  ///
+  /// In en, this message translates to:
+  /// **'5 Exempt, nil rated and non-GST inward supplies'**
+  String get gstr3b5Title;
+
+  /// No description provided for @gstr3bExemptInward.
+  ///
+  /// In en, this message translates to:
+  /// **'Nil rated / exempt purchases (0% lines)'**
+  String get gstr3bExemptInward;
+
+  /// No description provided for @gstr3bInterState.
+  ///
+  /// In en, this message translates to:
+  /// **'Inter-state'**
+  String get gstr3bInterState;
+
+  /// No description provided for @gstr3bIntraState.
+  ///
+  /// In en, this message translates to:
+  /// **'Intra-state'**
+  String get gstr3bIntraState;
+
+  /// No description provided for @gstr3b61Title.
+  ///
+  /// In en, this message translates to:
+  /// **'6.1 Payment of tax'**
+  String get gstr3b61Title;
+
+  /// No description provided for @gstr3bPayable.
+  ///
+  /// In en, this message translates to:
+  /// **'Payable'**
+  String get gstr3bPayable;
+
+  /// No description provided for @gstr3bPaidItc.
+  ///
+  /// In en, this message translates to:
+  /// **'Paid via ITC'**
+  String get gstr3bPaidItc;
+
+  /// No description provided for @gstr3bPaidCash.
+  ///
+  /// In en, this message translates to:
+  /// **'Paid in cash'**
+  String get gstr3bPaidCash;
+
+  /// No description provided for @gstr3bItcLeft.
+  ///
+  /// In en, this message translates to:
+  /// **'ITC carried forward'**
+  String get gstr3bItcLeft;
+
+  /// No description provided for @gstr3bSalesIssues.
+  ///
+  /// In en, this message translates to:
+  /// **'Sales: {excluded} documents not included, {warnings} warnings — see the GSTR-1 tab.'**
+  String gstr3bSalesIssues(int excluded, int warnings);
+
+  /// No description provided for @gstr3bPurchaseIssues.
+  ///
+  /// In en, this message translates to:
+  /// **'Purchases: {count} warnings — see Reports → Purchases.'**
+  String gstr3bPurchaseIssues(int count);
+
   /// No description provided for @purchaseRegisterTitle.
   ///
   /// In en, this message translates to:
@@ -10871,7 +11045,7 @@ abstract class AppLocalizations {
   /// No description provided for @reportsGstr1PanelNote.
   ///
   /// In en, this message translates to:
-  /// **'GSTR-1 uses its own return period (picked in the GSTR-1 tab) and INR invoices only.'**
+  /// **'GSTR-1 and GSTR-3B use their own return period (picked in the tab) and INR invoices only.'**
   String get reportsGstr1PanelNote;
 
   /// No description provided for @reportsNoDocumentsIssuedMessage.

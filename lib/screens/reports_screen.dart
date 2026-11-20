@@ -20,6 +20,8 @@ import 'package:invoiso/models/gstr1_report.dart';
 import 'package:invoiso/services/gst/gstr1_excel_writer.dart';
 import 'package:invoiso/services/gst/gstr1_pdf_writer.dart';
 import 'package:invoiso/services/gst/gstr1_service.dart';
+import 'package:invoiso/models/gstr3b_summary.dart';
+import 'package:invoiso/services/gst/gstr3b_pdf_writer.dart';
 import 'package:invoiso/models/purchase_gst_report.dart';
 import 'package:invoiso/providers/purchase_bills_settings_provider.dart';
 import 'package:invoiso/services/gst/purchase_gst_builder.dart';
@@ -122,6 +124,8 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
     return (last.year, last.month); // (year, month or quarter)
   }();
   Gstr1Report? _gstr1Report;
+  Gstr3bSummary? _gstr3b; // Tax sub-tab 4 (same return period as GSTR-1)
+  bool _gstr3bLoading = false;
   // Purchases tab (9) — purchase register (PurchaseGstReportsPlan.md P2).
   PurchaseGstReport? _purchaseReport;
   String _purchaseFilter = 'all'; // 'all' | 'registered' | 'unregistered'
@@ -132,8 +136,9 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
   bool get _showPurchases =>
       ref.watch(enablePurchaseBillsAndSuppliersProvider) &&
       (!_purchasesAdminOnly || widget.isAdmin);
+  /// GSTR-1 / GSTR-3B: own return period → side-panel period / currency hidden.
   bool get _isGstr1Section =>
-      _selectedIndex == 2 && _showGstFields && _taxSection == 3;
+      _selectedIndex == 2 && _showGstFields && _taxSection >= 3;
   bool _gstr1Loading = false;
   bool _gstr1IncludeRegister = false;
   List<TopCustomer> _topCustomers = [];
@@ -395,6 +400,28 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
       if (mounted) setState(() => _docRows = rows);
     } else if (_taxSection == 3 && _gstr1Report == null) {
       await _loadGstr1();
+    } else if (_taxSection == 4 && _gstr3b == null) {
+      await _loadGstr3b();
+    }
+  }
+
+  Future<void> _loadGstr3b() async {
+    if (_gstr3bLoading) return;
+    setState(() => _gstr3bLoading = true);
+    final (year, n) = _gstr1Period;
+    try {
+      final summary = await Gstr3bService.load(
+        _gstr1Quarterly
+            ? Gstr1Period.quarter(year, n)
+            : Gstr1Period.month(year, n),
+        invoices: ref.read(invoiceRepositoryProvider),
+        reports: ref.read(reportRepositoryProvider),
+        companyInfo: ref.read(companyInfoRepositoryProvider),
+        purchaseBills: ref.read(purchaseBillRepositoryProvider),
+      );
+      if (mounted) setState(() => _gstr3b = summary);
+    } finally {
+      if (mounted) setState(() => _gstr3bLoading = false);
     }
   }
 
@@ -462,6 +489,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
             _hsnRows = null; // reload on next view (period / currency changed)
             _docRows = null;
             _gstr1Report = null;
+            _gstr3b = null;
             _hsnPage = 0;
           });
           _loadTaxSection();
@@ -2533,6 +2561,10 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
                           value: 3,
                           icon: const Icon(Icons.upload_file, size: 16),
                           label: Text(l10n.reportsGstr1Tab)),
+                      ButtonSegment(
+                          value: 4,
+                          icon: const Icon(Icons.summarize_outlined, size: 16),
+                          label: Text(l10n.reportsGstr3bTab)),
                     ],
                     selected: {_taxSection},
                     onSelectionChanged: (s) {
@@ -2545,6 +2577,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
               if (_showGstFields && _taxSection == 1) _hsnSummaryCard(ts),
               if (_showGstFields && _taxSection == 2) _docsIssuedCard(ts),
               if (_showGstFields && _taxSection == 3) _gstr1Card(),
+              if (_showGstFields && _taxSection == 4) _gstr3bCard(),
               // Tax breakdown table
               if (!_showGstFields || _taxSection == 0)
               _sectionCard(
@@ -2909,12 +2942,22 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
 
   /// Reports → Tax → GSTR-1: period picker, preview (blocking / sections /
   /// excluded / warnings) and Excel export (Gstr1ExportPlan.md Part D2).
-  Widget _gstr1Card() {
+  /// Return period shared by the GSTR-1 and GSTR-3B sub-tabs.
+  String _returnPeriodLabel() {
+    final ml = MaterialLocalizations.of(context);
+    final (y, n) = _gstr1Period;
+    return _gstr1Quarterly
+        ? '${ml.formatMonthYear(DateTime(y, n * 3 - 2))} – '
+            '${ml.formatMonthYear(DateTime(y, n * 3))}'
+        : ml.formatMonthYear(DateTime(y, n));
+  }
+
+  /// Monthly / quarterly switch + recent periods (24 months / 8 quarters).
+  /// Changing it reloads the open return sub-tab.
+  Widget _returnPeriodPicker() {
     final l10n = AppLocalizations.of(context)!;
     final ml = MaterialLocalizations.of(context);
-    final r = _gstr1Report;
     final now = DateTime.now();
-    // Recent periods, newest first: 24 months or 8 quarters.
     final periods = <(int, int)>[
       if (_gstr1Quarterly)
         for (var i = 0; i < 8; i++)
@@ -2936,9 +2979,51 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
       setState(() {
         change();
         _gstr1Report = null;
+        _gstr3b = null;
       });
-      _loadGstr1();
+      _loadTaxSection();
     }
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 0, 20, 12),
+      child: Wrap(
+        spacing: 12,
+        runSpacing: 8,
+        crossAxisAlignment: WrapCrossAlignment.center,
+        children: [
+          SegmentedButton<bool>(
+            showSelectedIcon: false,
+            segments: [
+              ButtonSegment(value: false, label: Text(l10n.gstr1Monthly)),
+              ButtonSegment(value: true, label: Text(l10n.gstr1Quarterly)),
+            ],
+            selected: {_gstr1Quarterly},
+            onSelectionChanged: (v) => setPeriod(() {
+              _gstr1Quarterly = v.first;
+              final last = DateTime(now.year, now.month - (v.first ? 3 : 1));
+              _gstr1Period = v.first
+                  ? (last.year, (last.month - 1) ~/ 3 + 1)
+                  : (last.year, last.month);
+            }),
+          ),
+          DropdownButton<(int, int)>(
+            value: periods.contains(_gstr1Period) ? _gstr1Period : null,
+            items: [
+              for (final p in periods)
+                DropdownMenuItem(value: p, child: Text(label(p))),
+            ],
+            onChanged: (p) {
+              if (p != null) setPeriod(() => _gstr1Period = p);
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _gstr1Card() {
+    final l10n = AppLocalizations.of(context)!;
+    final r = _gstr1Report;
 
     String issue(Gstr1Issue i) {
       final msg = switch (i.kind) {
@@ -2997,41 +3082,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
                     fontSize: 12,
                     color: Theme.of(context).colorScheme.onSurfaceVariant)),
           ),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(20, 0, 20, 12),
-            child: Wrap(
-              spacing: 12,
-              runSpacing: 8,
-              crossAxisAlignment: WrapCrossAlignment.center,
-              children: [
-                SegmentedButton<bool>(
-                  showSelectedIcon: false,
-                  segments: [
-                    ButtonSegment(value: false, label: Text(l10n.gstr1Monthly)),
-                    ButtonSegment(value: true, label: Text(l10n.gstr1Quarterly)),
-                  ],
-                  selected: {_gstr1Quarterly},
-                  onSelectionChanged: (v) => setPeriod(() {
-                    _gstr1Quarterly = v.first;
-                    final last = DateTime(now.year, now.month - (v.first ? 3 : 1));
-                    _gstr1Period = v.first
-                        ? (last.year, (last.month - 1) ~/ 3 + 1)
-                        : (last.year, last.month);
-                  }),
-                ),
-                DropdownButton<(int, int)>(
-                  value: periods.contains(_gstr1Period) ? _gstr1Period : null,
-                  items: [
-                    for (final p in periods)
-                      DropdownMenuItem(value: p, child: Text(label(p))),
-                  ],
-                  onChanged: (p) {
-                    if (p != null) setPeriod(() => _gstr1Period = p);
-                  },
-                ),
-              ],
-            ),
-          ),
+          _returnPeriodPicker(),
           if (r == null)
             const Padding(
               padding: EdgeInsets.only(bottom: 24),
@@ -3099,7 +3150,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
                     : () async {
                         final (y, n) = _gstr1Period;
                         final bytes = await Gstr1PdfWriter.build(r,
-                            periodLabel: label(_gstr1Period),
+                            periodLabel: _returnPeriodLabel(),
                             company: await ref
                                 .read(companyInfoRepositoryProvider)
                                 .getCompanyInfo(),
@@ -3379,6 +3430,181 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  /// Reports → Tax → GSTR-3B: summary to type into the portal (no upload
+  /// file). Sales = GSTR-1 numbers; ITC from purchase bills.
+  Widget _gstr3bCard() {
+    final l10n = AppLocalizations.of(context)!;
+    final r = _gstr3b;
+    Widget table(List<(String, int, bool)> header,
+            List<List<(String, int, bool)>> rows) =>
+        Column(children: [
+          _gstTableRow(header, header: true),
+          for (final row in rows) _gstTableRow(row),
+        ]);
+    Widget heading(String text) => Padding(
+          padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
+          child: Text(text, style: const TextStyle(fontWeight: FontWeight.w600)),
+        );
+    List<(String, int, bool)> heads(String label, double taxable, double igst,
+            double cgst, {bool showTaxable = true}) =>
+        [
+          (label, 6, false),
+          (showTaxable ? _money(taxable) : '', 2, true),
+          (_money(igst), 2, true),
+          (_money(cgst), 2, true),
+          (_money(cgst), 2, true),
+        ];
+    final taxHeader = [
+      (l10n.gstr3bNature, 6, false),
+      (l10n.reportsTaxableAmountLabel, 2, true),
+      ('IGST', 2, true),
+      ('CGST', 2, true),
+      ('SGST', 2, true),
+    ];
+
+    return _sectionCard(
+      padding: EdgeInsets.zero,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(20, 20, 20, 4),
+            child: _cardTitle(
+              l10n.gstr3bTitle,
+              trailing: r == null
+                  ? null
+                  : _exportBtn(l10n.customerMgmtExportPdfMenuLabel, () async {
+                      final (y, n) = _gstr1Period;
+                      final bytes = await Gstr3bPdfWriter.build(r,
+                          periodLabel: _returnPeriodLabel(),
+                          company: await ref
+                              .read(companyInfoRepositoryProvider)
+                              .getCompanyInfo(),
+                          datePattern: _datePattern,
+                          showFooterBranding: _showFooterBranding);
+                      if (!mounted) return;
+                      await _savePdf(
+                          bytes,
+                          _gstr1Quarterly
+                              ? 'gstr3b_$y-Q$n.pdf'
+                              : 'gstr3b_$y-${n.toString().padLeft(2, '0')}.pdf');
+                    }),
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(20, 0, 20, 12),
+            child: Text(l10n.gstr3bSubtitle,
+                style: TextStyle(
+                    fontSize: 12,
+                    color: Theme.of(context).colorScheme.onSurfaceVariant)),
+          ),
+          _returnPeriodPicker(),
+          if (r == null)
+            const Padding(
+              padding: EdgeInsets.only(bottom: 24),
+              child: Center(child: CircularProgressIndicator()),
+            )
+          else ...[
+            if (!r.companyGstinValid)
+              Padding(
+                padding: const EdgeInsets.fromLTRB(20, 0, 20, 12),
+                child: _missingCostBanner(l10n.gstr1CompanyGstinMissing),
+              ),
+            if (r.salesExcluded.isNotEmpty || r.salesWarnings.isNotEmpty)
+              Padding(
+                padding: const EdgeInsets.fromLTRB(20, 0, 20, 8),
+                child: _missingCostBanner(l10n.gstr3bSalesIssues(
+                    r.salesExcluded.length, r.salesWarnings.length)),
+              ),
+            if (r.purchaseWarnings.isNotEmpty)
+              Padding(
+                padding: const EdgeInsets.fromLTRB(20, 0, 20, 8),
+                child: _missingCostBanner(
+                    l10n.gstr3bPurchaseIssues(r.purchaseWarnings.length)),
+              ),
+            heading(l10n.gstr3b31Title),
+            table(taxHeader, [
+              heads(l10n.gstr3bOutwardTaxable, r.outwardTaxable.taxable,
+                  r.outwardTaxable.tax.igst, r.outwardTaxable.tax.cgst),
+              heads(l10n.gstr3bZeroRated, r.outwardZeroRated, 0, 0),
+              heads(l10n.gstr3bNilExempt, r.outwardNilExempt, 0, 0),
+              heads(l10n.gstr3bInwardRcm, r.inwardReverseCharge.taxable,
+                  r.inwardReverseCharge.tax.igst, r.inwardReverseCharge.tax.cgst),
+              heads(l10n.gstr3bNonGst, r.outwardNonGst, 0, 0),
+            ]),
+            if (r.interStateUnregistered.isNotEmpty) ...[
+              heading(l10n.gstr3b32Title),
+              table([
+                (l10n.gstr3bPlaceOfSupply, 6, false),
+                (l10n.reportsTaxableAmountLabel, 3, true),
+                ('IGST', 3, true),
+              ], [
+                for (final x in r.interStateUnregistered)
+                  [
+                    (GstUtils.stateLabel(x.pos), 6, false),
+                    (_money(x.taxable), 3, true),
+                    (_money(x.igst), 3, true),
+                  ],
+              ]),
+            ],
+            heading(l10n.gstr3b4Title),
+            table(taxHeader, [
+              heads(l10n.gstr3bItcRcm, 0, r.itcReverseCharge.igst,
+                  r.itcReverseCharge.cgst, showTaxable: false),
+              heads(l10n.gstr3bItcOther, 0, r.itcOther.igst, r.itcOther.cgst,
+                  showTaxable: false),
+              heads(l10n.gstr3bItcNet, 0, r.itcNet.igst, r.itcNet.cgst,
+                  showTaxable: false),
+              heads(l10n.gstr3bNotClaimable, 0, r.notClaimable.igst,
+                  r.notClaimable.cgst, showTaxable: false),
+            ]),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 6, 20, 0),
+              child: Text(l10n.gstr3bBlockedNote,
+                  style: TextStyle(
+                      fontSize: 12,
+                      color: Theme.of(context).colorScheme.onSurfaceVariant)),
+            ),
+            heading(l10n.gstr3b5Title),
+            table([
+              (l10n.gstr3bNature, 6, false),
+              (l10n.gstr3bInterState, 3, true),
+              (l10n.gstr3bIntraState, 3, true),
+            ], [
+              [
+                (l10n.gstr3bExemptInward, 6, false),
+                (_money(r.inwardExemptInter), 3, true),
+                (_money(r.inwardExemptIntra), 3, true),
+              ],
+            ]),
+            heading(l10n.gstr3b61Title),
+            table([
+              (l10n.fieldTaxLabel, 2, false),
+              (l10n.gstr3bPayable, 2, true),
+              (l10n.gstr3bPaidItc, 2, true),
+              (l10n.gstr3bPaidCash, 2, true),
+              (l10n.gstr3bItcLeft, 2, true),
+            ], [
+              for (final (name, p) in [
+                ('IGST', r.igst),
+                ('CGST', r.cgst),
+                ('SGST', r.sgst),
+              ])
+                [
+                  (name, 2, false),
+                  (_money(p.payable), 2, true),
+                  (_money(p.paidByItc), 2, true),
+                  (_money(p.paidInCash), 2, true),
+                  (_money(p.itcLeft), 2, true),
+                ],
+            ]),
+            const SizedBox(height: 20),
+          ],
+        ],
       ),
     );
   }
