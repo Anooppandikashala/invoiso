@@ -3520,6 +3520,7 @@
   "gstr1ExportExcel": "Export Excel",
   "purchaseBillDueDateLabel": "Due date (optional)",
   "purchaseBillReverseChargeLabel": "Reverse charge",
+  "purchaseBillRcmTaxLabel": "Tax (reverse charge — you pay, not in total)",
   "purchaseBillReverseChargeHint": "You pay the GST on this purchase (e.g. goods transport, legal fees) — the supplier charged none.",
   "reportsGstr1PanelNote": "GSTR-1 uses its own return period (picked in the GSTR-1 tab) and INR invoices only.",
   "reportsNoDocumentsIssuedMessage": "No invoices, credit notes or debit notes in this period",

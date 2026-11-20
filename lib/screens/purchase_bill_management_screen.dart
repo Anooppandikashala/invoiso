@@ -1662,6 +1662,7 @@ class _PurchaseBillFormScreenState extends ConsumerState<_PurchaseBillFormScreen
               taxRatePercent: i.taxRate,
               costIncludesTax: i.costIncludesTax,
             )),
+        reverseCharge: _showGstFields && _reverseCharge,
       );
 
   Future<void> _pickBillDate() async {
@@ -2570,7 +2571,11 @@ class _PurchaseBillFormScreenState extends ConsumerState<_PurchaseBillFormScreen
     return Column(
       children: [
         _buildTotalRow(l10n.fieldSubtotalLabel, totals.subtotal),
-        _buildTotalRow(l10n.fieldTaxLabel, totals.tax),
+        _buildTotalRow(
+            totals.reverseCharge
+                ? l10n.purchaseBillRcmTaxLabel
+                : l10n.fieldTaxLabel,
+            totals.tax),
         const SizedBox(height: 4),
         _buildTotalRow(l10n.purchaseBillMgmtGrandTotalLabel, totals.total, isGrand: true),
       ],

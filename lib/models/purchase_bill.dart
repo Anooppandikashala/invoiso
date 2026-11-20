@@ -44,6 +44,7 @@ class PurchaseBill {
               taxRatePercent: item.taxRate,
               costIncludesTax: item.costIncludesTax,
             )),
+        reverseCharge: reverseCharge,
       );
 
   double get subtotal => _totals.subtotal;

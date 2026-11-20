@@ -6430,6 +6430,10 @@ class AppLocalizationsEs extends AppLocalizations {
   String get purchaseBillReverseChargeLabel => 'Reverse charge';
 
   @override
+  String get purchaseBillRcmTaxLabel =>
+      'Tax (reverse charge — you pay, not in total)';
+
+  @override
   String get purchaseBillReverseChargeHint =>
       'You pay the GST on this purchase (e.g. goods transport, legal fees) — the supplier charged none.';
 

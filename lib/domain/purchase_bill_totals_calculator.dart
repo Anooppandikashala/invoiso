@@ -19,12 +19,18 @@ class PurchaseBillTotals {
   final double subtotal;
   final double tax;
 
+  /// Reverse charge: the supplier charged no GST — [tax] is what we pay the
+  /// government ourselves, so it isn't part of what we owe the supplier.
+  final bool reverseCharge;
+
   const PurchaseBillTotals({
     required this.subtotal,
     required this.tax,
+    this.reverseCharge = false,
   });
 
-  double get total => subtotal + tax;
+  /// Amount owed to the supplier.
+  double get total => reverseCharge ? subtotal : subtotal + tax;
 }
 
 class PurchaseBillTotalsCalculator {
@@ -60,6 +66,7 @@ class PurchaseBillTotalsCalculator {
 
   static PurchaseBillTotals totals({
     required Iterable<PurchaseBillLineAmount> lines,
+    bool reverseCharge = false,
   }) {
     double subtotal = 0;
     double tax = 0;
@@ -67,6 +74,7 @@ class PurchaseBillTotalsCalculator {
       subtotal += line.lineTotal;
       tax += line.itemTax;
     }
-    return PurchaseBillTotals(subtotal: subtotal, tax: tax);
+    return PurchaseBillTotals(
+        subtotal: subtotal, tax: tax, reverseCharge: reverseCharge);
   }
 }

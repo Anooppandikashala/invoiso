@@ -10772,6 +10772,12 @@ abstract class AppLocalizations {
   /// **'Reverse charge'**
   String get purchaseBillReverseChargeLabel;
 
+  /// No description provided for @purchaseBillRcmTaxLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Tax (reverse charge — you pay, not in total)'**
+  String get purchaseBillRcmTaxLabel;
+
   /// No description provided for @purchaseBillReverseChargeHint.
   ///
   /// In en, this message translates to:
