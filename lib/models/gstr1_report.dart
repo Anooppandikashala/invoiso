@@ -2,7 +2,7 @@
 // Part C). Plain values only — the Excel writer (Part D) turns these into
 // the Offline Tool template sheets.
 
-/// One rate line of a document-level section (b2b, b2cl; cdnr / cdnur later).
+/// One rate line of a document-level section (b2b, b2cl, cdnr, cdnur).
 /// Document fields repeat on every rate line, as in the template.
 class Gstr1DocRow {
   final String invoiceId;
@@ -13,6 +13,7 @@ class Gstr1DocRow {
   final double value; // document total as printed
   final String pos; // 2-digit state code
   final bool reverseCharge;
+  final String? noteType; // cdnr / cdnur: 'C' credit | 'D' debit; null for invoices
   final double rate;
   final double taxable;
   final double igst;
@@ -27,6 +28,7 @@ class Gstr1DocRow {
     required this.value,
     required this.pos,
     required this.reverseCharge,
+    this.noteType,
     required this.rate,
     required this.taxable,
     required this.igst,
@@ -75,13 +77,17 @@ class Gstr1Issue {
 class Gstr1Report {
   final List<Gstr1DocRow> b2b;
   final List<Gstr1DocRow> b2cl;
-  final List<Gstr1B2csRow> b2cs;
+  final List<Gstr1B2csRow> b2cs; // unregistered notes netted in
+  final List<Gstr1DocRow> cdnr; // credit / debit notes to registered buyers
+  final List<Gstr1DocRow> cdnur; // unregistered notes against a B2C Large invoice
   final List<Gstr1Issue> excluded;
 
   const Gstr1Report({
     required this.b2b,
     required this.b2cl,
     required this.b2cs,
+    required this.cdnr,
+    required this.cdnur,
     required this.excluded,
   });
 }

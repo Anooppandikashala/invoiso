@@ -14,10 +14,15 @@ class Gstr1Input {
   /// Document number as printed (prefix + number, or the custom number).
   final String Function(Invoice) numberOf;
 
+  /// Original invoices of the period's credit / debit notes, by id (may be
+  /// from an earlier period) — decides whether a B2C note is cdnur.
+  final Map<String, Invoice> originals;
+
   const Gstr1Input({
     required this.companyGstin,
     required this.documents,
     required this.numberOf,
+    this.originals = const {},
   });
 }
 
@@ -34,17 +39,27 @@ class Gstr1Builder {
     final companyState = GstUtils.stateCodeFromGstin(input.companyGstin);
     final b2b = <Gstr1DocRow>[];
     final b2cl = <Gstr1DocRow>[];
+    final cdnr = <Gstr1DocRow>[];
+    final cdnur = <Gstr1DocRow>[];
     final b2csSums = <String, List<double>>{}; // 'pos|rate' → [taxable, igst, cgst]
     final excluded = <Gstr1Issue>[];
 
+    bool isB2cl(Invoice inv, String? pos) =>
+        inv.customer.gstin.trim().isEmpty &&
+        pos != companyState &&
+        inv.total > b2clLimit;
+
     for (final inv in input.documents) {
-      if (inv.type != 'Invoice') continue;
+      final isNote = inv.type == 'Credit Note' || inv.type == 'Debit Note';
+      if (inv.type != 'Invoice' && !isNote) continue;
       final number = input.numberOf(inv);
       if (inv.currencyCode != 'INR') {
         excluded.add(Gstr1Issue(Gstr1IssueKind.nonInr, inv.id, number));
         continue;
       }
-      final pos = placeOfSupply(inv, companyState);
+      final original = input.originals[inv.originalInvoiceId];
+      final pos = placeOfSupply(inv, companyState) ??
+          (original == null ? null : placeOfSupply(original, companyState));
       if (pos == null) {
         excluded.add(
             Gstr1Issue(Gstr1IssueKind.missingPlaceOfSupply, inv.id, number));
@@ -53,12 +68,18 @@ class Gstr1Builder {
       // 0 % supplies go to the nil / exempt table, not the rate sections.
       final split = rateSplit(inv)..remove(0.0);
       final gstin = inv.customer.gstin.trim();
-      final isB2cl =
-          gstin.isEmpty && pos != companyState && inv.total > b2clLimit;
 
-      if (gstin.isNotEmpty || isB2cl) {
+      final List<Gstr1DocRow>? rows = !isNote
+          ? (gstin.isNotEmpty ? b2b : isB2cl(inv, pos) ? b2cl : null)
+          : (gstin.isNotEmpty
+              ? cdnr
+              : original != null &&
+                      isB2cl(original, placeOfSupply(original, companyState))
+                  ? cdnur
+                  : null);
+      if (rows != null) {
         for (final e in split.entries) {
-          (gstin.isNotEmpty ? b2b : b2cl).add(Gstr1DocRow(
+          rows.add(Gstr1DocRow(
             invoiceId: inv.id,
             gstin: gstin,
             name: inv.customer.businessName.trim().isNotEmpty
@@ -69,6 +90,7 @@ class Gstr1Builder {
             value: _r(inv.total),
             pos: pos,
             reverseCharge: inv.reverseCharge,
+            noteType: !isNote ? null : inv.type == 'Credit Note' ? 'C' : 'D',
             rate: e.key,
             taxable: _r(e.value.taxable),
             igst: inv.isInterState ? _r(e.value.tax) : 0,
@@ -76,10 +98,16 @@ class Gstr1Builder {
           ));
         }
       } else {
+        // b2cs; unregistered credit notes reduce it, debit notes add.
+        final sign = inv.type == 'Credit Note' ? -1.0 : 1.0;
         for (final e in split.entries) {
           final s = b2csSums.putIfAbsent('$pos|${e.key}', () => [0, 0, 0]);
-          s[0] += e.value.taxable;
-          s[inv.isInterState ? 1 : 2] += inv.isInterState ? e.value.tax : e.value.tax / 2;
+          s[0] += sign * e.value.taxable;
+          if (inv.isInterState) {
+            s[1] += sign * e.value.tax;
+          } else {
+            s[2] += sign * e.value.tax / 2;
+          }
         }
       }
     }
@@ -99,6 +127,8 @@ class Gstr1Builder {
       ]..sort((a, b) => a.pos != b.pos
           ? a.pos.compareTo(b.pos)
           : a.rate.compareTo(b.rate)),
+      cdnr: cdnr,
+      cdnur: cdnur,
       excluded: excluded,
     );
   }
