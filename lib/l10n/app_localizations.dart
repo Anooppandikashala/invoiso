@@ -10586,6 +10586,24 @@ abstract class AppLocalizations {
   /// **'Documents issued (GSTR-1 Table 13)'**
   String get reportsDocumentsIssuedTitle;
 
+  /// No description provided for @reportsHsnSummaryTab.
+  ///
+  /// In en, this message translates to:
+  /// **'HSN summary'**
+  String get reportsHsnSummaryTab;
+
+  /// No description provided for @reportsDocumentsIssuedTab.
+  ///
+  /// In en, this message translates to:
+  /// **'Documents'**
+  String get reportsDocumentsIssuedTab;
+
+  /// No description provided for @reportsHsnSearchHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Search HSN…'**
+  String get reportsHsnSearchHint;
+
   /// No description provided for @reportsNoDocumentsIssuedMessage.
   ///
   /// In en, this message translates to:

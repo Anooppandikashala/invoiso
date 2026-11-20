@@ -93,8 +93,15 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
   List<AgedReceivable> _aged = [];
   List<AgedReceivableSummaryRow> _agedSummary = [];
   List<TaxBucket> _taxBuckets = [];
-  List<HsnSummaryRow> _hsnRows = [];
-  List<DocumentIssuedRow> _docRows = [];
+  // Tax sub-tabs (TaxTabRedesignPlan.md): 0 By rate · 1 HSN · 2 Documents.
+  // HSN / Documents load the first time their sub-tab shows (null = not yet).
+  int _taxSection = 0;
+  List<HsnSummaryRow>? _hsnRows;
+  List<DocumentIssuedRow>? _docRows;
+  String _hsnFilter = 'all'; // 'all' | 'b2b' | 'b2c'
+  String _hsnQuery = '';
+  int _hsnPage = 0;
+  int _hsnPageSize = 25;
   List<TopCustomer> _topCustomers = [];
   List<TopProduct> _topProducts = [];
   List<CustomerStatementCustomer> _statementCustomers = [];
@@ -323,6 +330,20 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
     _loadTab(_selectedIndex);
   }
 
+  /// HSN summary / Documents issued, the first time their sub-tab shows.
+  Future<void> _loadTaxSection() async {
+    final (from, to) = _range;
+    final repo = ref.read(reportRepositoryProvider);
+    if (_taxSection == 1 && _hsnRows == null) {
+      final rows =
+          await repo.getHsnSummary(from, to, currencyCode: _reportCurrencyCode);
+      if (mounted) setState(() => _hsnRows = rows);
+    } else if (_taxSection == 2 && _docRows == null) {
+      final rows = await repo.getDocumentsIssued(from, to);
+      if (mounted) setState(() => _docRows = rows);
+    }
+  }
+
   Future<void> _loadTab(int index) async {
     if (_tabLoading[index] == true || !mounted) return;
     setState(() => _tabLoading[index] = true);
@@ -366,18 +387,17 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
             _agedSummaryPage = 0;
           });
         case 2:
-          final repo = ref.read(reportRepositoryProvider);
-          final r = await Future.wait([
-            repo.getTaxByRate(from, to, currencyCode: _reportCurrencyCode),
-            repo.getHsnSummary(from, to, currencyCode: _reportCurrencyCode),
-            repo.getDocumentsIssued(from, to),
-          ]);
+          final buckets = await ref
+              .read(reportRepositoryProvider)
+              .getTaxByRate(from, to, currencyCode: _reportCurrencyCode);
           if (!mounted) return;
           setState(() {
-            _taxBuckets = r[0] as List<TaxBucket>;
-            _hsnRows = r[1] as List<HsnSummaryRow>;
-            _docRows = r[2] as List<DocumentIssuedRow>;
+            _taxBuckets = buckets;
+            _hsnRows = null; // reload on next view (period / currency changed)
+            _docRows = null;
+            _hsnPage = 0;
           });
+          _loadTaxSection();
         case 3:
           final r = await Future.wait([
             ref
@@ -2350,7 +2370,37 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
                 ),
               ),
 
+              if (_showGstFields)
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+                  child: SegmentedButton<int>(
+                    showSelectedIcon: false,
+                    segments: [
+                      ButtonSegment(
+                          value: 0,
+                          icon: const Icon(Icons.percent, size: 16),
+                          label: Text(l10n.reportsTaxCollectedByRateTitle)),
+                      ButtonSegment(
+                          value: 1,
+                          icon: const Icon(Icons.qr_code, size: 16),
+                          label: Text(l10n.reportsHsnSummaryTab)),
+                      ButtonSegment(
+                          value: 2,
+                          icon: const Icon(Icons.numbers, size: 16),
+                          label: Text(l10n.reportsDocumentsIssuedTab)),
+                    ],
+                    selected: {_taxSection},
+                    onSelectionChanged: (s) {
+                      if (!mounted) return;
+                      setState(() => _taxSection = s.first);
+                      _loadTaxSection();
+                    },
+                  ),
+                ),
+              if (_showGstFields && _taxSection == 1) _hsnSummaryCard(ts),
+              if (_showGstFields && _taxSection == 2) _docsIssuedCard(ts),
               // Tax breakdown table
+              if (!_showGstFields || _taxSection == 0)
               _sectionCard(
                 padding: EdgeInsets.zero,
                 child: Column(
@@ -2411,10 +2461,6 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
                   ],
                 ),
               ),
-              if (_showGstFields) ...[
-                _hsnSummaryCard(ts),
-                _docsIssuedCard(ts),
-              ],
             ],
           ),
         ),
@@ -2587,6 +2633,24 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
     final l10n = AppLocalizations.of(context)!;
     String rate(double r) => '${r.toStringAsFixed(r % 1 == 0 ? 0 : 2)}%';
     String qty(double q) => q.toStringAsFixed(q % 1 == 0 ? 0 : 2);
+    final all = _hsnRows;
+    // Filter + search over all rows; only one page is built.
+    final rows = all == null
+        ? const <HsnSummaryRow>[]
+        : [
+            for (final r in all)
+              if ((_hsnFilter == 'all' || (_hsnFilter == 'b2b') == r.b2b) &&
+                  r.hsn.contains(_hsnQuery.trim()))
+                r,
+          ];
+    void setFilter(VoidCallback change) {
+      if (!mounted) return;
+      setState(() {
+        change();
+        _hsnPage = 0;
+      });
+    }
+
     return _sectionCard(
       padding: EdgeInsets.zero,
       child: Column(
@@ -2596,30 +2660,71 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
             padding: const EdgeInsets.fromLTRB(20, 20, 20, 12),
             child: _cardTitle(
               l10n.reportsHsnSummaryTitle,
-              trailing: _exportBtn(l10n.reportsExportCsvLabel, () async {
-                await _saveCsv(ReportService.exportHsnSummaryCsv(_hsnRows),
-                    'hsn_summary_$ts.csv');
-              }),
+              trailing: all == null
+                  ? null
+                  : _exportBtn(l10n.reportsExportCsvLabel, () async {
+                      await _saveCsv(ReportService.exportHsnSummaryCsv(all),
+                          'hsn_summary_$ts.csv');
+                    }),
             ),
           ),
-          if (_hsnRows.isEmpty)
+          if (all == null)
+            const Padding(
+              padding: EdgeInsets.only(bottom: 24),
+              child: Center(child: CircularProgressIndicator()),
+            )
+          else if (all.isEmpty)
             Padding(
               padding: const EdgeInsets.only(bottom: 20),
               child: _emptyState(l10n.reportsNoTaxableItemsMessage),
             )
           else ...[
-            if (_hsnRows.any((r) => r.b2b && r.hsn.isEmpty))
+            if (all.any((r) => r.b2b && r.hsn.isEmpty))
               Padding(
                 padding: const EdgeInsets.fromLTRB(20, 0, 20, 12),
                 child: _missingCostBanner(l10n.gstMissingB2bHsnWarning),
               ),
-            if (_hsnRows.any((r) => r.invalidGstinCustomers.isNotEmpty))
+            if (all.any((r) => r.invalidGstinCustomers.isNotEmpty))
               Padding(
                 padding: const EdgeInsets.fromLTRB(20, 0, 20, 12),
                 child: _missingCostBanner(l10n.gstInvalidB2bGstinWarning(
-                    {for (final r in _hsnRows) ...r.invalidGstinCustomers}
+                    {for (final r in all) ...r.invalidGstinCustomers}
                         .join(', '))),
               ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 0, 20, 12),
+              child: Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                crossAxisAlignment: WrapCrossAlignment.center,
+                children: [
+                  for (final (key, label) in [
+                    ('all', l10n.invoiceMgmtStatusAllLabel),
+                    ('b2b', 'B2B'),
+                    ('b2c', 'B2C'),
+                  ])
+                    ChoiceChip(
+                      label: Text(label),
+                      selected: _hsnFilter == key,
+                      onSelected: (_) => setFilter(() => _hsnFilter = key),
+                    ),
+                  SizedBox(
+                    width: 200,
+                    child: TextField(
+                      decoration: InputDecoration(
+                        isDense: true,
+                        prefixIcon: const Icon(Icons.search, size: 18),
+                        hintText: l10n.reportsHsnSearchHint,
+                        border: OutlineInputBorder(
+                            borderRadius:
+                                BorderRadius.circular(AppBorderRadius.xsmall)),
+                      ),
+                      onChanged: (v) => setFilter(() => _hsnQuery = v),
+                    ),
+                  ),
+                ],
+              ),
+            ),
             _gstTableRow([
               (l10n.reportsGstSupplyTypeLabel, 2, false),
               (l10n.productMgmtHsnSacLabel, 3, false),
@@ -2629,7 +2734,8 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
               (l10n.reportsTaxableAmountLabel, 3, true),
               (l10n.reportsTaxCollectedLabel, 3, true),
             ], header: true),
-            for (final r in _hsnRows)
+            for (final r
+                in rows.skip(_hsnPage * _hsnPageSize).take(_hsnPageSize))
               _gstTableRow([
                 (r.b2b ? 'B2B' : 'B2C', 2, false),
                 (r.hsn.isEmpty ? '—' : r.hsn, 3, false),
@@ -2639,6 +2745,16 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
                 (_money(r.taxable), 3, true),
                 (_money(r.igst + r.cgst + r.sgst), 3, true),
               ]),
+            _buildReportPagination(
+              currentPage: _hsnPage,
+              pageSize: _hsnPageSize,
+              total: rows.length,
+              onPageChange: (p) {
+                if (!mounted) return;
+                setState(() => _hsnPage = p);
+              },
+              onSizeChange: (n) => setFilter(() => _hsnPageSize = n),
+            ),
           ],
         ],
       ),
@@ -2661,14 +2777,21 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
             padding: const EdgeInsets.fromLTRB(20, 20, 20, 12),
             child: _cardTitle(
               l10n.reportsDocumentsIssuedTitle,
-              trailing: _exportBtn(l10n.reportsExportCsvLabel, () async {
-                await _saveCsv(
-                    ReportService.exportDocumentsIssuedCsv(_docRows),
-                    'documents_issued_$ts.csv');
-              }),
+              trailing: _docRows == null
+                  ? null
+                  : _exportBtn(l10n.reportsExportCsvLabel, () async {
+                      await _saveCsv(
+                          ReportService.exportDocumentsIssuedCsv(_docRows!),
+                          'documents_issued_$ts.csv');
+                    }),
             ),
           ),
-          if (_docRows.isEmpty)
+          if (_docRows == null)
+            const Padding(
+              padding: EdgeInsets.only(bottom: 24),
+              child: Center(child: CircularProgressIndicator()),
+            )
+          else if (_docRows!.isEmpty)
             Padding(
               padding: const EdgeInsets.only(bottom: 20),
               child: _emptyState(l10n.reportsNoDocumentsIssuedMessage),
@@ -2681,7 +2804,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
               (l10n.reportsGstTotalNumberLabel, 2, true),
               (l10n.reportsGstCancelledLabel, 2, true),
             ], header: true),
-            for (final r in _docRows)
+            for (final r in _docRows!)
               _gstTableRow([
                 (nature(r.type), 4, false),
                 (r.from, 3, false),

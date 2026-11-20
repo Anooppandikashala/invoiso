@@ -6258,6 +6258,15 @@ class AppLocalizationsNe extends AppLocalizations {
       'Documents issued (GSTR-1 Table 13)';
 
   @override
+  String get reportsHsnSummaryTab => 'HSN summary';
+
+  @override
+  String get reportsDocumentsIssuedTab => 'Documents';
+
+  @override
+  String get reportsHsnSearchHint => 'Search HSN…';
+
+  @override
   String get reportsNoDocumentsIssuedMessage =>
       'No invoices, credit notes or debit notes in this period';
 
