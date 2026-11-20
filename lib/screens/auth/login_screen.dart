@@ -331,7 +331,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Image.asset('assets/images/logo_dark.png', height: 64),
+                      Image.asset('assets/images/logo_dark.png', height: 100),
                       const SizedBox(height: 32),
                       const Spacer(),
                       ConstrainedBox(
