@@ -569,7 +569,7 @@
       }
     }
   },
-  "createInvoiceTypeFieldLabel": "Invoice type",
+  "createInvoiceTypeFieldLabel": "Document type",
   "createInvoiceTypeLockedHelperText": "Type can't be changed after creation",
   "createInvoiceOrderDateLabel": "Order date",
   "createInvoiceOrderTimeLabel": "Order time",
@@ -660,7 +660,7 @@
   "attachmentsDone": "Done",
   "attachmentsMenuLabel": "Attachments ({count})",
   "@attachmentsMenuLabel": {"placeholders": {"count": {"type": "int"}}},
-  "createInvoiceHideNumberInPdfLabel": "Hide invoice number in PDF",
+  "createInvoiceHideNumberInPdfLabel": "Hide document number in PDF",
   "createInvoiceCustomNumberLabel": "Custom number (optional)",
   "createInvoiceCustomNumberHint": "e.g. QUO-2026-014 — shown in PDF instead",
   "createInvoiceEnableTaxLabel": "Enable tax",
@@ -2160,8 +2160,8 @@
   "invoiceSettingsQuantityColumnHelper": "Leave blank to use default \"Qty\"",
   "invoiceSettingsAdditionalInfoLabel": "Additional Information",
   "invoiceSettingsThankYouNoteLabel": "Thank You Note",
-  "invoiceSettingsHideInvoiceNumberLabel": "Hide Invoice Number by Default",
-  "invoiceSettingsHideInvoiceNumberSubtitle": "Enable \"Hide invoice number in PDF\" by default when creating new invoices.",
+  "invoiceSettingsHideInvoiceNumberLabel": "Hide Document Number by Default",
+  "invoiceSettingsHideInvoiceNumberSubtitle": "Enable \"Hide document number in PDF\" by default when creating new documents.",
   "invoiceSettingsTaxRateHint": "e.g. 18",
   "invoiceSettingsTaxRateHelper": "Applied to new invoices",
   "invoiceSettingsTaxEnabledLabel": "Tax Enabled by Default",

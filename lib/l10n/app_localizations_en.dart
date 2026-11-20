@@ -957,7 +957,7 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get createInvoiceTypeFieldLabel => 'Invoice type';
+  String get createInvoiceTypeFieldLabel => 'Document type';
 
   @override
   String get createInvoiceTypeLockedHelperText =>
@@ -1194,7 +1194,7 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get createInvoiceHideNumberInPdfLabel => 'Hide invoice number in PDF';
+  String get createInvoiceHideNumberInPdfLabel => 'Hide document number in PDF';
 
   @override
   String get createInvoiceCustomNumberLabel => 'Custom number (optional)';
@@ -3716,11 +3716,11 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get invoiceSettingsHideInvoiceNumberLabel =>
-      'Hide Invoice Number by Default';
+      'Hide Document Number by Default';
 
   @override
   String get invoiceSettingsHideInvoiceNumberSubtitle =>
-      'Enable \"Hide invoice number in PDF\" by default when creating new invoices.';
+      'Enable \"Hide document number in PDF\" by default when creating new documents.';
 
   @override
   String get invoiceSettingsTaxRateHint => 'e.g. 18';

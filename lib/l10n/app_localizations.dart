@@ -1731,7 +1731,7 @@ abstract class AppLocalizations {
   /// No description provided for @createInvoiceTypeFieldLabel.
   ///
   /// In en, this message translates to:
-  /// **'Invoice type'**
+  /// **'Document type'**
   String get createInvoiceTypeFieldLabel;
 
   /// No description provided for @createInvoiceTypeLockedHelperText.
@@ -2151,7 +2151,7 @@ abstract class AppLocalizations {
   /// No description provided for @createInvoiceHideNumberInPdfLabel.
   ///
   /// In en, this message translates to:
-  /// **'Hide invoice number in PDF'**
+  /// **'Hide document number in PDF'**
   String get createInvoiceHideNumberInPdfLabel;
 
   /// No description provided for @createInvoiceCustomNumberLabel.
@@ -6231,13 +6231,13 @@ abstract class AppLocalizations {
   /// No description provided for @invoiceSettingsHideInvoiceNumberLabel.
   ///
   /// In en, this message translates to:
-  /// **'Hide Invoice Number by Default'**
+  /// **'Hide Document Number by Default'**
   String get invoiceSettingsHideInvoiceNumberLabel;
 
   /// No description provided for @invoiceSettingsHideInvoiceNumberSubtitle.
   ///
   /// In en, this message translates to:
-  /// **'Enable \"Hide invoice number in PDF\" by default when creating new invoices.'**
+  /// **'Enable \"Hide document number in PDF\" by default when creating new documents.'**
   String get invoiceSettingsHideInvoiceNumberSubtitle;
 
   /// No description provided for @invoiceSettingsTaxRateHint.
