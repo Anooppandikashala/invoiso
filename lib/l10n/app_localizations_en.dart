@@ -2652,7 +2652,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get productMgmtLowStockLimitHelper =>
-      'Shown in Low Stock when stock is at or below this number. Leave blank for the default (10).';
+      'Shown in Low Stock when stock is at or below this number (default 10).';
 
   @override
   String get productMgmtTipEnableCustomFieldsMessage =>

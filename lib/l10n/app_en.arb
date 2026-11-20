@@ -1657,7 +1657,7 @@
   "productMgmtUnlimitedStockLabel": "Unlimited stock",
   "productMgmtTrackInfiniteStockSubtitle": "Track infinite stock for this product",
   "productMgmtLowStockLimitLabel": "Low-stock limit",
-  "productMgmtLowStockLimitHelper": "Shown in Low Stock when stock is at or below this number. Leave blank for the default (10).",
+  "productMgmtLowStockLimitHelper": "Shown in Low Stock when stock is at or below this number (default 10).",
   "productMgmtTipEnableCustomFieldsMessage": "Tip: Enable custom fields from Columns to add more details.",
   "productMgmtEditProductTitle": "Edit Product",
   "productMgmtViewProductTitle": "View Product",

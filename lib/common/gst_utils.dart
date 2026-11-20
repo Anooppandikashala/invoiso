@@ -93,13 +93,17 @@ class GstUtils {
     'quintal': 'QTL', 'tablet': 'TBS', 'tablets': 'TBS',
   };
 
-  /// UQC implied by free-text [unit] (an exact code, or a common name like
-  /// "kg" / "pcs"); services → 'NA'; null when unknown.
-  static String? suggestUqc(String unit, {bool isService = false}) {
-    if (isService) return 'NA';
+  /// UQC for GSTR-1: 'NA' for a service code (SAC, HSN starting 99); else
+  /// the code implied by free-text [unit] (exact code or a common name like
+  /// "kg" / "pcs"); else 'NA' for a service item; null (→ OTH) when unknown.
+  static String? suggestUqc(String unit,
+      {String hsn = '', bool isService = false}) {
+    if (hsn.trim().startsWith('99')) return 'NA';
     final u = unit.trim();
-    if (uqcCodes.containsKey(u.toUpperCase())) return u.toUpperCase();
-    return _unitAliases[u.toLowerCase()];
+    final fromUnit = uqcCodes.containsKey(u.toUpperCase())
+        ? u.toUpperCase()
+        : _unitAliases[u.toLowerCase()];
+    return fromUnit ?? (isService ? 'NA' : null);
   }
 
   /// "PCS-PIECES" (GSTR-1 UQC format), or the bare code if unknown.

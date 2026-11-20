@@ -64,7 +64,7 @@ class ProductFormState extends ConsumerState<ProductForm> {
   final _priceController = TextEditingController();
   final _purchasePriceController = TextEditingController();
   final _stockController = TextEditingController(text: '0');
-  final _lowStockLimitController = TextEditingController();
+  final _lowStockLimitController = TextEditingController(text: '10'); // the default
   final _hsnCodeController = TextEditingController();
   final _taxRateController = TextEditingController(text: '18');
   final _customUnitController = TextEditingController();
@@ -296,6 +296,7 @@ class ProductFormState extends ConsumerState<ProductForm> {
     _defaultDiscountController.text = '0';
     _stockController.text = '0';
     _taxRateController.text = '18';
+    _lowStockLimitController.text = '10';
     setState(() {
       _selectedUnit = '';
       _uqc = '';
@@ -463,10 +464,11 @@ class ProductFormState extends ConsumerState<ProductForm> {
           if (_columnsConfig.stock || _columnsConfig.unit) ...[
             const SizedBox(height: 12),
             _sectionLabel(l10n.productMgmtSectionInventory),
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                if (_columnsConfig.stock)
+            // Row 1: Stock | Unlimited stock.
+            if (_columnsConfig.stock)
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
                   Expanded(
                     child: _buildFormField(_stockController, l10n.labelStock, Icons.inventory,
                         keyboardType: TextInputType.number,
@@ -475,45 +477,27 @@ class ProductFormState extends ConsumerState<ProductForm> {
                         enabled: !_unlimitedStock && !_stockLocked,
                         helperText: widget.stockHelperText),
                   ),
-                if (_columnsConfig.stock && _columnsConfig.unit) const SizedBox(width: 12),
-                if (_columnsConfig.unit)
+                  const SizedBox(width: 12),
                   Expanded(
-                    child: ProductUnitField(
-                      initialUnit: _selectedUnit,
-                      customController: _customUnitController,
-                      onUnitChanged: (v) {
-                        if (!mounted) return;
-                        setState(() => _selectedUnit = v);
-                      },
+                    child: CheckboxListTile(
+                      contentPadding: EdgeInsets.zero,
+                      controlAffinity: ListTileControlAffinity.leading,
+                      dense: true,
+                      value: _unlimitedStock,
+                      onChanged: _stockLocked
+                          ? null
+                          : (v) {
+                              if (!mounted) return;
+                              setState(() => _unlimitedStock = v ?? false);
+                            },
+                      title: Text(l10n.productMgmtUnlimitedStockLabel),
+                      subtitle: Text(l10n.productMgmtTrackInfiniteStockSubtitle),
                     ),
                   ),
-              ],
-            ),
-            if (_showGstFields) ...[
+                ],
+              ),
+            if (_columnsConfig.stock && !_unlimitedStock) ...[
               const SizedBox(height: 16),
-              UqcDropdown(
-                value: _uqc,
-                unit: _selectedUnit,
-                isService: _newItemType == 'service',
-                onChanged: (v) => setState(() => _uqc = v),
-              ),
-            ],
-            if (_columnsConfig.stock)
-              CheckboxListTile(
-                contentPadding: EdgeInsets.zero,
-                controlAffinity: ListTileControlAffinity.leading,
-                dense: true,
-                value: _unlimitedStock,
-                onChanged: _stockLocked
-                    ? null
-                    : (v) {
-                        if (!mounted) return;
-                        setState(() => _unlimitedStock = v ?? false);
-                      },
-                title: Text(l10n.productMgmtUnlimitedStockLabel),
-                subtitle: Text(l10n.productMgmtTrackInfiniteStockSubtitle),
-              ),
-            if (_columnsConfig.stock && !_unlimitedStock)
               _buildFormField(_lowStockLimitController,
                   l10n.productMgmtLowStockLimitLabel, Icons.notification_important_outlined,
                   keyboardType: TextInputType.number,
@@ -521,6 +505,42 @@ class ProductFormState extends ConsumerState<ProductForm> {
                   required: false,
                   enabled: !_stockLocked,
                   helperText: l10n.productMgmtLowStockLimitHelper),
+            ],
+            // Row 2: Unit | GST unit (UQC).
+            if (_columnsConfig.unit || _showGstFields) ...[
+              if (_columnsConfig.stock) const SizedBox(height: 16),
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  if (_columnsConfig.unit)
+                    Expanded(
+                      child: ProductUnitField(
+                        initialUnit: _selectedUnit,
+                        customController: _customUnitController,
+                        onUnitChanged: (v) {
+                          if (!mounted) return;
+                          setState(() => _selectedUnit = v);
+                        },
+                      ),
+                    ),
+                  if (_columnsConfig.unit && _showGstFields) const SizedBox(width: 12),
+                  if (_showGstFields)
+                    Expanded(
+                      // Rebuilds as HSN/SAC is typed (99… = service → NA).
+                      child: ValueListenableBuilder<TextEditingValue>(
+                        valueListenable: _hsnCodeController,
+                        builder: (context, hsn, _) => UqcDropdown(
+                          value: _uqc,
+                          unit: _selectedUnit,
+                          hsn: hsn.text,
+                          isService: _newItemType == 'service',
+                          onChanged: (v) => setState(() => _uqc = v),
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+            ],
           ],
           if (_columnsConfig.productMetadata) ...[
             const SizedBox(height: 8),

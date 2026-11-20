@@ -2528,7 +2528,7 @@ class _ProductManagementScreenV2State extends ConsumerState<ProductManagementScr
     final taxCtrl = TextEditingController(text: AppFormatters.formatTaxRate(product.tax_rate));
     final stockCtrl = TextEditingController(text: product.stock.toString());
     final lowStockLimitCtrl =
-        TextEditingController(text: product.lowStockLimit?.toString() ?? '');
+        TextEditingController(text: product.lowStockLimit?.toString() ?? '10');
     final customUnitCtrl = TextEditingController(
         text: ProductUnits.presets.contains(product.unit) ? '' : product.unit);
     final storageCtrl = TextEditingController(text: metadata?.storageLocation ?? '');
@@ -2896,10 +2896,12 @@ class _ProductManagementScreenV2State extends ConsumerState<ProductManagementScr
                             if (_columnsConfig.stock || _columnsConfig.unit) ...[
                               const SizedBox(height: 12),
                               sectionLabel(l10n.productMgmtSectionInventory),
-                              Row(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  if (_columnsConfig.stock)
+                              // Same layout as the add form: Stock | Unlimited,
+                              // Low stock limit, then Unit | GST unit.
+                              if (_columnsConfig.stock)
+                                Row(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
                                     Expanded(
                                       child: field(stockCtrl, l10n.labelStock, Icons.inventory,
                                           keyboardType: TextInputType.number,
@@ -2907,51 +2909,68 @@ class _ProductManagementScreenV2State extends ConsumerState<ProductManagementScr
                                           isRequired: !unlimitedStock,
                                           locked: _stockLocked),
                                     ),
-                                  if (_columnsConfig.stock && _columnsConfig.unit)
                                     const SizedBox(width: 12),
-                                  if (_columnsConfig.unit)
                                     Expanded(
-                                      child: _buildUnitField(
-                                        selectedUnit: unit,
-                                        customController: customUnitCtrl,
-                                        onUnitChanged: (v) =>
-                                            setDialogState(() => unit = v),
-                                        readOnly: !isEdit,
+                                      child: CheckboxListTile(
+                                        contentPadding: EdgeInsets.zero,
+                                        controlAffinity: ListTileControlAffinity.leading,
+                                        value: unlimitedStock,
+                                        onChanged: !isEdit || _stockLocked
+                                            ? null
+                                            : (v) => setDialogState(
+                                                () => unlimitedStock = v ?? false),
+                                        title: Text(l10n.productMgmtUnlimitedStockLabel),
+                                        subtitle:
+                                            Text(l10n.productMgmtTrackInfiniteStockSubtitle),
                                       ),
                                     ),
-                                ],
-                              ),
-                              if (_showGstFields) ...[
+                                  ],
+                                ),
+                              if (_columnsConfig.stock && !unlimitedStock) ...[
                                 const SizedBox(height: 16),
-                                IgnorePointer(
-                                  ignoring: !isEdit,
-                                  child: UqcDropdown(
-                                    value: uqc,
-                                    unit: unit,
-                                    isService: itemType == 'service',
-                                    onChanged: (v) => setDialogState(() => uqc = v),
-                                  ),
-                                ),
-                              ],
-                              if (_columnsConfig.stock)
-                                CheckboxListTile(
-                                  contentPadding: EdgeInsets.zero,
-                                  controlAffinity: ListTileControlAffinity.leading,
-                                  value: unlimitedStock,
-                                  onChanged: !isEdit || _stockLocked
-                                      ? null
-                                      : (v) => setDialogState(
-                                          () => unlimitedStock = v ?? false),
-                                  title: Text(l10n.productMgmtUnlimitedStockLabel),
-                                  subtitle:
-                                      Text(l10n.productMgmtTrackInfiniteStockSubtitle),
-                                ),
-                              if (_columnsConfig.stock && !unlimitedStock)
                                 field(lowStockLimitCtrl,
                                     l10n.productMgmtLowStockLimitLabel,
                                     Icons.notification_important_outlined,
                                     keyboardType: TextInputType.number,
                                     locked: _stockLocked),
+                              ],
+                              if (_columnsConfig.unit || _showGstFields) ...[
+                                if (_columnsConfig.stock) const SizedBox(height: 16),
+                                Row(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    if (_columnsConfig.unit)
+                                      Expanded(
+                                        child: _buildUnitField(
+                                          selectedUnit: unit,
+                                          customController: customUnitCtrl,
+                                          onUnitChanged: (v) =>
+                                              setDialogState(() => unit = v),
+                                          readOnly: !isEdit,
+                                        ),
+                                      ),
+                                    if (_columnsConfig.unit && _showGstFields)
+                                      const SizedBox(width: 12),
+                                    if (_showGstFields)
+                                      Expanded(
+                                        child: IgnorePointer(
+                                          ignoring: !isEdit,
+                                          child: ValueListenableBuilder<TextEditingValue>(
+                                            valueListenable: hsnCtrl,
+                                            builder: (context, hsn, _) => UqcDropdown(
+                                              value: uqc,
+                                              unit: unit,
+                                              hsn: hsn.text,
+                                              isService: itemType == 'service',
+                                              onChanged: (v) =>
+                                                  setDialogState(() => uqc = v),
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                  ],
+                                ),
+                              ],
                             ],
                             if (_columnsConfig.productMetadata) ...[
                               const SizedBox(height: 8),

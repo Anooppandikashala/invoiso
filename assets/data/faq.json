@@ -1,5 +1,5 @@
 {
-  "version": 13,
+  "version": 14,
   "updated_at": "2026-11-20",
   "categories": [
     { "id": "general", "label": "General" },
@@ -132,7 +132,7 @@
       "id": "faq_gst",
       "category": "india",
       "question": "Does Invoiso support GST invoicing?",
-      "answer": "Yes. Invoiso supports **GST-ready invoices** — GSTIN fields for your company and customers, an HSN code per product, and tax rates set globally or per item. Built for Indian businesses filing GST returns.",
+      "answer": "Yes. Turn on **Invoice Settings → Enable GST**. You get GSTIN and state for your company and customers, HSN/SAC and GST unit per product, tax rates set globally or per item, **Place of Supply** with automatic CGST/SGST or IGST, a **Reverse charge** option, and GST reports (Tax by rate, HSN summary, Documents issued) under **Reports → Tax**. Built for Indian businesses filing GST returns.",
       "keywords": ["gst", "gstin", "hsn", "tax", "india"]
     },
     {
@@ -344,6 +344,27 @@
       "question": "Is GST charged on freight, packing and other extra charges?",
       "answer": "It can be. Under GST, freight, packing, loading or insurance you bill along with the goods are part of the taxable value and take the **rate of the main goods**. Only a cost you pay on the buyer's behalf at actual cost (a pure-agent reimbursement) stays outside GST.\n\nIn the create/edit form open **Charges & Adjustments** and add a row. When the invoice has tax, each charge gets a **Taxable** switch:\n\n- **One rate for the whole invoice** — a taxable charge uses the invoice rate.\n- **Rate per item** — set the charge's own **Tax Rate (%)**. It starts with the rate of the largest item on the invoice.\n- With GST enabled, add its **HSN/SAC** (e.g. 9965 for freight) for the HSN summary.\n\nNew charges start **taxable** when GST is enabled. Choose whether the amount you type already includes tax in **Invoice Settings → Taxable charges**: **Tax extra** (default) or **Tax included**.\n\nTaxable charges print before the tax rows at their taxable value and count in the **Tax** report and HSN summary. Untaxed charges print after the tax. Invoices saved before this change keep their charges untaxed.",
       "keywords": ["freight gst", "packing charges", "shipping tax", "delivery charges", "extra charges", "additional charges", "taxable charges", "transport charges"]
+    },
+    {
+      "id": "faq_gst_place_of_supply",
+      "category": "india",
+      "question": "How does Invoiso decide CGST + SGST or IGST?",
+      "answer": "By the invoice's **Place of Supply** (in the invoice form under **Tax settings**, with Enable GST on).\n\n- A new invoice starts with your company's state (from your GSTIN).\n- Picking a customer switches it to the customer's **State** — set in the customer form, or taken from their GSTIN.\n- If the place of supply differs from your company's state, **Inter-state** turns on and the invoice shows **IGST**; otherwise **CGST + SGST**. You can still change both by hand.\n\nThe PDF prints **Place of Supply: 32-Kerala**, as GST invoices require for inter-state sales. Invoices made before this update keep printing as before.",
+      "keywords": ["place of supply", "igst", "cgst", "sgst", "inter-state", "interstate", "customer state", "state code"]
+    },
+    {
+      "id": "faq_reverse_charge",
+      "category": "india",
+      "question": "What is the Reverse charge switch on the invoice?",
+      "answer": "Under **reverse charge** the **buyer** pays the GST to the government instead of the seller. It only applies to notified supplies — for example goods transport (GTA), legal services or security services billed to a registered business. Most shops never need it, so it is **off** by default.\n\nWhen you turn it on, the invoice prints **Reverse Charge: Yes** (otherwise **No**). Invoiso does not remove the tax for you — if you should not collect GST on that invoice, also switch tax off.",
+      "keywords": ["reverse charge", "rcm", "tax paid by buyer", "gta", "legal services"]
+    },
+    {
+      "id": "faq_gst_unit_type",
+      "category": "india",
+      "question": "What are GST unit (UQC) and GST type on a product?",
+      "answer": "Both are for your **GSTR-1** return and show in the product form when Enable GST is on.\n\n- **GST unit (UQC)** — the official unit code the GST portal accepts (e.g. **PCS-PIECES**, **KGS-KILOGRAMS**). Leave it on **Auto** and Invoiso works it out from your Unit (pcs → PCS, kg → KGS); service codes (SAC starting 99) use NA. Your Unit text on the invoice doesn't change.\n- **GST type** — only for **0%** items: **Nil-rated** (default), **Exempt** or **Non-GST**. GSTR-1 reports these separately.",
+      "keywords": ["uqc", "unit code", "gst unit", "nil rated", "exempt", "non-gst", "gst type", "0% tax"]
     }
   ]
 }

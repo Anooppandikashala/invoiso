@@ -4443,7 +4443,7 @@ abstract class AppLocalizations {
   /// No description provided for @productMgmtLowStockLimitHelper.
   ///
   /// In en, this message translates to:
-  /// **'Shown in Low Stock when stock is at or below this number. Leave blank for the default (10).'**
+  /// **'Shown in Low Stock when stock is at or below this number (default 10).'**
   String get productMgmtLowStockLimitHelper;
 
   /// No description provided for @productMgmtTipEnableCustomFieldsMessage.

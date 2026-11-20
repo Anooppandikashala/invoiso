@@ -11,10 +11,11 @@ InputDecoration _decoration(String label, IconData icon) => InputDecoration(
     );
 
 /// GST unit code (UQC) for GSTR-1. '' = Auto: the export derives it from
-/// the free-text [unit] (shown in the label when recognised).
+/// [hsn] / the free-text [unit] (shown in the label when recognised).
 class UqcDropdown extends StatelessWidget {
   final String value;
   final String unit;
+  final String hsn;
   final bool isService;
   final ValueChanged<String> onChanged;
 
@@ -22,6 +23,7 @@ class UqcDropdown extends StatelessWidget {
     super.key,
     required this.value,
     required this.unit,
+    required this.hsn,
     required this.isService,
     required this.onChanged,
   });
@@ -29,7 +31,7 @@ class UqcDropdown extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    final auto = GstUtils.suggestUqc(unit, isService: isService);
+    final auto = GstUtils.suggestUqc(unit, hsn: hsn, isService: isService);
     return DropdownButtonFormField<String>(
       isExpanded: true,
       value: GstUtils.uqcCodes.containsKey(value) ? value : '',

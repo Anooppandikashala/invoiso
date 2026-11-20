@@ -118,6 +118,7 @@ void main() {
       expect(saved.purchasePrice, 8);
       expect(saved.stock, 40);
       expect(saved.tax_rate, 18);
+      expect(saved.lowStockLimit, 10); // pre-filled default
     });
   });
 

@@ -35,6 +35,10 @@ void main() {
     expect(GstUtils.suggestUqc('BOX'), 'BOX');
     expect(GstUtils.suggestUqc('hrs'), isNull);
     expect(GstUtils.suggestUqc('hrs', isService: true), 'NA');
+    // A recognised unit wins for a goods HSN even if marked service…
+    expect(GstUtils.suggestUqc('PCS', hsn: '84716010', isService: true), 'PCS');
+    // …but a service code (SAC 99…) is always NA.
+    expect(GstUtils.suggestUqc('PCS', hsn: '998314'), 'NA');
     expect(GstUtils.uqcLabel('PCS'), 'PCS-PIECES');
   });
 }
