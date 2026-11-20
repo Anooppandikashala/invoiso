@@ -146,6 +146,13 @@ class Invoice {
         invoiceDiscountValue: invoiceDiscountValue,
       );
 
+  /// Per-line taxable base / tax in this invoice's tax mode (same as totals).
+  List<InvoiceLineAmount> get lineAmounts => [
+        for (final item in items)
+          item._amountsForInvoice(
+              taxMode: taxMode, globalTaxRatePercent: taxRate * 100),
+      ];
+
   double get subtotal => _totals.subtotal;
 
   double get grossSubtotal => _totals.grossSubtotal;

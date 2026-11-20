@@ -176,6 +176,29 @@ class InvoiceTotalsCalculator {
         taxMode == TaxMode.global ? globalRateFraction * 100 : c.taxRate);
   }
 
+  /// Taxed charges of one document (rate %, taxable value, tax, HSN/SAC) —
+  /// same rule as [totals]. Used by the tax reports and the GSTR-1 export.
+  static List<({double rate, double taxable, double tax, String hsn})>
+      taxedCharges(Iterable<AdditionalCost> costs, TaxMode mode,
+          double globalRateFraction) {
+    final out = <({double rate, double taxable, double tax, String hsn})>[];
+    for (final c in costs) {
+      if (chargeTaxableValue(c, mode, globalRateFraction) == null) continue;
+      final t = totals(
+          lines: const [],
+          taxMode: mode,
+          globalTaxRate: globalRateFraction,
+          additionalCosts: [c]);
+      out.add((
+        rate: mode == TaxMode.global ? globalRateFraction * 100 : c.taxRate,
+        taxable: t.taxableChargesTotal,
+        tax: t.chargesTax,
+        hsn: c.hsn.trim(),
+      ));
+    }
+    return out;
+  }
+
   static InvoiceTotals totals({
     required Iterable<InvoiceLineAmount> lines,
     required TaxMode taxMode,

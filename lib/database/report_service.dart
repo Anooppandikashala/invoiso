@@ -743,30 +743,11 @@ class ReportService {
   /// tax_rate, additional_costs) — same rule as the invoice totals.
   /// Shared with the cloud edition.
   static List<({double rate, double taxable, double tax, String hsn})>
-      taxedCharges(Map<String, Object?> inv) {
-    final mode = TaxModeExtension.fromKey(inv['tax_mode'] as String?);
-    final globalRate = (inv['tax_rate'] as num?)?.toDouble() ?? 0.0;
-    final out = <({double rate, double taxable, double tax, String hsn})>[];
-    for (final c
-        in AdditionalCost.listFromJson(inv['additional_costs'] as String?)) {
-      if (InvoiceTotalsCalculator.chargeTaxableValue(c, mode, globalRate) ==
-          null) {
-        continue;
-      }
-      final t = InvoiceTotalsCalculator.totals(
-          lines: const [],
-          taxMode: mode,
-          globalTaxRate: globalRate,
-          additionalCosts: [c]);
-      out.add((
-        rate: mode == TaxMode.global ? globalRate * 100 : c.taxRate,
-        taxable: t.taxableChargesTotal,
-        tax: t.chargesTax,
-        hsn: c.hsn.trim(),
-      ));
-    }
-    return out;
-  }
+      taxedCharges(Map<String, Object?> inv) =>
+          InvoiceTotalsCalculator.taxedCharges(
+              AdditionalCost.listFromJson(inv['additional_costs'] as String?),
+              TaxModeExtension.fromKey(inv['tax_mode'] as String?),
+              (inv['tax_rate'] as num?)?.toDouble() ?? 0.0);
 
   static Future<List<TaxBucket>> getTaxByRate(DateTime from, DateTime to,
       {String? currencyCode}) async {
