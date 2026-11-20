@@ -219,7 +219,7 @@ class ProductService {
     required int limit,
     String query = '',
     String tab = 'all',
-    String orderBy = 'name', // 'name' | 'price' | 'stock'
+    String orderBy = 'name', // 'name' | 'price' | 'stock' | 'id'
     bool ascending = true,
   }) async {
     final db = await dbHelper.database;
@@ -228,6 +228,8 @@ class ProductService {
     final order = switch (orderBy) {
       'price' => 'COALESCE(price, 0) $dir',
       'stock' => '$_stockExpr $dir',
+      // ids are random UUIDs → "ID oldest/newest" = insert order (rowid).
+      'id' => 'rowid $dir',
       _ => 'name COLLATE NOCASE $dir',
     };
     final maps = await db.query(

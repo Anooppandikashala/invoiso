@@ -194,7 +194,8 @@ class CustomerService
     final dir = ascending ? 'ASC' : 'DESC';
     return switch (orderBy) {
       'name' => 'name COLLATE NOCASE $dir, id ASC',
-      'id' => 'id $dir',
+      // ids are random UUIDs → "ID oldest/newest" = insert order (rowid).
+      'id' => 'rowid $dir',
       _ => 'id ASC',
     };
   }

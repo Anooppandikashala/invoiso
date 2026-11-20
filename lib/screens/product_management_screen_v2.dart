@@ -1925,6 +1925,8 @@ class _ProductManagementScreenV2State extends ConsumerState<ProductManagementScr
     final sortOptions = [
       {'label': l10n.customerMgmtSortNameAZ, 'field': 'name', 'asc': true},
       {'label': l10n.customerMgmtSortNameZA, 'field': 'name', 'asc': false},
+      {'label': l10n.customerMgmtSortIdOldest, 'field': 'id', 'asc': true},
+      {'label': l10n.customerMgmtSortIdNewest, 'field': 'id', 'asc': false},
       {'label': l10n.productMgmtSortPriceLowHigh, 'field': 'price', 'asc': true},
       {'label': l10n.productMgmtSortPriceHighLow, 'field': 'price', 'asc': false},
       {'label': l10n.productMgmtSortStockLowHigh, 'field': 'stock', 'asc': true},
