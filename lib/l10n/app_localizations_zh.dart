@@ -3324,7 +3324,7 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get invoiceSettingsColumnHsnSubtitle =>
-      'Print the HSN/SAC code column (tied to Show GST Fields)';
+      'Print the HSN/SAC code column (tied to Enable GST)';
 
   @override
   String get invoiceSettingsColumnTaxLabel => 'Show tax column';
@@ -3390,7 +3390,7 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get invoiceSettingsShowCustomerGstinSubtitle =>
-      'Print the customer\'s GSTIN / tax id (requires GST fields on)';
+      'Print the customer\'s GSTIN / tax id (requires Enable GST)';
 
   @override
   String get invoiceSettingsCustomerFieldsHeader => '客户字段';
@@ -3610,7 +3610,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get invoiceSettingsTaxModePerItem => '按项目';
 
   @override
-  String get invoiceSettingsShowGstFieldsLabel => '显示 GST 字段';
+  String get invoiceSettingsShowGstFieldsLabel => '启用 GST';
 
   @override
   String get invoiceSettingsShowGstFieldsSubtitle =>
@@ -5910,6 +5910,36 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get gstStateNotSetLabel => 'Not set';
+
+  @override
+  String get createInvoicePlaceOfSupplyLabel => 'Place of Supply';
+
+  @override
+  String get createInvoiceReverseChargeLabel =>
+      'Reverse charge (tax paid by buyer)';
+
+  @override
+  String get productUqcLabel => 'GST unit (UQC)';
+
+  @override
+  String productUqcAuto(String code) {
+    return 'Auto ($code)';
+  }
+
+  @override
+  String get productUqcAutoUnknown => 'Auto (OTH-OTHERS)';
+
+  @override
+  String get productGstTypeLabel => 'GST type (0% items)';
+
+  @override
+  String get productGstTypeNil => 'Nil-rated';
+
+  @override
+  String get productGstTypeExempt => 'Exempt';
+
+  @override
+  String get productGstTypeNonGst => 'Non-GST';
 
   @override
   String get chargeInclTaxSuffix => 'incl. tax';

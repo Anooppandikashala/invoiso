@@ -6,6 +6,7 @@ import 'package:uuid/uuid.dart';
 import 'package:invoiso/common/common.dart';
 import 'package:invoiso/common/constants.dart';
 import 'package:invoiso/common/gst_utils.dart';
+import 'package:invoiso/widgets/gst_product_fields.dart';
 import 'package:invoiso/l10n/app_localizations.dart';
 import 'package:invoiso/models/product.dart';
 import 'package:invoiso/models/user.dart';
@@ -84,6 +85,8 @@ class ProductFormState extends ConsumerState<ProductForm> {
   bool _unlimitedStock = false;
   bool _priceIncludesTax = false;
   bool _showGstFields = false;
+  String _uqc = ''; // '' = auto from the unit text
+  String _gstCategory = ''; // 0 % items: '' nil | 'exempt' | 'non_gst'
   ProductColumnsConfig _columnsConfig = const ProductColumnsConfig();
   // Purchase price restricted to admins and this user isn't one.
   bool _hidePurchasePrice = false;
@@ -231,6 +234,11 @@ class ProductFormState extends ConsumerState<ProductForm> {
         lowStockLimit: _unlimitedStock || _stockLocked
             ? null
             : int.tryParse(_lowStockLimitController.text.trim()),
+        uqc: _uqc,
+        // Only meaningful at 0 %.
+        gstCategory: double.parse(_taxRateController.text.trim()) == 0
+            ? _gstCategory
+            : '',
       );
       await productRepo.insertProduct(product);
       await productRepo.upsertProductMetadata(
@@ -290,6 +298,8 @@ class ProductFormState extends ConsumerState<ProductForm> {
     _taxRateController.text = '18';
     setState(() {
       _selectedUnit = '';
+      _uqc = '';
+      _gstCategory = '';
       _unlimitedStock = !_columnsConfig.stock;
       _priceIncludesTax = false;
       _expiryDate = null;
@@ -435,6 +445,20 @@ class ProductFormState extends ConsumerState<ProductForm> {
                       fontSize: 11.5,
                       color: Theme.of(context).colorScheme.onSurfaceVariant)),
             ),
+            if (_showGstFields)
+              ValueListenableBuilder<TextEditingValue>(
+                valueListenable: _taxRateController,
+                builder: (context, value, _) =>
+                    double.tryParse(value.text.trim()) == 0
+                        ? Padding(
+                            padding: const EdgeInsets.only(top: 16),
+                            child: GstCategoryDropdown(
+                              value: _gstCategory,
+                              onChanged: (v) => setState(() => _gstCategory = v),
+                            ),
+                          )
+                        : const SizedBox.shrink(),
+              ),
           ],
           if (_columnsConfig.stock || _columnsConfig.unit) ...[
             const SizedBox(height: 12),
@@ -465,6 +489,15 @@ class ProductFormState extends ConsumerState<ProductForm> {
                   ),
               ],
             ),
+            if (_showGstFields) ...[
+              const SizedBox(height: 16),
+              UqcDropdown(
+                value: _uqc,
+                unit: _selectedUnit,
+                isService: _newItemType == 'service',
+                onChanged: (v) => setState(() => _uqc = v),
+              ),
+            ],
             if (_columnsConfig.stock)
               CheckboxListTile(
                 contentPadding: EdgeInsets.zero,

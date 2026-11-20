@@ -930,7 +930,7 @@
   "invoiceSettingsTaxEnabledLabel": "Taxe activée par défaut",
   "invoiceSettingsTaxModeGlobal": "Global",
   "invoiceSettingsShowQuantityLabel": "Afficher le champ Quantité",
-  "invoiceSettingsShowGstFieldsLabel": "Afficher les champs TPS",
+  "invoiceSettingsShowGstFieldsLabel": "Activer la TPS",
   "invoiceSettingsPercentValueLabel": "{value} %",
   "invoiceSettingsLogoPositionLabel": "Position du logo de l'entreprise",
   "invoiceSettingsSectionItems": "Articles de facture",

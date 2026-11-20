@@ -20,6 +20,7 @@ import 'package:invoiso/models/product_list_stats.dart';
 import 'package:invoiso/models/user.dart';
 import 'package:invoiso/utils/formatters.dart';
 import 'package:invoiso/screens/settings/product_columns_settings_screen.dart';
+import 'package:invoiso/widgets/gst_product_fields.dart';
 import 'package:invoiso/widgets/long_text_expand_button.dart';
 import 'package:invoiso/widgets/product_form.dart';
 
@@ -142,6 +143,7 @@ class _ProductManagementScreenV2State extends ConsumerState<ProductManagementScr
   }
 
   ProductColumnsConfig _columnsConfig = const ProductColumnsConfig();
+  bool _showGstFields = false; // GST unit (UQC) / GST type in the edit dialog
   // Purchase price restricted to admins and this user isn't one.
   bool _hidePurchasePrice = false;
   // Stock editing admin-only: non-admins can't set stock or import CSV.
@@ -176,9 +178,11 @@ class _ProductManagementScreenV2State extends ConsumerState<ProductManagementScr
 
   Future<void> _loadColumnsConfig() async {
     final config = await ref.read(settingsRepositoryProvider).getProductColumnsConfig();
+    final showGst = await ref.read(settingsRepositoryProvider).getShowGstFields();
     if (!mounted) return;
     final hide = config.purchasePriceAdminOnly && !widget.user.isAdmin();
     setState(() {
+      _showGstFields = showGst;
       _hidePurchasePrice = hide;
       _stockLocked = config.stockEditAdminOnly && !widget.user.isAdmin();
       _columnsConfig = hide ? config.copyWith(purchasePrice: false) : config;
@@ -935,6 +939,8 @@ class _ProductManagementScreenV2State extends ConsumerState<ProductManagementScr
           lowStockLimit: (lowStockLimit != null && lowStockLimit >= 0)
               ? lowStockLimit
               : existing?.lowStockLimit,
+          uqc: existing?.uqc ?? '',
+          gstCategory: existing?.gstCategory ?? '',
         );
 
         metadataById[product.id] = ProductMetadata(
@@ -2537,6 +2543,8 @@ class _ProductManagementScreenV2State extends ConsumerState<ProductManagementScr
 
     String itemType = product.type;
     String unit = product.unit;
+    String uqc = product.uqc;
+    String gstCategory = product.gstCategory;
     bool priceIncludesTax = product.priceIncludesTax;
     bool unlimitedStock = !_columnsConfig.stock ? true : product.unlimitedStock;
     DateTime? expiryDate = _parseIsoDate(metadata?.expiryDate);
@@ -2645,6 +2653,9 @@ class _ProductManagementScreenV2State extends ConsumerState<ProductManagementScr
                 lowStockLimit: _stockLocked
                     ? product.lowStockLimit
                     : int.tryParse(lowStockLimitCtrl.text.trim()),
+                uqc: uqc,
+                gstCategory:
+                    double.parse(taxCtrl.text.trim()) == 0 ? gstCategory : '',
               );
               await ref.read(productRepositoryProvider).updateProduct(updated);
               await ref.read(productRepositoryProvider).upsertProductMetadata(
@@ -2863,6 +2874,24 @@ class _ProductManagementScreenV2State extends ConsumerState<ProductManagementScr
                                         color:
                                             Theme.of(dialogContext).colorScheme.onSurfaceVariant)),
                               ),
+                              if (_showGstFields)
+                                ValueListenableBuilder<TextEditingValue>(
+                                  valueListenable: taxCtrl,
+                                  builder: (context, value, _) =>
+                                      double.tryParse(value.text.trim()) == 0
+                                          ? Padding(
+                                              padding: const EdgeInsets.only(top: 16),
+                                              child: IgnorePointer(
+                                                ignoring: !isEdit,
+                                                child: GstCategoryDropdown(
+                                                  value: gstCategory,
+                                                  onChanged: (v) => setDialogState(
+                                                      () => gstCategory = v),
+                                                ),
+                                              ),
+                                            )
+                                          : const SizedBox.shrink(),
+                                ),
                             ],
                             if (_columnsConfig.stock || _columnsConfig.unit) ...[
                               const SizedBox(height: 12),
@@ -2892,6 +2921,18 @@ class _ProductManagementScreenV2State extends ConsumerState<ProductManagementScr
                                     ),
                                 ],
                               ),
+                              if (_showGstFields) ...[
+                                const SizedBox(height: 16),
+                                IgnorePointer(
+                                  ignoring: !isEdit,
+                                  child: UqcDropdown(
+                                    value: uqc,
+                                    unit: unit,
+                                    isService: itemType == 'service',
+                                    onChanged: (v) => setDialogState(() => uqc = v),
+                                  ),
+                                ),
+                              ],
                               if (_columnsConfig.stock)
                                 CheckboxListTile(
                                   contentPadding: EdgeInsets.zero,

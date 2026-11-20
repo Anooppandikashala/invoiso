@@ -145,7 +145,7 @@ void main() {
         tester,
         CreateInvoiceScreenV2(
             cloneFrom: quote, cloneType: 'Invoice', convertFromQuotationId: 'q1'));
-    expect(find.text('1 customer · 1 private'), findsOneWidget);
+    expect(find.text('Attachments (2)'), findsOneWidget); // 1 customer + 1 private
     await tapAndSettle(tester, Icons.save_outlined);
 
     await tester.runAsync(() async {
@@ -174,7 +174,8 @@ void main() {
       // New key per run, or Flutter reuses the last (already saved) form.
       await openForm(tester,
           CreateInvoiceScreenV2(key: ValueKey(type), cloneFrom: inv, cloneType: type));
-      expect(find.text('No photos'), findsOneWidget, reason: type);
+      // Attachments button in the action bar, no count = no photos.
+      expect(find.text('Attachments'), findsOneWidget, reason: type);
       await tapAndSettle(tester, Icons.save_outlined);
 
       await tester.runAsync(() async {
@@ -194,13 +195,32 @@ void main() {
         (await InvoiceAttachmentService.listFor('i2')).map((a) => a.id).toList()))!;
 
     await openForm(tester, CreateInvoiceScreenV2(invoiceToEdit: inv));
-    expect(find.text('1 customer · 1 private'), findsOneWidget);
+    expect(find.text('Attachments (2)'), findsOneWidget); // 1 customer + 1 private
     await tapAndSettle(tester, Icons.update);
 
     await tester.runAsync(() async {
       final after = await InvoiceAttachmentService.listFor('i2');
       expect(after.map((a) => a.id), ids);
       expect((await InvoiceService.getInvoiceById('i2'))!.privateNotes, 'secret i2');
+    });
+  });
+
+  testWidgets('private notes bubble opens a window whose text is saved',
+      (tester) async {
+    final inv = (await tester.runAsync(() => seed('i4', 'Invoice')))!;
+
+    await openForm(tester, CreateInvoiceScreenV2(invoiceToEdit: inv));
+    // Closed by default: no private notes field on the form.
+    expect(find.text('secret i4'), findsNothing);
+    await tester.tap(find.byIcon(Icons.lock_outline));
+    await tester.pump();
+    expect(find.text('secret i4'), findsOneWidget);
+    await tester.enterText(find.text('secret i4'), 'paid by cheque');
+    await tapAndSettle(tester, Icons.update);
+
+    await tester.runAsync(() async {
+      expect((await InvoiceService.getInvoiceById('i4'))!.privateNotes,
+          'paid by cheque');
     });
   });
 

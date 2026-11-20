@@ -930,7 +930,7 @@
   "invoiceSettingsTaxEnabledLabel": "Impuesto activado por defecto",
   "invoiceSettingsTaxModeGlobal": "Global",
   "invoiceSettingsShowQuantityLabel": "Mostrar campo de cantidad",
-  "invoiceSettingsShowGstFieldsLabel": "Mostrar campos GST",
+  "invoiceSettingsShowGstFieldsLabel": "Activar GST",
   "invoiceSettingsPercentValueLabel": "{value}%",
   "invoiceSettingsLogoPositionLabel": "Posición del logo de la empresa",
   "invoiceSettingsSectionItems": "Artículos de la factura",

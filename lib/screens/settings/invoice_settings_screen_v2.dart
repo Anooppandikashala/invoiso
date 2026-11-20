@@ -1439,7 +1439,7 @@ class _InvoiceSettingsScreenV2State
 
   // The invoice PDF items-table columns, all in one checklist. Item Name,
   // Price and Total are structural and always print, so they show as locked
-  // rows. HSN/SAC mirrors the Show GST Fields toggle (which also controls the
+  // rows. HSN/SAC mirrors the Enable GST toggle (which also controls the
   // GSTIN header fields, so it stays in the Tax section too).
   Widget _sectionColumnsV2() {
     final l10n = AppLocalizations.of(context)!;

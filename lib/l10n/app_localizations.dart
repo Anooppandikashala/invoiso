@@ -5757,7 +5757,7 @@ abstract class AppLocalizations {
   /// No description provided for @invoiceSettingsColumnHsnSubtitle.
   ///
   /// In en, this message translates to:
-  /// **'Print the HSN/SAC code column (tied to Show GST Fields)'**
+  /// **'Print the HSN/SAC code column (tied to Enable GST)'**
   String get invoiceSettingsColumnHsnSubtitle;
 
   /// No description provided for @invoiceSettingsColumnTaxLabel.
@@ -5871,7 +5871,7 @@ abstract class AppLocalizations {
   /// No description provided for @invoiceSettingsShowCustomerGstinSubtitle.
   ///
   /// In en, this message translates to:
-  /// **'Print the customer\'s GSTIN / tax id (requires GST fields on)'**
+  /// **'Print the customer\'s GSTIN / tax id (requires Enable GST)'**
   String get invoiceSettingsShowCustomerGstinSubtitle;
 
   /// No description provided for @invoiceSettingsCustomerFieldsHeader.
@@ -6291,13 +6291,13 @@ abstract class AppLocalizations {
   /// No description provided for @invoiceSettingsShowGstFieldsLabel.
   ///
   /// In en, this message translates to:
-  /// **'Show GST Fields'**
+  /// **'Enable GST'**
   String get invoiceSettingsShowGstFieldsLabel;
 
   /// No description provided for @invoiceSettingsShowGstFieldsSubtitle.
   ///
   /// In en, this message translates to:
-  /// **'Display GSTIN fields (HSN/SAC) on invoices, PDFs, and CSV exports'**
+  /// **'For GST-registered businesses: GSTIN, HSN/SAC, state, place of supply and GST unit on invoices, PDFs and exports, plus GST reports'**
   String get invoiceSettingsShowGstFieldsSubtitle;
 
   /// No description provided for @invoiceSettingsShowCgstSgstLabel.
@@ -10459,6 +10459,60 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Not set'**
   String get gstStateNotSetLabel;
+
+  /// No description provided for @createInvoicePlaceOfSupplyLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Place of Supply'**
+  String get createInvoicePlaceOfSupplyLabel;
+
+  /// No description provided for @createInvoiceReverseChargeLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Reverse charge (tax paid by buyer)'**
+  String get createInvoiceReverseChargeLabel;
+
+  /// No description provided for @productUqcLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'GST unit (UQC)'**
+  String get productUqcLabel;
+
+  /// No description provided for @productUqcAuto.
+  ///
+  /// In en, this message translates to:
+  /// **'Auto ({code})'**
+  String productUqcAuto(String code);
+
+  /// No description provided for @productUqcAutoUnknown.
+  ///
+  /// In en, this message translates to:
+  /// **'Auto (OTH-OTHERS)'**
+  String get productUqcAutoUnknown;
+
+  /// No description provided for @productGstTypeLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'GST type (0% items)'**
+  String get productGstTypeLabel;
+
+  /// No description provided for @productGstTypeNil.
+  ///
+  /// In en, this message translates to:
+  /// **'Nil-rated'**
+  String get productGstTypeNil;
+
+  /// No description provided for @productGstTypeExempt.
+  ///
+  /// In en, this message translates to:
+  /// **'Exempt'**
+  String get productGstTypeExempt;
+
+  /// No description provided for @productGstTypeNonGst.
+  ///
+  /// In en, this message translates to:
+  /// **'Non-GST'**
+  String get productGstTypeNonGst;
 
   /// No description provided for @chargeInclTaxSuffix.
   ///

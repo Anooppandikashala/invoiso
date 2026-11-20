@@ -930,7 +930,7 @@
   "invoiceSettingsTaxEnabledLabel": "默认启用税费",
   "invoiceSettingsTaxModeGlobal": "整体",
   "invoiceSettingsShowQuantityLabel": "显示数量字段",
-  "invoiceSettingsShowGstFieldsLabel": "显示 GST 字段",
+  "invoiceSettingsShowGstFieldsLabel": "启用 GST",
   "invoiceSettingsPercentValueLabel": "{value}%",
   "invoiceSettingsLogoPositionLabel": "公司徽标位置",
   "invoiceSettingsSectionItems": "发票项目",

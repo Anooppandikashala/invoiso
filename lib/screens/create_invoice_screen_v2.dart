@@ -31,6 +31,7 @@ import 'package:invoiso/models/custom_field_def.dart';
 import 'package:invoiso/models/custom_field_value.dart';
 import 'package:invoiso/models/customer_field_settings.dart';
 import 'package:invoiso/widgets/customer_extra_fields.dart';
+import 'package:invoiso/widgets/gst_state_dropdown.dart';
 import 'package:invoiso/services/invoice_pdf_services.dart';
 import 'package:invoiso/services/pdf_service.dart';
 import 'package:invoiso/widgets/apply_payment_dialog.dart';
@@ -190,6 +191,9 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
   bool _isTaxEnabled = true;
   bool _isPerItem = false;
   bool _isInterState = false; // India: interstate supply → IGST instead of CGST/SGST
+  String _placeOfSupply = ''; // India GST state code; '' = not recorded
+  bool _reverseCharge = false; // India GST: tax payable by the recipient
+  String? _companyStateCode; // company GSTIN digits 1–2
   bool isEditing = false;
   bool isLoading = false;
   bool _finalizing = false;
@@ -348,6 +352,8 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
       _isTaxEnabled = _invoice!.taxMode != TaxMode.none;
       _isPerItem = _invoice!.taxMode == TaxMode.perItem;
       _isInterState = _invoice!.isInterState;
+      _placeOfSupply = _invoice!.placeOfSupply ?? '';
+      _reverseCharge = _invoice!.reverseCharge;
       invoiceType = _invoice!.type;
       invoiceTitle = _invoice!.invoiceTitle;
       currentInvoiceNumber = _invoice!.invoiceNumber ?? _invoice!.id;
@@ -422,6 +428,8 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
       _isTaxEnabled = src.taxMode != TaxMode.none;
       _isPerItem = src.taxMode == TaxMode.perItem;
       _isInterState = src.isInterState;
+      _placeOfSupply = src.placeOfSupply ?? '';
+      _reverseCharge = src.reverseCharge;
       invoiceType = widget.cloneType ?? src.type;
       invoiceTitle = invoiceType == src.type ? src.invoiceTitle : null;
       _quantityLabel = src.quantityLabel ?? '';
@@ -619,6 +627,8 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
       'taxEnabled': _isTaxEnabled,
       'perItemTax': _isPerItem,
       'interState': _isInterState,
+      'placeOfSupply': _placeOfSupply,
+      'reverseCharge': _reverseCharge,
       'taxRate': taxRate,
       'taxRateText': taxRateController.text.trim(),
       'date': _selectedOrderDate.toIso8601String(),
@@ -716,6 +726,8 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
         settingsRepo.getSetting(SettingKey.paymentQrSource), // 24
         settingsRepo.getSetting(SettingKey.paymentQrEntries), // 25
         settingsRepo.getSetting(SettingKey.chargesIncludeTax), // 26
+        ref.read(companyInfoRepositoryProvider).getCompanyInfo().then(
+            (c) => GstUtils.stateCodeFromGstin(c?.gstin)), // 27
       ]);
 
       final c = results[0] as List<Customer>;
@@ -769,6 +781,7 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
       final paymentQrEntries =
           PaymentQrEntry.listFromJson(results[25] as String?);
       final chargesIncludeTax = (results[26] as String?) == 'true';
+      final companyStateCode = results[27] as String?;
 
       // Determine which UPI to pre-select.
       String? existingUpiId;
@@ -846,10 +859,13 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
         _showAliasNameInPdf = showAliasNameInPdf;
         _allowDuplicateInvoiceItems = allowDuplicateInvoiceItems;
         _chargesIncludeTax = chargesIncludeTax;
+        _companyStateCode = companyStateCode;
         if (!isEditing && widget.cloneFrom == null) {
           _isTaxEnabled = showTaxButtonInInvoicePage;
           _isPerItem = defaultTaxMode == 'perItem';
           _hideInvoiceNumber = hideInvoiceNumberByDefault;
+          // No customer yet → supply within the company's own state.
+          if (showGst) _placeOfSupply = companyStateCode ?? '';
         }
         _customFieldsEnabled = customFieldsEnabled;
         _customFieldDefs = customFieldDefs;
@@ -1573,6 +1589,10 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
         currencySymbol: _currencySymbol,
         taxMode: _taxMode,
         isInterState: _isInterState,
+        placeOfSupply: _showGstFields && _placeOfSupply.isNotEmpty
+            ? _placeOfSupply
+            : null,
+        reverseCharge: _showGstFields && _reverseCharge,
         upiId: _selectedUpi?.id,
         paymentQrId: _selectedPaymentQr?.id,
         bankAccountId: _selectedBankAccount?.accountNumber,
@@ -1913,6 +1933,10 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
         currencySymbol: _currencySymbol,
         taxMode: _taxMode,
         isInterState: _isInterState,
+        placeOfSupply: _showGstFields && _placeOfSupply.isNotEmpty
+            ? _placeOfSupply
+            : null,
+        reverseCharge: _showGstFields && _reverseCharge,
         upiId: _selectedUpi?.id,
         paymentQrId: _selectedPaymentQr?.id,
         bankAccountId: _selectedBankAccount?.accountNumber,
@@ -2788,19 +2812,27 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
       _customerExtraFields.load(customer);
       _customerFieldsUnlocked = false;
     });
-    if (_showGstFields && customer != null) await _autoSetInterState(customer.gstin);
+    if (_showGstFields && customer != null) _applyCustomerState(customer);
     await _loadPreviousBalanceDue(customer);
   }
 
-  // India: company and customer GSTINs in different states → interstate (IGST).
-  // Only when both GSTINs are valid; the manual toggle still overrides.
-  Future<void> _autoSetInterState(String customerGstin) async {
-    final customerState = GstUtils.stateCodeFromGstin(customerGstin);
-    if (customerState == null) return;
-    final company = await ref.read(companyInfoRepositoryProvider).getCompanyInfo();
-    final companyState = GstUtils.stateCodeFromGstin(company?.gstin);
-    if (companyState == null || !mounted) return;
-    setState(() => _isInterState = customerState != companyState);
+  // India GST: place of supply = the customer's state (saved state, else
+  // GSTIN); unknown → left as is. Picker and Inter-state toggle stay editable.
+  void _applyCustomerState(Customer customer) {
+    final code = customer.stateCode.isNotEmpty
+        ? customer.stateCode
+        : GstUtils.stateCodeFromGstin(customer.gstin);
+    if (code != null) _setPlaceOfSupply(code);
+  }
+
+  // Inter-state = place of supply ≠ company state (needs a valid company GSTIN).
+  void _setPlaceOfSupply(String code) {
+    if (!mounted) return;
+    setState(() {
+      _placeOfSupply = code;
+      final company = _companyStateCode;
+      if (code.isNotEmpty && company != null) _isInterState = code != company;
+    });
   }
 
   Future<void> _loadPreviousBalanceDue(Customer? customer) async {
@@ -2905,6 +2937,10 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
       _applyCustomerCredit = false;
       _payStatus = PaymentStatus.unpaid;
       _payAmountController.clear();
+      // Next invoice starts within the company's own state, like a new form.
+      _placeOfSupply = _showGstFields ? (_companyStateCode ?? '') : '';
+      _isInterState = false;
+      _reverseCharge = false;
     });
     await _setAdditionalNote(forceDefault: true);
     _markFormClean();
@@ -4293,6 +4329,10 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
         currencySymbol: _currencySymbol,
         taxMode: _taxMode,
         isInterState: _isInterState,
+        placeOfSupply: _showGstFields && _placeOfSupply.isNotEmpty
+            ? _placeOfSupply
+            : null,
+        reverseCharge: _showGstFields && _reverseCharge,
         upiId: _selectedUpi?.id,
         paymentQrId: _selectedPaymentQr?.id,
         bankAccountId: _selectedBankAccount?.accountNumber,
@@ -4917,13 +4957,33 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
                   child: Column(
                     children: [
                       Expanded(
-                        child: isWide
-                            ? _buildDesktopLayoutV2(tax, subtotal, total,
-                                grossSubtotal, totalDiscount, invoiceDiscountAmount)
-                            : SingleChildScrollView(
-                                child: _buildStackedLayoutV2(tax, subtotal, total,
-                                    grossSubtotal, totalDiscount, invoiceDiscountAmount),
+                        child: Stack(
+                          children: [
+                            Positioned.fill(
+                              child: isWide
+                                  ? _buildDesktopLayoutV2(tax, subtotal, total,
+                                      grossSubtotal, totalDiscount, invoiceDiscountAmount)
+                                  : SingleChildScrollView(
+                                      child: _buildStackedLayoutV2(tax, subtotal, total,
+                                          grossSubtotal, totalDiscount, invoiceDiscountAmount),
+                                    ),
+                            ),
+                            // Over the items area, clear of the totals.
+                            if (_privateNotesOpen)
+                              Positioned.fill(
+                                child: Padding(
+                                  // Centred over the items area, clear of the right panel.
+                                  padding: EdgeInsets.only(
+                                      left: 12,
+                                      right: isWide ? _rightPanelWidth + 20 : 12),
+                                  child: LayoutBuilder(
+                                    builder: (context, area) => Center(
+                                        child: _privateNotesWindowV2(area.biggest)),
+                                  ),
+                                ),
                               ),
+                          ],
+                        ),
                       ),
                       AppSpacing.hSmall,
                       _actionButtonsV2(),
@@ -5222,6 +5282,8 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
       _isTaxEnabled = inv.taxMode != TaxMode.none;
       _isPerItem = inv.taxMode == TaxMode.perItem;
       _isInterState = inv.isInterState;
+      _placeOfSupply = inv.placeOfSupply ?? '';
+      _reverseCharge = inv.reverseCharge;
       for (final row in _additionalCostControllers) {
         row.dispose();
       }
@@ -6382,6 +6444,8 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
       type: item.product.type,
       aliasName: item.product.aliasName,
       priceIncludesTax: item.product.priceIncludesTax,
+      uqc: item.product.uqc,
+      gstCategory: item.product.gstCategory,
     );
     await ref.read(productRepositoryProvider).insertProduct(newProduct);
     item.isProductSaved = true;
@@ -6636,8 +6700,10 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
   }
 
   Widget _itemsEmptyStateV2() {
-    return Column(
-      mainAxisAlignment: MainAxisAlignment.center,
+    // Scrolls instead of overflowing when the items area is very short.
+    return SingleChildScrollView(
+      child: Column(
+      mainAxisSize: MainAxisSize.min,
       children: [
         Icon(Icons.shopping_cart_outlined,
             size: 48, color: Theme.of(context).colorScheme.outlineVariant),
@@ -6651,6 +6717,7 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
                 fontSize: 12,
                 color: Theme.of(context).colorScheme.onSurfaceVariant)),
       ],
+      ),
     );
   }
 
@@ -6952,24 +7019,114 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
     );
   }
 
+  bool _privateNotesOpen = false;
+  double _privateNotesWidth = 600; // drag-resized, kept while the form is open
+  double _privateNotesHeight = 260;
+  static double get _rightPanelWidth => Platform.isAndroid ? 300 : 420;
+
+  // Private notes as a chat-style window, opened from the action bar; stays
+  // open while editing, closed with × or the action-bar button.
+  /// [area] = space it's centred in; the window never grows past it.
+  Widget _privateNotesWindowV2(Size area) {
+    final l10n = AppLocalizations.of(context)!;
+    final scheme = Theme.of(context).colorScheme;
+    const headerHeight = 48.0;
+    // Upper bounds never below the minimums, or clamp() throws on tiny areas.
+    final maxWidth = area.width < 280 ? 280.0 : area.width;
+    final maxHeight = area.height - headerHeight - 24 < 120
+        ? 120.0
+        : area.height - headerHeight - 24;
+    final width = _privateNotesWidth.clamp(280.0, maxWidth);
+    final height = _privateNotesHeight.clamp(120.0, maxHeight);
+    return Material(
+      elevation: 16,
+      shadowColor: Colors.black,
+      color: scheme.surfaceContainerHigh,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(AppBorderRadius.small),
+        side: BorderSide(color: Colors.indigo.withValues(alpha: 0.6)),
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: SizedBox(
+        width: width,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Container(
+              height: headerHeight,
+              color: Colors.indigo.withValues(alpha: 0.18),
+              padding: const EdgeInsets.fromLTRB(12, 2, 2, 2),
+              child: Row(
+                children: [
+                  const Icon(Icons.lock_outline, size: 18, color: Colors.indigo),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(l10n.invoiceDetailsPrivateNotesTitle,
+                        style: const TextStyle(fontWeight: FontWeight.w600)),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.close, size: 18),
+                    tooltip: l10n.actionClose,
+                    onPressed: () => setState(() => _privateNotesOpen = false),
+                  ),
+                ],
+              ),
+            ),
+            SizedBox(
+              height: height,
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(16, 16, 16, 4),
+                child: Stack(
+                  children: [
+                    Positioned.fill(child: _privateNotesFieldV2()),
+                    // Bottom-right resize grip, above the 0/N counter. The
+                    // window is centred, so an edge moves half the drag → ×2.
+                    Positioned(
+                      right: 4,
+                      bottom: 28,
+                      child: MouseRegion(
+                        cursor: SystemMouseCursors.resizeDownRight,
+                        child: GestureDetector(
+                          behavior: HitTestBehavior.opaque,
+                          onPanUpdate: (d) => setState(() {
+                            _privateNotesWidth =
+                                (width + d.delta.dx * 2).clamp(280.0, maxWidth);
+                            _privateNotesHeight =
+                                (height + d.delta.dy * 2).clamp(120.0, maxHeight);
+                          }),
+                          child: Container(
+                            padding: const EdgeInsets.all(2),
+                            decoration: BoxDecoration(
+                              color: scheme.primaryContainer,
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                            child: Icon(Icons.south_east,
+                                size: 20, color: scheme.onPrimaryContainer),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget _privateNotesFieldV2() {
     final l10n = AppLocalizations.of(context)!;
     return TextField(
       controller: privateNotesController,
       maxLength: DefaultValues.privateNotesLength,
-      maxLines: 3,
+      expands: true,
+      maxLines: null,
+      textAlignVertical: TextAlignVertical.top,
       decoration: _flatFieldDecorationV2(l10n.createInvoicePrivateNotesLabel,
-          hint: l10n.createInvoicePrivateNotesHint,
-          prefixIcon: const Icon(Icons.lock_outline, size: 18),
-          suffixIcon: IconButton(
-            icon: const Icon(Icons.open_in_full, size: 18),
-            tooltip: l10n.tooltipEditInLargerView,
-            onPressed: () => _editLongTextDialogV2(
-              title: l10n.invoiceDetailsPrivateNotesTitle,
-              controller: privateNotesController,
-              maxLength: DefaultValues.privateNotesLength,
-            ),
-          )),
+          hint: l10n.createInvoicePrivateNotesHint),
     );
   }
 
@@ -6988,46 +7145,15 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
     }
   }
 
-  Widget _attachmentsRowV2() {
-    final l10n = AppLocalizations.of(context)!;
-    final publicCount = _attachmentDrafts.where((d) => d.isPublic).length;
-    final privateCount = _attachmentDrafts.length - publicCount;
-    return OutlinedButton.icon(
-      style: OutlinedButton.styleFrom(
-        alignment: Alignment.centerLeft,
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-        shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(AppBorderRadius.xsmall)),
-      ),
-      icon: const Icon(Icons.attach_file, size: 18),
-      label: Row(
-        children: [
-          Text(l10n.attachmentsTitle),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Text(
-              _attachmentDrafts.isEmpty
-                  ? l10n.attachmentsNone
-                  : l10n.attachmentsSummary(publicCount, privateCount),
-              overflow: TextOverflow.ellipsis,
-              style: TextStyle(
-                  color: Theme.of(context).colorScheme.onSurfaceVariant),
-            ),
-          ),
-          Text(l10n.attachmentsManage),
-        ],
-      ),
-      onPressed: () async {
-        final result = await InvoiceAttachmentsScreen.open(context,
-            document: currentInvoiceNumber.isNotEmpty
-                ? '$invoiceType #$currentInvoiceNumber'
-                : invoiceType,
-            initial: _attachmentDrafts);
-        if (result != null && mounted) {
-          setState(() => _attachmentDrafts = result);
-        }
-      },
-    );
+  Future<void> _openAttachmentsV2() async {
+    final result = await InvoiceAttachmentsScreen.open(context,
+        document: currentInvoiceNumber.isNotEmpty
+            ? '$invoiceType #$currentInvoiceNumber'
+            : invoiceType,
+        initial: _attachmentDrafts);
+    if (result != null && mounted) {
+      setState(() => _attachmentDrafts = result);
+    }
   }
 
   static const double _notesDialogMinWidth = 320;
@@ -7331,6 +7457,30 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
                 ),
               ],
             ),
+            const SizedBox(height: 6),
+            GstStateDropdown(
+              value: _placeOfSupply,
+              label: AppLocalizations.of(context)!.createInvoicePlaceOfSupplyLabel,
+              onChanged: _setPlaceOfSupply,
+            ),
+            Row(
+              children: [
+                Expanded(
+                  child: Text(AppLocalizations.of(context)!.createInvoiceReverseChargeLabel,
+                      style: const TextStyle(fontWeight: FontWeight.w600)),
+                ),
+                Transform.scale(
+                  scale: 0.8,
+                  child: Switch(
+                    value: _reverseCharge,
+                    onChanged: (value) {
+                      if (!mounted) return;
+                      setState(() => _reverseCharge = value);
+                    },
+                  ),
+                ),
+              ],
+            ),
           ],
         ],
         if (_qrFromImage && _paymentQrEntries.isNotEmpty) ...[
@@ -7522,6 +7672,10 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
+                          // Tax first (used on most invoices); notes last (occasional).
+                          _sectionLabelV2('Tax settings'),
+                          _lockedV2(_taxSettingsSectionV2()),
+                          const SizedBox(height: 18),
                           _lockedV2(_buildAdditionalCostsSection()),
                           const SizedBox(height: 12),
                           _lockedV2(_invoiceDiscountSectionV2()),
@@ -7535,15 +7689,6 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
                           const SizedBox(height: 18),
                           _sectionLabelV2('Notes'),
                           _notesFieldV2(),
-                          const SizedBox(height: 10),
-                          _privateNotesFieldV2(),
-                          if (ref.watch(attachmentsEnabledProvider)) ...[
-                            const SizedBox(height: 10),
-                            _attachmentsRowV2(),
-                          ],
-                          const SizedBox(height: 18),
-                          _sectionLabelV2('Tax settings'),
-                          _lockedV2(_taxSettingsSectionV2()),
                         ],
                       ),
                     ),
@@ -7631,14 +7776,51 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
                           ? () => InvoicePdfServices.generatePDF(context, _invoice!)
                           : null,
                     ),
+                    if (ref.watch(attachmentsEnabledProvider))
+                      _buildActionButton(
+                        icon: Icons.attach_file,
+                        label: _attachmentDrafts.isEmpty
+                            ? AppLocalizations.of(context)!.attachmentsTitle
+                            : '${AppLocalizations.of(context)!.attachmentsTitle} (${_attachmentDrafts.length})',
+                        tooltip: _attachmentDrafts.isEmpty
+                            ? AppLocalizations.of(context)!.attachmentsNone
+                            : AppLocalizations.of(context)!.attachmentsSummary(
+                                _attachmentDrafts.where((d) => d.isPublic).length,
+                                _attachmentDrafts.where((d) => !d.isPublic).length),
+                        color: Colors.teal,
+                        onPressed: _openAttachmentsV2,
+                      ),
+                    // Dot = the invoice has private notes.
+                    Badge(
+                      isLabelVisible: !_privateNotesOpen &&
+                          privateNotesController.text.trim().isNotEmpty,
+                      smallSize: 10,
+                      child: _buildActionButton(
+                        icon: Icons.lock_outline,
+                        label: AppLocalizations.of(context)!
+                            .invoiceDetailsPrivateNotesTitle,
+                        color: Colors.indigo,
+                        onPressed: () => setState(
+                            () => _privateNotesOpen = !_privateNotesOpen),
+                      ),
+                    ),
                   ],
                 ),
               ),
+              const SizedBox(width: 12),
+              // Save buttons as one inflexible block (≤ half the bar) so the
+              // icon group above gets all the remaining width — separate
+              // Flexibles each reserved an equal share and left a gap.
+              ConstrainedBox(
+                constraints:
+                    BoxConstraints(maxWidth: constraints.maxWidth / 2),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
               // A quotation conversion links on create, so it can't be a
               // draft. Draft notes stay inert until finalized (_createInvoice).
               if ((!hasSavedRow || isDraftRow) &&
                   widget.convertFromQuotationId == null) ...[
-                const SizedBox(width: 12),
                 Flexible(
                   child: OutlinedButton.icon(
                     onPressed: !isLoading ? _saveDraft : null,
@@ -7657,8 +7839,8 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
                     ),
                   ),
                 ),
+                const SizedBox(width: 12),
               ],
-              const SizedBox(width: 12),
               Flexible(
                 child: Tooltip(
                   message: 'Shortcut: Ctrl+s',
@@ -7708,6 +7890,9 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
                   ),
                 ),
               ),
+                  ],
+                ),
+              ),
               SizedBox(width: bookend),
             ],
           );
@@ -7745,7 +7930,7 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
         ),
         AppSpacing.wSmall,
         SizedBox(
-          width: Platform.isAndroid ? 300 : 420,
+          width: _rightPanelWidth,
           child: _rightPanelV2(tax, subtotal, total, grossSubtotal,
               totalDiscount, invoiceDiscountAmount),
         ),
@@ -7777,6 +7962,10 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              // Tax first (used on most invoices); notes last (occasional).
+              _sectionLabelV2('Tax settings'),
+              _lockedV2(_taxSettingsSectionV2()),
+              const SizedBox(height: 18),
               _lockedV2(_buildAdditionalCostsSection()),
               const SizedBox(height: 12),
               _lockedV2(_invoiceDiscountSectionV2()),
@@ -7790,15 +7979,6 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
               const SizedBox(height: 18),
               _sectionLabelV2('Notes'),
               _notesFieldV2(),
-              const SizedBox(height: 10),
-              _privateNotesFieldV2(),
-              if (ref.watch(attachmentsEnabledProvider)) ...[
-                const SizedBox(height: 10),
-                _attachmentsRowV2(),
-              ],
-              const SizedBox(height: 18),
-              _sectionLabelV2('Tax settings'),
-              _lockedV2(_taxSettingsSectionV2()),
             ],
           ),
         ),

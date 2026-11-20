@@ -27,4 +27,14 @@ void main() {
     expect(GstUtils.stateLabel('26'), '26-Dadra & Nagar Haveli & Daman & Diu');
     expect(GstUtils.stateLabel('99'), '99');
   });
+
+  test('UQC suggestion from free-text units', () {
+    expect(GstUtils.uqcCodes, hasLength(46)); // 45 template codes + NA
+    expect(GstUtils.suggestUqc('pcs'), 'PCS');
+    expect(GstUtils.suggestUqc(' Kg '), 'KGS');
+    expect(GstUtils.suggestUqc('BOX'), 'BOX');
+    expect(GstUtils.suggestUqc('hrs'), isNull);
+    expect(GstUtils.suggestUqc('hrs', isService: true), 'NA');
+    expect(GstUtils.uqcLabel('PCS'), 'PCS-PIECES');
+  });
 }

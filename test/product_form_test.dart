@@ -121,6 +121,33 @@ void main() {
     });
   });
 
+  testWidgets('GST: 0 % item saves the chosen GST type and unit code',
+      (tester) async {
+    final key = await pumpForm(tester, admin); // GST fields on by default
+    expect(find.text('GST unit (UQC)'), findsOneWidget);
+    expect(find.text('GST type (0% items)'), findsNothing); // 18 %
+    await tester.enterText(field('Name'), 'Rice');
+    await tester.enterText(field('Sale Price'), '50');
+    await tester.enterText(field('Purchase Price'), '40');
+    await tester.enterText(field('Tax (%)'), '0');
+    await tester.pump();
+
+    await tester.tap(find.text('Nil-rated'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Exempt').last);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Auto (OTH-OTHERS)'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('KGS-KILOGRAMS').last);
+    await tester.pumpAndSettle();
+
+    final product = await submit(tester, key);
+    await tester.runAsync(() async {
+      final saved = (await ProductService.getProductById(product!.id))!;
+      expect([saved.gstCategory, saved.uqc], ['exempt', 'KGS']);
+    });
+  });
+
   testWidgets('a double submit saves one product', (tester) async {
     final key = await pumpForm(tester, admin);
     await tester.enterText(field('Name'), 'Red Pen');

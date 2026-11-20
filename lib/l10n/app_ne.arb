@@ -930,7 +930,7 @@
   "invoiceSettingsTaxEnabledLabel": "पूर्वनिर्धारित रूपमा कर सक्षम",
   "invoiceSettingsTaxModeGlobal": "समग्र",
   "invoiceSettingsShowQuantityLabel": "परिमाण फिल्ड देखाउनुहोस्",
-  "invoiceSettingsShowGstFieldsLabel": "GST फिल्डहरू देखाउनुहोस्",
+  "invoiceSettingsShowGstFieldsLabel": "GST सक्रिय गर्नुहोस्",
   "invoiceSettingsPercentValueLabel": "{value}%",
   "invoiceSettingsLogoPositionLabel": "कम्पनी लोगो स्थिति",
   "invoiceSettingsSectionItems": "बीजक वस्तुहरू",
