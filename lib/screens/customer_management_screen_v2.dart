@@ -13,6 +13,7 @@ import 'package:invoiso/models/customer.dart';
 import 'package:invoiso/models/customer_list_stats.dart';
 import 'package:invoiso/models/company_info.dart';
 import 'package:invoiso/models/user.dart';
+import 'package:invoiso/widgets/copyable_text.dart';
 import 'package:invoiso/widgets/apply_customer_payment_dialog.dart';
 import 'package:invoiso/models/customer_field_settings.dart';
 import 'package:invoiso/widgets/customer_extra_fields.dart';
@@ -1754,8 +1755,7 @@ class _CustomerManagementScreenV2State extends ConsumerState<CustomerManagementS
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(c.name,
-                          overflow: TextOverflow.ellipsis,
+                      CopyableText(c.name,
                           style: const TextStyle(fontWeight: FontWeight.w600)),
                       if (c.businessName.trim().isNotEmpty)
                         Text(c.businessName,

@@ -20,6 +20,7 @@ import 'package:invoiso/models/product_list_stats.dart';
 import 'package:invoiso/models/user.dart';
 import 'package:invoiso/utils/formatters.dart';
 import 'package:invoiso/screens/settings/product_columns_settings_screen.dart';
+import 'package:invoiso/widgets/copyable_text.dart';
 import 'package:invoiso/widgets/gst_product_fields.dart';
 import 'package:invoiso/widgets/long_text_expand_button.dart';
 import 'package:invoiso/widgets/product_form.dart';
@@ -2148,8 +2149,7 @@ class _ProductManagementScreenV2State extends ConsumerState<ProductManagementScr
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(p.name,
-                    overflow: TextOverflow.ellipsis,
+                CopyableText(p.name,
                     style: const TextStyle(fontWeight: FontWeight.w600)),
                 if (_businessType == BusinessType.both && _columnsConfig.type)
                   Padding(
