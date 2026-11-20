@@ -19,6 +19,7 @@ import 'package:invoiso/services/export_service.dart';
 import 'package:invoiso/screens/invoice_attachments_screen.dart';
 import 'package:invoiso/services/invoice_pdf_services.dart';
 import 'package:invoiso/services/pdf_service.dart';
+import 'package:invoiso/widgets/copyable_text.dart';
 import 'package:invoiso/widgets/apply_payment_dialog.dart';
 import 'package:invoiso/widgets/record_refund_dialog.dart';
 import 'package:invoiso/models/refund.dart';
@@ -2319,8 +2320,8 @@ class _InvoiceManagementScreenV2State
                                   fontWeight: FontWeight.w700,
                                   color: Colors.orange[800])),
                         )
-                      : Text('#${invoice.invoiceNumber ?? invoice.id}',
-                          overflow: TextOverflow.ellipsis,
+                      : CopyableText('#${invoice.invoiceNumber ?? invoice.id}',
+                          copyValue: invoice.invoiceNumber ?? invoice.id,
                           style: const TextStyle(fontSize: 14.5, fontWeight: FontWeight.w700)),
                   if (ref.watch(attachmentsEnabledProvider) &&
                       _attachmentCount(invoice) > 0)

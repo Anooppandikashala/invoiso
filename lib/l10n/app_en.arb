@@ -3311,6 +3311,9 @@
       }
     }
   },
+  "copyToClipboardTooltip": "Copy",
+  "copiedToClipboardMessage": "Copied: {text}",
+  "@copiedToClipboardMessage": {"placeholders": {"text": {"type": "String"}}},
   "returnCopyInvoiceNumberTooltip": "Copy invoice number",
   "returnInvoiceNumberCopiedMessage": "Invoice number copied",
   "returnCopyNoteNumberTooltip": "Copy note number",

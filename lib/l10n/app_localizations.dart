@@ -10130,6 +10130,18 @@ abstract class AppLocalizations {
   /// **'Against Receipt #{number}'**
   String returnAgainstReceiptFull(String number);
 
+  /// No description provided for @copyToClipboardTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy'**
+  String get copyToClipboardTooltip;
+
+  /// No description provided for @copiedToClipboardMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Copied: {text}'**
+  String copiedToClipboardMessage(String text);
+
   /// No description provided for @returnCopyInvoiceNumberTooltip.
   ///
   /// In en, this message translates to:

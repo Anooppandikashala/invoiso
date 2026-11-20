@@ -6049,6 +6049,14 @@ class AppLocalizationsEs extends AppLocalizations {
   }
 
   @override
+  String get copyToClipboardTooltip => 'Copy';
+
+  @override
+  String copiedToClipboardMessage(String text) {
+    return 'Copied: $text';
+  }
+
+  @override
   String get returnCopyInvoiceNumberTooltip => 'Copy invoice number';
 
   @override
