@@ -10,6 +10,7 @@ import 'package:invoiso/services/pdf/pdf_widgets.dart'
     show
         invoiceTaxLabel,
         customerExtraLines,
+        gstSupplyLines,
         shipToLines,
         showShipTo,
         returnInfoLines,
@@ -273,6 +274,10 @@ class ThermalPrinterService {
         settings.showCustomerGstin &&
         invoice.customer.gstin.isNotEmpty) {
       line('${taxLabel(company?.country)}: ${invoice.customer.gstin}');
+    }
+    for (final (label, value)
+        in gstSupplyLines(invoice, showGst: settings.showGst)) {
+      line('$label: $value');
     }
     // ASCII separator: '·' isn't in every ESC/POS code page.
     for (final l in customerExtraLines(invoice.customer,

@@ -386,6 +386,8 @@ pw.MultiPage buildGridClassicTemplate(
                       ),
                       if (showGst && showCustomerGstin && invoice.customer.gstin.isNotEmpty)
                         infoRow(gstLabel, invoice.customer.gstin),
+                      for (final (label, value) in gstSupplyLines(invoice, showGst: showGst))
+                        infoRow(label, value),
                     ],
                   ),
                 ),

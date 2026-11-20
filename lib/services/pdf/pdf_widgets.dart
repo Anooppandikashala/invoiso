@@ -6,6 +6,7 @@ import 'package:invoiso/services/pdf/pdf_attachments_page.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:qr/qr.dart';
 import 'package:invoiso/common/common.dart';
+import 'package:invoiso/common/gst_utils.dart';
 import 'package:invoiso/models/customer.dart';
 import 'package:invoiso/models/customer_field_settings.dart';
 import 'package:invoiso/models/invoice.dart';
@@ -1467,6 +1468,18 @@ String formatInvoiceNumberForDisplay(String number, bool showLeadingZeros) {
   if (showLeadingZeros) return number;
   final stripped = number.replaceFirst(RegExp(r'^0+'), '');
   return stripped.isEmpty ? '0' : stripped;
+}
+
+/// India GST Rule 46(n)/(p) lines under the customer: place of supply and
+/// reverse charge, as (label, value). Only for invoices that recorded a place
+/// of supply (v61+), so reprints of older invoices don't change.
+List<(String, String)> gstSupplyLines(Invoice invoice, {required bool showGst}) {
+  final pos = invoice.placeOfSupply;
+  if (!showGst || pos == null || pos.isEmpty) return const [];
+  return [
+    ('Place of Supply', GstUtils.stateLabel(pos)),
+    ('Reverse Charge', invoice.reverseCharge ? 'Yes' : 'No'),
+  ];
 }
 
 /// Ship To prints only when the feature is on, the invoice isn't

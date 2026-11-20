@@ -50,6 +50,21 @@ void main() {
     });
   });
 
+  test('GST place of supply / reverse charge lines only when recorded', () {
+    Invoice inv({String? pos, bool rcm = false}) => Invoice(
+        id: 'i', customer: _customer(), items: const [], date: DateTime(2026, 11, 20),
+        type: 'Invoice',
+        placeOfSupply: pos, reverseCharge: rcm);
+    expect(gstSupplyLines(inv(pos: '29', rcm: true), showGst: true), [
+      ('Place of Supply', '29-Karnataka'),
+      ('Reverse Charge', 'Yes'),
+    ]);
+    expect(gstSupplyLines(inv(pos: '33'), showGst: true).last,
+        ('Reverse Charge', 'No'));
+    expect(gstSupplyLines(inv(), showGst: true), isEmpty); // old invoice
+    expect(gstSupplyLines(inv(pos: '29'), showGst: false), isEmpty);
+  });
+
   test('showShipTo respects the Print-on-PDF switch', () {
     expect(
         showShipTo(_customer(),

@@ -308,6 +308,10 @@ pw.MultiPage buildMinimalTemplate(
                     "${taxLabel(company?.country)}: ${invoice.customer.gstin}",
                     style: pw.TextStyle(
                         fontStyle: pw.FontStyle.italic, fontSize: style.bodyFontSize)),
+              for (final (label, value) in gstSupplyLines(invoice, showGst: showGst))
+                pw.Text('$label: $value',
+                    style: pw.TextStyle(
+                        fontStyle: pw.FontStyle.italic, fontSize: style.bodyFontSize)),
               for (final line in customerExtraLines(
                   invoice.customer, customerFields, invoice.date, datePattern))
                 pw.Text(line,

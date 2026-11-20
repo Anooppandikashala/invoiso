@@ -228,6 +228,12 @@ pw.MultiPage buildClassicTemplate(
                               fontStyle: pw.FontStyle.italic,
                               fontSize: style.subtitleFontSize,
                               color: PdfColors.grey600)),
+                    for (final (label, value) in gstSupplyLines(invoice, showGst: showGst))
+                      pw.Text('$label: $value',
+                          style: pw.TextStyle(
+                              fontStyle: pw.FontStyle.italic,
+                              fontSize: style.subtitleFontSize,
+                              color: PdfColors.grey600)),
                     for (final line in customerExtraLines(
                         invoice.customer, customerFields, invoice.date, datePattern))
                       pw.Text(line,

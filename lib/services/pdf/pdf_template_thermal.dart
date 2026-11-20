@@ -416,6 +416,8 @@ pw.Page buildThermalTemplate(
       if (showGst && showCustomerGstin && invoice.customer.gstin.isNotEmpty)
         pw.Text('${taxLabel(company?.country)}: ${invoice.customer.gstin}',
             style: const pw.TextStyle(fontSize: smallFs)),
+      for (final (label, value) in gstSupplyLines(invoice, showGst: showGst))
+        pw.Text('$label: $value', style: const pw.TextStyle(fontSize: smallFs)),
       for (final line in customerExtraLines(
           invoice.customer, customerFields, invoice.date, datePattern))
         pw.Text(line, style: const pw.TextStyle(fontSize: smallFs)),

@@ -177,6 +177,8 @@ pw.MultiPage buildExecutiveTemplate(
       invoice.customer.email,
     if (showGst && showCustomerGstin && invoice.customer.gstin.isNotEmpty)
       '${taxLabel(company?.country)}: ${invoice.customer.gstin}',
+    for (final (label, value) in gstSupplyLines(invoice, showGst: showGst))
+      '$label: $value',
     ...customerExtraLines(
         invoice.customer, customerFields, invoice.date, datePattern),
   ];
