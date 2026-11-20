@@ -3425,7 +3425,7 @@ class AppLocalizationsBo extends AppLocalizations {
       'ཌེཤ་བོརཌ་དཀར་ཆག་ནང་ཉོ་ཐོ་དང་སྤྲོད་མཁན་སྟོན་གྱི་རེད།';
 
   @override
-  String get invoiceSettingsSectionCustomer => 'Customer Details';
+  String get invoiceSettingsSectionCustomer => 'Customer on Invoice';
 
   @override
   String get invoiceSettingsSectionColumns => 'Invoice Columns';
@@ -4591,6 +4591,15 @@ class AppLocalizationsBo extends AppLocalizations {
 
   @override
   String get settingsNavProductDetailsLabel => 'ཐོན་སྐྱེད་ཞིབ་ཕྲ།';
+
+  @override
+  String get settingsNavCustomerDetailsLabel => 'Customer Details';
+
+  @override
+  String get customerDetailsScreenTitle => 'Customize Customer Details';
+
+  @override
+  String get customerDetailsSavedMessage => 'Customer details saved.';
 
   @override
   String get settingsNavCustomizeLabel => 'སྒེར་སྒྲིག';

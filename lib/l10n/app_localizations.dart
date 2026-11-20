@@ -5721,7 +5721,7 @@ abstract class AppLocalizations {
   /// No description provided for @invoiceSettingsSectionCustomer.
   ///
   /// In en, this message translates to:
-  /// **'Customer Details'**
+  /// **'Customer on Invoice'**
   String get invoiceSettingsSectionCustomer;
 
   /// No description provided for @invoiceSettingsSectionColumns.
@@ -7793,6 +7793,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Product Details'**
   String get settingsNavProductDetailsLabel;
+
+  /// No description provided for @settingsNavCustomerDetailsLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Customer Details'**
+  String get settingsNavCustomerDetailsLabel;
+
+  /// No description provided for @customerDetailsScreenTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Customize Customer Details'**
+  String get customerDetailsScreenTitle;
+
+  /// No description provided for @customerDetailsSavedMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Customer details saved.'**
+  String get customerDetailsSavedMessage;
 
   /// No description provided for @settingsNavCustomizeLabel.
   ///

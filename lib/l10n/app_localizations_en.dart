@@ -3426,7 +3426,7 @@ class AppLocalizationsEn extends AppLocalizations {
       'Shows Purchase Bills and Suppliers in the dashboard menu';
 
   @override
-  String get invoiceSettingsSectionCustomer => 'Customer Details';
+  String get invoiceSettingsSectionCustomer => 'Customer on Invoice';
 
   @override
   String get invoiceSettingsSectionColumns => 'Invoice Columns';
@@ -4586,6 +4586,15 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get settingsNavProductDetailsLabel => 'Product Details';
+
+  @override
+  String get settingsNavCustomerDetailsLabel => 'Customer Details';
+
+  @override
+  String get customerDetailsScreenTitle => 'Customize Customer Details';
+
+  @override
+  String get customerDetailsSavedMessage => 'Customer details saved.';
 
   @override
   String get settingsNavCustomizeLabel => 'Customize';

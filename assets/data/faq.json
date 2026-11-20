@@ -1,5 +1,5 @@
 {
-  "version": 15,
+  "version": 16,
   "updated_at": "2026-11-20",
   "categories": [
     { "id": "general", "label": "General" },
@@ -300,7 +300,7 @@
       "id": "faq_customer_fields",
       "category": "features",
       "question": "Can I record a customer's age, date of birth, gender or a separate shipping address?",
-      "answer": "Yes. Go to **Settings → Invoice Settings → Customer Fields** and turn on what you need:\n\n- **Separate Shipping Address** — a Ship To name, phone and address. If it's the same as billing, only one address prints.\n- **Date of Birth** — the age is worked out from it.\n- **Age** — used only when no date of birth is entered.\n- **Gender** — Male, Female or Other.\n- **Customer Custom Fields** — up to 5 of your own fields, like Patient ID or Blood Group.\n\nEach field has its own **Print on PDF** switch. Once turned on, the fields appear on the customer form and on the create-invoice screen.",
+      "answer": "Yes. Go to **Settings → Customer Details** and turn on what you need:\n\n- **Separate Shipping Address** — a Ship To name, phone and address. If it's the same as billing, only one address prints.\n- **Date of Birth** — the age is worked out from it.\n- **Age** — used only when no date of birth is entered.\n- **Gender** — Male, Female or Other.\n- **Customer Custom Fields** — up to 5 of your own fields, like Patient ID or Blood Group.\n\nEach field has its own **Print on PDF** switch. Once turned on, the fields appear on the customer form and on the create-invoice screen.",
       "keywords": ["customer age", "date of birth", "dob", "gender", "shipping address", "ship to", "patient id", "customer custom fields"]
     },
     {

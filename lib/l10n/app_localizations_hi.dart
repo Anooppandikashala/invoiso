@@ -3442,7 +3442,7 @@ class AppLocalizationsHi extends AppLocalizations {
       'डैशबोर्ड मेनू में खरीद बिल और आपूर्तिकर्ता दिखाता है';
 
   @override
-  String get invoiceSettingsSectionCustomer => 'Customer Details';
+  String get invoiceSettingsSectionCustomer => 'Customer on Invoice';
 
   @override
   String get invoiceSettingsSectionColumns => 'Invoice Columns';
@@ -4602,6 +4602,15 @@ class AppLocalizationsHi extends AppLocalizations {
 
   @override
   String get settingsNavProductDetailsLabel => 'उत्पाद विवरण';
+
+  @override
+  String get settingsNavCustomerDetailsLabel => 'Customer Details';
+
+  @override
+  String get customerDetailsScreenTitle => 'Customize Customer Details';
+
+  @override
+  String get customerDetailsSavedMessage => 'Customer details saved.';
 
   @override
   String get settingsNavCustomizeLabel => 'कस्टमाइज़ करें';

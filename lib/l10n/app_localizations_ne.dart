@@ -3455,7 +3455,7 @@ class AppLocalizationsNe extends AppLocalizations {
       'ड्यासबोर्ड मेनुमा खरिद बिल र आपूर्तिकर्ता देखाउँछ';
 
   @override
-  String get invoiceSettingsSectionCustomer => 'Customer Details';
+  String get invoiceSettingsSectionCustomer => 'Customer on Invoice';
 
   @override
   String get invoiceSettingsSectionColumns => 'Invoice Columns';
@@ -4628,6 +4628,15 @@ class AppLocalizationsNe extends AppLocalizations {
 
   @override
   String get settingsNavProductDetailsLabel => 'उत्पादन विवरण';
+
+  @override
+  String get settingsNavCustomerDetailsLabel => 'Customer Details';
+
+  @override
+  String get customerDetailsScreenTitle => 'Customize Customer Details';
+
+  @override
+  String get customerDetailsSavedMessage => 'Customer details saved.';
 
   @override
   String get settingsNavCustomizeLabel => 'अनुकूलन गर्नुहोस्';

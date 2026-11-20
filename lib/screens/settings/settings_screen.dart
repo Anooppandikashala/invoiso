@@ -12,6 +12,7 @@ import 'package:invoiso/screens/settings/invoice_settings_screen_v2.dart';
 // import 'package:invoiso/screens/settings/pdf_settings_screen.dart';
 import 'package:invoiso/screens/settings/pdf_settings_screen_v2.dart';
 import 'package:invoiso/screens/settings/product_columns_settings_screen.dart';
+import 'package:invoiso/screens/settings/customer_details_settings_screen.dart';
 import 'package:invoiso/screens/settings/app_info_screen.dart';
 import 'package:invoiso/screens/settings/company_info_screen.dart';
 import 'package:invoiso/screens/settings/company_management_screen.dart';
@@ -48,6 +49,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   static const _idProductColumns = 8;
   static const _idAccessibility = 9;
   static const _idCompanies = 10;
+  static const _idCustomerDetails = 11;
 
   int _selectedIndex = 0;
   int? _highlightCustomIndex;
@@ -97,6 +99,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       _idPdf,
       _idInvoice,
       _idProductColumns,
+      _idCustomerDetails,
       _idCustomize,
       _idAccessibility,
       _idSoftwareInfo,
@@ -227,6 +230,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         return CustomizationScreen(highlightIndex: _highlightCustomIndex);
       case _idProductColumns:
         return const ProductColumnsSettingsScreen();
+      case _idCustomerDetails:
+        return const CustomerDetailsSettingsScreen();
       case _idAccessibility:
         return const AccessibilityScreen();
       case _idCompanies:
@@ -303,6 +308,10 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               NavigationRailDestination(
                 icon: const Icon(Icons.view_column_outlined),
                 label: Text(l10n.settingsNavProductDetailsLabel),
+              ),
+              NavigationRailDestination(
+                icon: const Icon(Icons.person_outline),
+                label: Text(l10n.settingsNavCustomerDetailsLabel),
               ),
               NavigationRailDestination(
                 icon: const Icon(Icons.tune_rounded),

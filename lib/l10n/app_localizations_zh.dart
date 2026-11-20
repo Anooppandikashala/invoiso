@@ -3303,7 +3303,7 @@ class AppLocalizationsZh extends AppLocalizations {
       '在仪表盘菜单中显示采购账单与供应商';
 
   @override
-  String get invoiceSettingsSectionCustomer => 'Customer Details';
+  String get invoiceSettingsSectionCustomer => 'Customer on Invoice';
 
   @override
   String get invoiceSettingsSectionColumns => 'Invoice Columns';
@@ -4406,6 +4406,15 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get settingsNavProductDetailsLabel => '产品详情';
+
+  @override
+  String get settingsNavCustomerDetailsLabel => 'Customer Details';
+
+  @override
+  String get customerDetailsScreenTitle => 'Customize Customer Details';
+
+  @override
+  String get customerDetailsSavedMessage => 'Customer details saved.';
 
   @override
   String get settingsNavCustomizeLabel => '自定义';

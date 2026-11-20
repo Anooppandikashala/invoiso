@@ -3495,7 +3495,7 @@ class AppLocalizationsFr extends AppLocalizations {
       'Affiche Factures d\'achat et Fournisseurs dans le menu du tableau de bord';
 
   @override
-  String get invoiceSettingsSectionCustomer => 'Customer Details';
+  String get invoiceSettingsSectionCustomer => 'Customer on Invoice';
 
   @override
   String get invoiceSettingsSectionColumns => 'Invoice Columns';
@@ -4692,6 +4692,15 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get settingsNavProductDetailsLabel => 'Détails produit';
+
+  @override
+  String get settingsNavCustomerDetailsLabel => 'Customer Details';
+
+  @override
+  String get customerDetailsScreenTitle => 'Customize Customer Details';
+
+  @override
+  String get customerDetailsSavedMessage => 'Customer details saved.';
 
   @override
   String get settingsNavCustomizeLabel => 'Personnaliser';
