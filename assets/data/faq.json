@@ -1,5 +1,5 @@
 {
-  "version": 14,
+  "version": 15,
   "updated_at": "2026-11-20",
   "categories": [
     { "id": "general", "label": "General" },
@@ -132,7 +132,7 @@
       "id": "faq_gst",
       "category": "india",
       "question": "Does Invoiso support GST invoicing?",
-      "answer": "Yes. Turn on **Invoice Settings → Enable GST**. You get GSTIN and state for your company and customers, HSN/SAC and GST unit per product, tax rates set globally or per item, **Place of Supply** with automatic CGST/SGST or IGST, a **Reverse charge** option, and GST reports (Tax by rate, HSN summary, Documents issued) under **Reports → Tax**. Built for Indian businesses filing GST returns.",
+      "answer": "Yes. Turn on **Invoice Settings → Enable GST**. You get GSTIN and state for your company and customers, HSN/SAC and GST unit per product, tax rates set globally or per item, **Place of Supply** with automatic CGST/SGST or IGST, a **Reverse charge** option, and GST reports under **Reports → Tax**: Tax by rate, HSN summary, Documents, **GSTR-1 export** (Excel for the GST Offline Tool) and a **GSTR-3B summary**. With Purchase Bills on, **Reports → Purchases** adds a purchase register with input tax credit. Built for Indian businesses filing GST returns.",
       "keywords": ["gst", "gstin", "hsn", "tax", "india"]
     },
     {
@@ -244,7 +244,7 @@
       "id": "faq_purchase_bills",
       "category": "features",
       "question": "Can I record purchases from my suppliers and add the stock?",
-      "answer": "Yes. Turn on **Settings → Accessibility → Purchase Bills & Suppliers** — this adds **Purchase Bills** and **Suppliers** to the menu.\n\n1. Open **Purchase Bills** and click **New Purchase Bill**.\n2. Pick a saved supplier, or choose **Walk-in Supplier** and type a name.\n3. Add the products with quantity and cost, then click **Save Purchase Bill**.\n\nThe quantities are **added to stock** as soon as the bill is saved, and each product's purchase price is updated to the cost on its latest bill. Use **Apply Payment** on the bill to record what you paid — the supplier's **Outstanding** shows what you still owe.",
+      "answer": "Yes. Turn on **Settings → Accessibility → Purchase Bills & Suppliers** — this adds **Purchase Bills** and **Suppliers** to the menu.\n\n1. Open **Purchase Bills** and click **New Purchase Bill**.\n2. Pick a saved supplier, or choose **Walk-in Supplier** and type a name.\n3. Add the products with quantity and cost, then click **Save Purchase Bill**.\n\nThe quantities are **added to stock** as soon as the bill is saved, and each product's purchase price is updated to the cost on its latest bill. Use **Apply Payment** on the bill to record what you paid — the supplier's **Outstanding** shows what you still owe.\n\nA bill can also take an optional **Due date** (used by the payables report) and, with Enable GST on, a **Reverse charge** switch. **Reports → Purchases** shows the purchase register, payables aging and a statement for each supplier.",
       "keywords": ["purchase bill", "purchase entry", "supplier bill", "add stock", "stock inward", "vendor bill", "buy stock"]
     },
     {
@@ -356,7 +356,7 @@
       "id": "faq_reverse_charge",
       "category": "india",
       "question": "What is the Reverse charge switch on the invoice?",
-      "answer": "Under **reverse charge** the **buyer** pays the GST to the government instead of the seller. It only applies to notified supplies — for example goods transport (GTA), legal services or security services billed to a registered business. Most shops never need it, so it is **off** by default.\n\nWhen you turn it on, the invoice prints **Reverse Charge: Yes** (otherwise **No**). Invoiso does not remove the tax for you — if you should not collect GST on that invoice, also switch tax off.",
+      "answer": "Under **reverse charge** the **buyer** pays the GST to the government instead of the seller. It only applies to notified supplies — for example goods transport (GTA), legal services or security services billed to a registered business. Most shops never need it, so it is **off** by default.\n\nWhen you turn it on, the invoice prints **Reverse Charge: Yes** (otherwise **No**). Invoiso does not remove the tax for you — if you should not collect GST on that invoice, also switch tax off.\n\nFor **purchases** under reverse charge (for example you hire a goods transporter), turn on **Reverse charge** on the purchase bill. The tax is not added to what you owe the supplier — you pay it to the government — and it shows in the **GSTR-3B** summary (3.1(d), and as input tax credit in table 4).",
       "keywords": ["reverse charge", "rcm", "tax paid by buyer", "gta", "legal services"]
     },
     {
@@ -365,6 +365,34 @@
       "question": "What are GST unit (UQC) and GST type on a product?",
       "answer": "Both are for your **GSTR-1** return and show in the product form when Enable GST is on.\n\n- **GST unit (UQC)** — the official unit code the GST portal accepts (e.g. **PCS-PIECES**, **KGS-KILOGRAMS**). Leave it on **Auto** and Invoiso works it out from your Unit (pcs → PCS, kg → KGS); service codes (SAC starting 99) use NA. Your Unit text on the invoice doesn't change.\n- **GST type** — only for **0%** items: **Nil-rated** (default), **Exempt** or **Non-GST**. GSTR-1 reports these separately.",
       "keywords": ["uqc", "unit code", "gst unit", "nil rated", "exempt", "non-gst", "gst type", "0% tax"]
+    },
+    {
+      "id": "faq_gstr1_export",
+      "category": "india",
+      "question": "How do I file GSTR-1 with Invoiso?",
+      "answer": "Invoiso makes the **GSTR-1 Excel** in the official GST **Offline Tool** format.\n\n1. Add your **company GSTIN** in **Settings → Company Info** and turn on **Enable GST**.\n2. Open **Reports → Tax → GSTR-1** and choose **Monthly** or **Quarterly** and the return period.\n3. Check the preview: rows per section (B2B, B2C, credit/debit notes, nil/exempt, HSN, documents), **Not included** (for example non-INR invoices or a missing place of supply) and **Check before filing** warnings.\n4. Click **Export Excel**, import the file in the GST Offline Tool to create the JSON, and upload it on the GST portal — or send the Excel to your CA. **Export PDF** gives a printable copy.\n\nDraft invoices are left out. Fix warnings in the invoices themselves, then export again.",
+      "keywords": ["gstr-1", "gstr1", "gst return", "offline tool", "b2b", "b2cs", "hsn summary", "file gst", "gst excel"]
+    },
+    {
+      "id": "faq_gstr3b",
+      "category": "india",
+      "question": "Can Invoiso help me fill GSTR-3B?",
+      "answer": "Yes. **Reports → Tax → GSTR-3B** shows the figures to type into the GST portal, for the same return period as GSTR-1 (GSTR-3B has no upload file):\n\n- **3.1** sales after credit/debit notes, nil-rated / exempt and non-GST sales, and purchases under reverse charge\n- **3.2** inter-state sales to unregistered buyers, by state\n- **4** eligible input tax credit (ITC) from your purchase bills\n- **5** nil-rated / exempt purchases\n- **6.1** tax payable, how much is paid by ITC and how much in **cash**\n\nSales match the GSTR-1 export. Input tax credit needs **Purchase Bills** turned on — compare it with your **GSTR-2B** and check blocked credits (Sec 17(5)) before filing. **Export PDF** prints the summary.",
+      "keywords": ["gstr-3b", "gstr3b", "3b", "itc", "input tax credit", "tax payable", "monthly return", "gst payment"]
+    },
+    {
+      "id": "faq_purchase_itc",
+      "category": "india",
+      "question": "How does Invoiso work out input tax credit (ITC) on purchases?",
+      "answer": "From your purchase bills (with Purchase Bills and Enable GST on):\n\n- Bills from a supplier with a **valid GSTIN** → the tax is claimable (**ITC: Y**). The supplier's GSTIN is copied onto the bill when you save it.\n- Bills without a valid supplier GSTIN → **not claimable** (ITC: N).\n- **Reverse charge** bills → you pay the tax yourself and can claim it (**RCM**).\n- 0% purchases count as nil-rated / exempt inward supplies.\n\n**Reports → Purchases → Purchase register** lists every bill with taxable value, IGST / CGST / SGST and the ITC flag, with totals by rate. **Export CSV** to match it against GSTR-2B in Excel.",
+      "keywords": ["itc", "input tax credit", "purchase gst", "purchase register", "gstr-2b", "claim gst", "supplier gstin"]
+    },
+    {
+      "id": "faq_payables",
+      "category": "features",
+      "question": "How do I see what I owe my suppliers and what's overdue?",
+      "answer": "Turn on **Purchase Bills & Suppliers**, then open **Reports → Purchases**:\n\n- **Payables** — unpaid bills by supplier, aged by **due date**: Current, 0–30, 31–60, 61–90, 90+ days overdue, and **No Due Date**. Set the due date on the purchase bill.\n- **Supplier statement** — pick a supplier to see the opening balance, bills, payments and a running balance for the period, like a ledger. Bills show as credit and payments as debit.\n\nBoth export to CSV and PDF.",
+      "keywords": ["payables", "accounts payable", "supplier dues", "amount owed", "overdue bills", "supplier statement", "supplier ledger", "aging"]
     }
   ]
 }
