@@ -1,5 +1,6 @@
-// Reports → Tax tab (TaxTabRedesignPlan.md): sub-tabs, HSN summary loaded on
-// first view, paging, B2B/B2C filter and HSN search.
+// Reports sub-tabs (TaxTabRedesignPlan.md): Tax — HSN summary loaded on first
+// view, paging, B2B/B2C filter, HSN search; Receivables — aging loaded on first
+// view of an aging sub-tab.
 import 'dart:io';
 
 import 'package:flutter/material.dart';
@@ -129,5 +130,46 @@ void main() {
     expect(find.text('1030'), findsNWidgets(2)); // search box + the row
     expect(find.text('1029'), findsNothing);
     expect(find.text('1001'), findsNothing);
+  });
+
+  testWidgets('Receivables sub-tabs: aging lists load on first view',
+      (tester) async {
+    await tester.runAsync(() => InvoiceService.insertInvoice(Invoice(
+        id: 'r1', invoiceNumber: '00000101',
+        customer: Customer(id: 'c9', name: 'Overdue Co', email: '', phone: '',
+            address: '', gstin: ''),
+        items: [InvoiceItem(product: p('5555'), quantity: 1)],
+        date: DateTime.now(), type: 'Invoice', taxMode: TaxMode.perItem)));
+    final onError = FlutterError.onError;
+    FlutterError.onError = (d) {
+      if (!d.exceptionAsString().contains('overflowed')) onError?.call(d);
+    };
+    addTearDown(() => FlutterError.onError = onError);
+    tester.view.physicalSize = const Size(1600, 3000);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.reset);
+    await tester.pumpWidget(ProviderScope(
+      overrides: sqliteRepositoryOverrides,
+      child: MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: const Scaffold(body: ReportsScreen()),
+      ),
+    ));
+    await settle(tester);
+    await tester.tap(find.text('Receivables').first);
+    await settle(tester);
+
+    expect(find.text('Payment Status Breakdown'), findsOneWidget);
+    expect(find.text('Overdue Co'), findsNothing); // aged list not built yet
+
+    await tester.tap(find.text('Aged invoices'));
+    await settle(tester);
+    expect(find.text('Payment Status Breakdown'), findsNothing);
+    expect(find.text('Overdue Co'), findsOneWidget);
+
+    await tester.tap(find.text('Aging summary'));
+    await settle(tester);
+    expect(find.text('A/R Aging Summary'), findsOneWidget);
   });
 }

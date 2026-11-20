@@ -6237,6 +6237,15 @@ class AppLocalizationsHi extends AppLocalizations {
   String get reportsHsnSearchHint => 'Search HSN…';
 
   @override
+  String get reportsPaymentStatusTab => 'Payment status';
+
+  @override
+  String get reportsAgingSummaryTab => 'Aging summary';
+
+  @override
+  String get reportsAgedInvoicesTab => 'Aged invoices';
+
+  @override
   String get reportsNoDocumentsIssuedMessage =>
       'No invoices, credit notes or debit notes in this period';
 

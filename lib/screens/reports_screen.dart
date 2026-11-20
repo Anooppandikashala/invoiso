@@ -92,6 +92,10 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
   StatusBreakdown _status = StatusBreakdown.empty;
   List<AgedReceivable> _aged = [];
   List<AgedReceivableSummaryRow> _agedSummary = [];
+  // Receivables sub-tabs: 0 Payment status · 1 Aging summary · 2 Aged invoices.
+  // Both aging lists load the first time an aging sub-tab shows.
+  int _arSection = 0;
+  bool _agedLoaded = false;
   List<TaxBucket> _taxBuckets = [];
   // Tax sub-tabs (TaxTabRedesignPlan.md): 0 By rate · 1 HSN · 2 Documents.
   // HSN / Documents load the first time their sub-tab shows (null = not yet).
@@ -330,6 +334,22 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
     _loadTab(_selectedIndex);
   }
 
+  /// Aging summary + aged invoices, the first time an aging sub-tab shows.
+  Future<void> _loadArSection() async {
+    if (_arSection == 0 || _agedLoaded) return;
+    final repo = ref.read(reportRepositoryProvider);
+    final r = await Future.wait([
+      repo.getAgedReceivables(currencyCode: _reportCurrencyCode),
+      repo.getAgedReceivableSummary(currencyCode: _reportCurrencyCode),
+    ]);
+    if (!mounted) return;
+    setState(() {
+      _aged = (r[0] as List).cast<AgedReceivable>();
+      _agedSummary = (r[1] as List).cast<AgedReceivableSummaryRow>();
+      _agedLoaded = true;
+    });
+  }
+
   /// HSN summary / Documents issued, the first time their sub-tab shows.
   Future<void> _loadTaxSection() async {
     final (from, to) = _range;
@@ -367,25 +387,18 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
             _missingCostItemCount = r[2] as int;
           });
         case 1:
-          final r = await Future.wait([
-            ref.read(reportRepositoryProvider).getPaymentStatusBreakdown(
-                from, to,
-                currencyCode: _reportCurrencyCode),
-            ref
-                .read(reportRepositoryProvider)
-                .getAgedReceivables(currencyCode: _reportCurrencyCode),
-            ref
-                .read(reportRepositoryProvider)
-                .getAgedReceivableSummary(currencyCode: _reportCurrencyCode),
-          ]);
+          final status = await ref
+              .read(reportRepositoryProvider)
+              .getPaymentStatusBreakdown(from, to,
+                  currencyCode: _reportCurrencyCode);
           if (!mounted) return;
           setState(() {
-            _status = r[0] as StatusBreakdown;
-            _aged = (r[1] as List).cast<AgedReceivable>();
-            _agedSummary = (r[2] as List).cast<AgedReceivableSummaryRow>();
+            _status = status;
+            _agedLoaded = false; // reload on next view (period / currency changed)
             _agedPage = 0;
             _agedSummaryPage = 0;
           });
+          _loadArSection();
         case 2:
           final buckets = await ref
               .read(reportRepositoryProvider)
@@ -1800,7 +1813,39 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+                child: SegmentedButton<int>(
+                  showSelectedIcon: false,
+                  segments: [
+                    ButtonSegment(
+                        value: 0,
+                        icon: const Icon(Icons.donut_large, size: 16),
+                        label: Text(l10n.reportsPaymentStatusTab)),
+                    ButtonSegment(
+                        value: 1,
+                        icon: const Icon(Icons.people_outline, size: 16),
+                        label: Text(l10n.reportsAgingSummaryTab)),
+                    ButtonSegment(
+                        value: 2,
+                        icon: const Icon(Icons.receipt_long_outlined, size: 16),
+                        label: Text(l10n.reportsAgedInvoicesTab)),
+                  ],
+                  selected: {_arSection},
+                  onSelectionChanged: (s) {
+                    if (!mounted) return;
+                    setState(() => _arSection = s.first);
+                    _loadArSection();
+                  },
+                ),
+              ),
+              if (_arSection != 0 && !_agedLoaded)
+                const Padding(
+                  padding: EdgeInsets.all(32),
+                  child: Center(child: CircularProgressIndicator()),
+                ),
               // Donut chart + legend row
+              if (_arSection == 0)
               _sectionCard(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -1858,7 +1903,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
               ),
 
               // A/R aging summary by customer
-              if (_agedSummary.isNotEmpty)
+              if (_arSection == 1 && _agedLoaded)
                 _sectionCard(
                   padding: EdgeInsets.zero,
                   child: Column(
@@ -1885,6 +1930,13 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
                           ),
                         ),
                       ),
+                      if (_agedSummary.isEmpty)
+                        Padding(
+                          padding: const EdgeInsets.only(bottom: 20),
+                          child: _emptyState(
+                              l10n.reportsNoOutstandingInvoicesMessage),
+                        )
+                      else ...[
                       _agedSummaryHeader(),
                       ..._agedSummary
                           .skip(_agedSummaryPage * _agedSummaryPageSize)
@@ -1907,11 +1959,13 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
                           });
                         },
                       ),
+                      ],
                     ],
                   ),
                 ),
 
               // Aged receivables table
+              if (_arSection == 2 && _agedLoaded)
               _sectionCard(
                 padding: EdgeInsets.zero,
                 child: Column(

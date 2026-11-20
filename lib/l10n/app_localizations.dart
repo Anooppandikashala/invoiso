@@ -10604,6 +10604,24 @@ abstract class AppLocalizations {
   /// **'Search HSN…'**
   String get reportsHsnSearchHint;
 
+  /// No description provided for @reportsPaymentStatusTab.
+  ///
+  /// In en, this message translates to:
+  /// **'Payment status'**
+  String get reportsPaymentStatusTab;
+
+  /// No description provided for @reportsAgingSummaryTab.
+  ///
+  /// In en, this message translates to:
+  /// **'Aging summary'**
+  String get reportsAgingSummaryTab;
+
+  /// No description provided for @reportsAgedInvoicesTab.
+  ///
+  /// In en, this message translates to:
+  /// **'Aged invoices'**
+  String get reportsAgedInvoicesTab;
+
   /// No description provided for @reportsNoDocumentsIssuedMessage.
   ///
   /// In en, this message translates to:
