@@ -10760,6 +10760,24 @@ abstract class AppLocalizations {
   /// **'Export Excel'**
   String get gstr1ExportExcel;
 
+  /// No description provided for @purchaseBillDueDateLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Due date (optional)'**
+  String get purchaseBillDueDateLabel;
+
+  /// No description provided for @purchaseBillReverseChargeLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Reverse charge'**
+  String get purchaseBillReverseChargeLabel;
+
+  /// No description provided for @purchaseBillReverseChargeHint.
+  ///
+  /// In en, this message translates to:
+  /// **'You pay the GST on this purchase (e.g. goods transport, legal fees) — the supplier charged none.'**
+  String get purchaseBillReverseChargeHint;
+
   /// No description provided for @reportsGstr1PanelNote.
   ///
   /// In en, this message translates to:

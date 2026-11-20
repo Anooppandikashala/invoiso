@@ -20,7 +20,7 @@ class DatabaseHelper {
   static String? get path => _path;
   static Database? _database;
   static String _dbFileName = 'invoice_manager.db';
-  final dbVersion = 61;
+  final dbVersion = 62;
 
   /// Startup only, before anything has opened a connection yet — just points
   /// at the right file for the first `_initDB()` call. No close/reopen, so
@@ -307,7 +307,10 @@ class DatabaseHelper {
         total_amount REAL DEFAULT 0.0,
         deleted_at TEXT,
         created_at TEXT,
-        is_draft INTEGER DEFAULT 0
+        is_draft INTEGER DEFAULT 0,
+        supplier_gstin TEXT DEFAULT '',
+        due_date TEXT,
+        reverse_charge INTEGER DEFAULT 0
       )
     ''');
 
@@ -1408,6 +1411,36 @@ class DatabaseHelper {
           }
         });
       }
+    }
+
+    if (oldVersion < 62) await _upgradeTo62(db);
+  }
+
+  /// v62 body (purchase GST reports, PurchaseGstReportsPlan.md P0).
+  Future<void> _upgradeTo62(Database db) async {
+    for (final (step, sql) in const [
+      ('add_supplier_gstin_to_purchase_bills',
+          "ALTER TABLE purchase_bills ADD COLUMN supplier_gstin TEXT DEFAULT ''"),
+      ('add_due_date_to_purchase_bills',
+          'ALTER TABLE purchase_bills ADD COLUMN due_date TEXT'),
+      ('add_reverse_charge_to_purchase_bills',
+          'ALTER TABLE purchase_bills ADD COLUMN reverse_charge INTEGER DEFAULT 0'),
+    ]) {
+      await _runMigrationStep(db, 62, step, () => db.execute(sql));
+    }
+    // Copy each bill's supplier GSTIN once, so later supplier edits don't
+    // change past periods. (Guard: minimal test fixtures lack these tables.)
+    final tables = (await db.rawQuery(
+            "SELECT name FROM sqlite_master WHERE type = 'table' AND name IN ('purchase_bills', 'suppliers')"))
+        .length;
+    if (tables == 2) {
+      await _runMigrationStep(db, 62, 'backfill_purchase_bill_supplier_gstin', () async {
+        await db.execute('''
+          UPDATE purchase_bills SET supplier_gstin = COALESCE(
+            (SELECT TRIM(s.gstin) FROM suppliers s WHERE s.id = purchase_bills.supplier_id), '')
+          WHERE supplier_id IS NOT NULL AND COALESCE(supplier_gstin, '') = ''
+        ''');
+      });
     }
   }
 

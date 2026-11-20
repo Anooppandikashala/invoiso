@@ -6438,6 +6438,16 @@ class AppLocalizationsFr extends AppLocalizations {
   String get gstr1ExportExcel => 'Export Excel';
 
   @override
+  String get purchaseBillDueDateLabel => 'Due date (optional)';
+
+  @override
+  String get purchaseBillReverseChargeLabel => 'Reverse charge';
+
+  @override
+  String get purchaseBillReverseChargeHint =>
+      'You pay the GST on this purchase (e.g. goods transport, legal fees) — the supplier charged none.';
+
+  @override
   String get reportsGstr1PanelNote =>
       'GSTR-1 uses its own return period (picked in the GSTR-1 tab) and INR invoices only.';
 

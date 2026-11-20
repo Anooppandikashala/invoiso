@@ -198,6 +198,34 @@ void main() {
     await db.close();
   });
 
+  test('v62 adds purchase bill GST columns and copies supplier GSTINs', () async {
+    final db = await openDatabase(
+      inMemoryDatabasePath,
+      version: currentVersion,
+      onCreate: (db, v) => DatabaseHelper().createDbForTest(db, v),
+    );
+    for (final col in ['supplier_gstin', 'due_date', 'reverse_charge']) {
+      await db.execute('ALTER TABLE purchase_bills DROP COLUMN $col'); // v61 shape
+    }
+    await db.insert('suppliers', {'id': 's1', 'name': 'Acme', 'gstin': ' 33AAAAA1111A1Z5 '});
+    await db.insert('suppliers', {'id': 's2', 'name': 'No GST', 'gstin': ''});
+    await db.insert('purchase_bills', {'id': 'b1', 'supplier_id': 's1', 'bill_date': '2026-11-01'});
+    await db.insert('purchase_bills', {'id': 'b2', 'supplier_id': 's2', 'bill_date': '2026-11-01'});
+    await db.insert('purchase_bills', {'id': 'b3', 'supplier_id': null, 'bill_date': '2026-11-01'});
+    await db.insert('purchase_bills', {'id': 'b4', 'supplier_id': 'gone', 'bill_date': '2026-11-01'});
+
+    await DatabaseHelper().upgradeDbForTest(db, 61, 62);
+
+    final rows = {
+      for (final r in await db.query('purchase_bills')) r['id']: r
+    };
+    expect(rows['b1']!['supplier_gstin'], '33AAAAA1111A1Z5');
+    expect([for (final id in ['b2', 'b3', 'b4']) rows[id]!['supplier_gstin']],
+        ['', '', '']);
+    expect([rows['b1']!['due_date'], rows['b1']!['reverse_charge']], [null, 0]);
+    await db.close();
+  });
+
   test('re-running upgrade at the same version does not throw', () async {
     final db = await openDatabase(
       inMemoryDatabasePath,

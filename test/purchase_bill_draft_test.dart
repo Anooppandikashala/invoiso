@@ -211,4 +211,24 @@ void main() {
     final db = await DatabaseHelper().database;
     expect(await db.query('supplier_payments'), isEmpty);
   });
+
+  test('v62 fields: supplier GSTIN copy, due date and reverse charge round-trip',
+      () async {
+    await PurchaseBillService.insertPurchaseBill(bill('b62')
+      ..supplierGstin = '33AAAAA1111A1Z5'
+      ..dueDate = DateTime(2026, 12, 15)
+      ..reverseCharge = true);
+    var saved = (await PurchaseBillService.getPurchaseBillById('b62'))!;
+    expect(saved.supplierGstin, '33AAAAA1111A1Z5');
+    expect(saved.dueDate, DateTime(2026, 12, 15));
+    expect(saved.reverseCharge, isTrue);
+
+    saved
+      ..dueDate = null
+      ..reverseCharge = false;
+    await PurchaseBillService.updatePurchaseBill(saved);
+    saved = (await PurchaseBillService.getPurchaseBillById('b62'))!;
+    expect([saved.dueDate, saved.reverseCharge, saved.supplierGstin],
+        [null, false, '33AAAAA1111A1Z5']);
+  });
 }

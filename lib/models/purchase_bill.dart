@@ -16,6 +16,9 @@ class PurchaseBill {
   List<SupplierPayment> payments;
   DateTime? createdAt;
   bool isDraft; // draft = no stock/ledger/purchase-price effect, no payments
+  String supplierGstin; // copied from the supplier at save (v62); '' = none
+  DateTime? dueDate; // payables aging; null = no due date
+  bool reverseCharge; // GST payable by us (RCM) — supplier charged no GST
 
   PurchaseBill({
     required this.id,
@@ -29,6 +32,9 @@ class PurchaseBill {
     this.payments = const [],
     this.createdAt,
     this.isDraft = false,
+    this.supplierGstin = '',
+    this.dueDate,
+    this.reverseCharge = false,
   });
 
   PurchaseBillTotals get _totals => PurchaseBillTotalsCalculator.totals(

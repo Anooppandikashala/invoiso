@@ -28,6 +28,9 @@ class PurchaseBillService {
         'total_amount': bill.total,
         'created_at': DateTime.now().toIso8601String(),
         'is_draft': bill.isDraft ? 1 : 0,
+        'supplier_gstin': bill.supplierGstin,
+        'due_date': bill.dueDate?.toIso8601String(),
+        'reverse_charge': bill.reverseCharge ? 1 : 0,
       });
 
       for (var item in bill.items) {
@@ -79,6 +82,9 @@ class PurchaseBillService {
           'tax_amount': bill.tax,
           'total_amount': bill.total,
           'is_draft': bill.isDraft ? 1 : 0,
+          'supplier_gstin': bill.supplierGstin,
+          'due_date': bill.dueDate?.toIso8601String(),
+          'reverse_charge': bill.reverseCharge ? 1 : 0,
         },
         where: 'id = ?',
         whereArgs: [bill.id],
@@ -437,6 +443,11 @@ class PurchaseBillService {
             ? DateTime.tryParse(map['created_at'] as String)
             : null,
         isDraft: (map['is_draft'] as int? ?? 0) == 1,
+        supplierGstin: map['supplier_gstin'] as String? ?? '',
+        dueDate: map['due_date'] != null
+            ? DateTime.tryParse(map['due_date'] as String)
+            : null,
+        reverseCharge: (map['reverse_charge'] as int? ?? 0) == 1,
       );
     }).toList();
   }

@@ -1605,6 +1605,9 @@ class _PurchaseBillFormScreenState extends ConsumerState<_PurchaseBillFormScreen
   int _supplierFieldGen = 0;
   final _supplierNameController = TextEditingController();
   DateTime _billDate = DateTime.now();
+  DateTime? _dueDate;
+  bool _reverseCharge = false;
+  bool _showGstFields = false;
   List<PurchaseBillItem> _items = [];
   String _currencySymbol = '₹';
   bool _isSaving = false;
@@ -1624,13 +1627,22 @@ class _PurchaseBillFormScreenState extends ConsumerState<_PurchaseBillFormScreen
       _supplierNameController.text = bill.supplierName;
       _useExistingSupplier = bill.supplierId != null;
       _billDate = bill.billDate;
+      _dueDate = bill.dueDate;
+      _reverseCharge = bill.reverseCharge;
       _items = List.from(bill.items);
     }
   }
 
   Future<void> _loadCurrency() async {
-    final currency = await ref.read(settingsRepositoryProvider).getCurrency();
-    if (mounted) setState(() => _currencySymbol = currency.symbol);
+    final settings = ref.read(settingsRepositoryProvider);
+    final currency = await settings.getCurrency();
+    final showGst = await settings.getShowGstFields();
+    if (mounted) {
+      setState(() {
+        _currencySymbol = currency.symbol;
+        _showGstFields = showGst;
+      });
+    }
   }
 
   @override
@@ -1660,6 +1672,16 @@ class _PurchaseBillFormScreenState extends ConsumerState<_PurchaseBillFormScreen
       lastDate: DateTime.now().add(const Duration(days: 365)),
     );
     if (picked != null) setState(() => _billDate = picked);
+  }
+
+  Future<void> _pickDueDate() async {
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: _dueDate ?? _billDate,
+      firstDate: DateTime(2000),
+      lastDate: DateTime.now().add(const Duration(days: 3650)),
+    );
+    if (picked != null) setState(() => _dueDate = picked);
   }
 
   void _addItem(PurchaseBillItem item) {
@@ -1823,6 +1845,14 @@ class _PurchaseBillFormScreenState extends ConsumerState<_PurchaseBillFormScreen
 
     setState(() => _isSaving = true);
     try {
+      // GSTIN copied onto the bill now, so later supplier edits don't change
+      // past periods (like invoices copy the customer's GSTIN).
+      final supplierGstin = _useExistingSupplier && _supplierId != null
+          ? ((await ref.read(supplierRepositoryProvider).getSupplierById(_supplierId!))
+                      ?.gstin ??
+                  '')
+              .trim()
+          : '';
       final bill = PurchaseBill(
         id: widget.billToEdit?.id ?? const Uuid().v4(),
         supplierId: _useExistingSupplier ? _supplierId : null,
@@ -1834,6 +1864,9 @@ class _PurchaseBillFormScreenState extends ConsumerState<_PurchaseBillFormScreen
         payments: widget.billToEdit?.payments ?? const [],
         createdAt: widget.billToEdit?.createdAt,
         isDraft: asDraft,
+        supplierGstin: supplierGstin,
+        dueDate: _dueDate,
+        reverseCharge: _showGstFields && _reverseCharge,
       );
 
       final repo = ref.read(purchaseBillRepositoryProvider);
@@ -2330,6 +2363,40 @@ class _PurchaseBillFormScreenState extends ConsumerState<_PurchaseBillFormScreen
               child: Text(AppDate.dateKey(_billDate)),
             ),
           ),
+          const SizedBox(height: 16),
+          InkWell(
+            onTap: _pickDueDate,
+            child: InputDecorator(
+              decoration: InputDecoration(
+                labelText: l10n.purchaseBillDueDateLabel,
+                prefixIcon: const Icon(Icons.event_outlined),
+                suffixIcon: _dueDate == null
+                    ? IconButton(
+                        icon: const Icon(Icons.calendar_month),
+                        tooltip: l10n.purchaseBillMgmtPickDateTooltip,
+                        onPressed: _pickDueDate,
+                      )
+                    : IconButton(
+                        icon: const Icon(Icons.clear),
+                        tooltip: l10n.tooltipRemove,
+                        onPressed: () => setState(() => _dueDate = null),
+                      ),
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(AppBorderRadius.xsmall)),
+              ),
+              child: Text(_dueDate == null ? '—' : AppDate.dateKey(_dueDate!)),
+            ),
+          ),
+          if (_showGstFields) ...[
+            const SizedBox(height: 8),
+            SwitchListTile(
+              contentPadding: EdgeInsets.zero,
+              value: _reverseCharge,
+              onChanged: (v) => setState(() => _reverseCharge = v),
+              title: Text(l10n.purchaseBillReverseChargeLabel),
+              subtitle: Text(l10n.purchaseBillReverseChargeHint,
+                  style: const TextStyle(fontSize: 12)),
+            ),
+          ],
           const SizedBox(height: 16),
           TextFormField(
             controller: _notesController,
