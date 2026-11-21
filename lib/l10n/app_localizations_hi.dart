@@ -1889,6 +1889,10 @@ class AppLocalizationsHi extends AppLocalizations {
   String get customerMgmtCsvDescTaxNumber => 'टैक्स / वैट / GSTIN नंबर';
 
   @override
+  String get customerMgmtCsvDescStateCode =>
+      'GST state code, e.g. 33 or 33-Tamil Nadu (used when there is no GSTIN)';
+
+  @override
   String customerMgmtCsvMaxRowsNote(int max) {
     return 'प्रति आयात अधिकतम $max पंक्तियाँ।';
   }
@@ -1949,6 +1953,11 @@ class AppLocalizationsHi extends AppLocalizations {
   @override
   String customerMgmtRowMissingNameMessage(int n) {
     return 'पंक्ति $n: नाम गायब है — छोड़ी गई';
+  }
+
+  @override
+  String customerMgmtRowDuplicateInFileMessage(int n, int first) {
+    return 'Row $n: same as row $first in this file — skipped';
   }
 
   @override
@@ -2387,6 +2396,14 @@ class AppLocalizationsHi extends AppLocalizations {
   @override
   String get productMgmtCsvDescLowStockLimit =>
       'इस उत्पाद की कम स्टॉक सीमा, खाली = डिफ़ॉल्ट 10';
+
+  @override
+  String get productMgmtCsvDescUqc =>
+      'GST unit code (UQC), e.g. PCS, KGS; NA for services';
+
+  @override
+  String get productMgmtCsvDescGstCategory =>
+      '0% tax only: blank = nil-rated, exempt, or non_gst';
 
   @override
   String get productMgmtCsvDescStorageLocation => 'गोदाम/शेल्फ स्थान';
@@ -5859,6 +5876,54 @@ class AppLocalizationsHi extends AppLocalizations {
   String get productFormCreateAnywayButton => 'Create anyway';
 
   @override
+  String get supplierMgmtSaveCsvDialogTitle => 'Save suppliers CSV';
+
+  @override
+  String get supplierMgmtImportCsvTitle => 'Import suppliers from CSV';
+
+  @override
+  String supplierMgmtImportCsvHelp(int max) {
+    return 'Columns: name (required), business_name, phone, email, address, gstin, notes.\n\nExisting suppliers are matched by GSTIN, phone or email. When updating them, a column missing from the file keeps the stored value. Maximum $max rows.';
+  }
+
+  @override
+  String supplierMgmtImportSummary(int newCount, int matched) {
+    return '$newCount new · $matched matching existing suppliers';
+  }
+
+  @override
+  String get supplierMgmtUpdateMatchedLabel => 'Update matching suppliers';
+
+  @override
+  String supplierMgmtImportedMessage(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Imported $count suppliers',
+      one: 'Imported 1 supplier',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get productFormDuplicateSkuTitle => 'SKU already used';
+
+  @override
+  String productFormDuplicateSkuMessage(String sku, String name) {
+    return 'SKU \"$sku\" is already used by \"$name\". Save anyway?';
+  }
+
+  @override
+  String get productMgmtCsvDuplicateSkuLabel =>
+      'Duplicate SKU codes (will still be imported)';
+
+  @override
+  String productMgmtCsvDuplicateSkuLine(
+      String name, String sku, String others) {
+    return '$name: SKU \"$sku\" also used by $others';
+  }
+
+  @override
   String get productFormNewProductButton => 'New product';
 
   @override
@@ -6578,4 +6643,148 @@ class AppLocalizationsHi extends AppLocalizations {
 
   @override
   String get gstDocNatureDebitNote => 'Debit Note';
+
+  @override
+  String get pdfLayoutPreviewGenerating =>
+      'पूर्वावलोकन अभी बन रहा है, कृपया प्रतीक्षा करें...';
+
+  @override
+  String pdfLayoutPrintError(String error) {
+    return 'प्रिंट त्रुटि: $error';
+  }
+
+  @override
+  String get pdfLayoutRemoveTitle => 'कस्टम लेआउट हटाएं';
+
+  @override
+  String pdfLayoutRemoveConfirm(String name) {
+    return 'क्या आप वाकई \'$name\' हटाना चाहते हैं? डिफ़ॉल्ट टेम्पलेट हटाए नहीं जा सकते।';
+  }
+
+  @override
+  String pdfLayoutRemovedSnackbar(String name) {
+    return 'लेआउट \'$name\' हटाया गया';
+  }
+
+  @override
+  String get pdfLayoutAddTitle => 'कस्टम लेआउट जोड़ें';
+
+  @override
+  String get pdfLayoutAddSubtitle =>
+      'कस्टम .json लेआउट फ़ाइल आयात करें या मौजूदा कस्टमाइज़ेशन को नए लेआउट के रूप में सहेजें।';
+
+  @override
+  String get pdfLayoutCreateEditJsonTitle => 'JSON बनाएं / संपादित करें';
+
+  @override
+  String get pdfLayoutCreateEditJsonSubtitle =>
+      'लेआउट कॉन्फ़िगरेशन पेस्ट या संपादित करें, साथ में तुरंत जाँच';
+
+  @override
+  String get pdfLayoutImportFileTitle => 'JSON फ़ाइल से आयात करें';
+
+  @override
+  String get pdfLayoutImportFileSubtitle => 'अपने डिवाइस से .json फ़ाइल चुनें';
+
+  @override
+  String get pdfLayoutSaveCurrentTitle =>
+      'मौजूदा सेटिंग्स को लेआउट के रूप में सहेजें';
+
+  @override
+  String get pdfLayoutSaveCurrentSubtitle =>
+      'मौजूदा विकल्पों से दोबारा उपयोग होने वाला टेम्पलेट बनाएं';
+
+  @override
+  String get pdfLayoutDefaultName => 'मेरा कस्टम लेआउट';
+
+  @override
+  String get pdfLayoutDefaultDescription =>
+      'व्यक्तिगत स्टाइल वाला कस्टम टेम्पलेट';
+
+  @override
+  String get pdfLayoutTooLarge => 'लेआउट बहुत बड़ा है (अधिकतम 512 KB)।';
+
+  @override
+  String get pdfLayoutCreateFromJsonTitle => 'JSON से लेआउट बनाएं';
+
+  @override
+  String get pdfLayoutEditJsonTitle => 'लेआउट JSON संपादित करें';
+
+  @override
+  String get pdfLayoutEditJsonHelp =>
+      'JSON कॉन्फ़िगरेशन संपादित करें। अमान्य JSON अस्वीकार होता है और सहेजे गए लेआउट को कभी नहीं बदलता।';
+
+  @override
+  String get pdfLayoutPreviewButton => 'पूर्वावलोकन';
+
+  @override
+  String get pdfLayoutSaveApplyButton => 'सहेजें और लागू करें';
+
+  @override
+  String get pdfLayoutAppliedToPreview =>
+      'लेआउट पूर्वावलोकन पर लागू हुआ। सक्रिय करने के लिए सेटिंग्स सहेजें।';
+
+  @override
+  String pdfLayoutCouldNotSave(String error) {
+    return 'लेआउट सहेजा नहीं जा सका: $error';
+  }
+
+  @override
+  String get pdfLayoutJsonError => 'JSON फ़ाइल में त्रुटि';
+
+  @override
+  String pdfLayoutImportedSnackbar(String name) {
+    return 'कस्टम लेआउट \'$name\' सफलतापूर्वक आयात हुआ!';
+  }
+
+  @override
+  String get pdfLayoutSaveAsTitle => 'कस्टम लेआउट के रूप में सहेजें';
+
+  @override
+  String get pdfLayoutNameLabel => 'लेआउट का नाम';
+
+  @override
+  String get pdfLayoutDescriptionLabel => 'विवरण';
+
+  @override
+  String get pdfLayoutSaveButton => 'लेआउट सहेजें';
+
+  @override
+  String get pdfLayoutFallbackName => 'कस्टम लेआउट';
+
+  @override
+  String pdfLayoutSavedSnackbar(String name) {
+    return 'कस्टम लेआउट \'$name\' सहेजा गया!';
+  }
+
+  @override
+  String get pdfLayoutAddButton => 'लेआउट जोड़ें';
+
+  @override
+  String get pdfLayoutInsertedSection => 'आपके जोड़े गए लेआउट';
+
+  @override
+  String get pdfLayoutDefaultSection => 'डिफ़ॉल्ट टेम्पलेट';
+
+  @override
+  String get pdfLayoutInsertButton => 'लेआउट डालें';
+
+  @override
+  String get pdfLayoutPreviewModePdf => 'PDF';
+
+  @override
+  String get pdfLayoutPreviewModeMock => 'नमूना';
+
+  @override
+  String get pdfLayoutGeneratingPreview =>
+      'सटीक प्रिंट पूर्वावलोकन बन रहा है...';
+
+  @override
+  String get pdfLayoutEditTooltip => 'लेआउट JSON संपादित करें';
+
+  @override
+  String get pdfLayoutRemoveTooltip => 'जोड़ा गया लेआउट हटाएं';
+
+  @override
+  String get pdfLayoutInsertedBadge => 'जोड़ा गया';
 }

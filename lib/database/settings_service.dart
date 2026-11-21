@@ -5,6 +5,7 @@ import 'package:sqflite/sqflite.dart';
 import 'package:invoiso/common/common.dart';
 import '../common/supported_currencies.dart';
 import '../models/custom_field_def.dart';
+import '../models/custom_invoice_layout.dart';
 import 'database_helper.dart';
 
 class SettingsService {
@@ -636,5 +637,37 @@ class SettingsService {
 
   static Future<void> setAllowDuplicateInvoiceItems(bool allow) async {
     await setSetting(SettingKey.allowDuplicateInvoiceItems, allow.toString());
+  }
+
+  static Future<List<CustomInvoiceLayout>> getCustomInvoiceLayouts() async {
+    final raw = await getSetting(SettingKey.customInvoiceLayouts);
+    if (raw == null || raw.trim().isEmpty) return [];
+    try {
+      final decoded = jsonDecode(raw);
+      if (decoded is! List) return [];
+      final layouts = <CustomInvoiceLayout>[];
+      for (final entry in decoded) {
+        if (entry is! Map) continue;
+        try {
+          layouts.add(
+            CustomInvoiceLayout.fromMap(
+              entry.map((key, value) => MapEntry(key.toString(), value)),
+            ),
+          );
+        } catch (_) {
+          // Keep every valid layout even if one legacy/corrupt entry can't be
+          // parsed. Loading never overwrites the stored value.
+        }
+      }
+      return layouts;
+    } catch (_) {
+      return [];
+    }
+  }
+
+  static Future<void> saveCustomInvoiceLayouts(
+      List<CustomInvoiceLayout> layouts) async {
+    final raw = jsonEncode(layouts.map((l) => l.toMap()).toList());
+    await setSetting(SettingKey.customInvoiceLayouts, raw);
   }
 }

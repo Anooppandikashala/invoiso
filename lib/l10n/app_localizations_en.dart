@@ -1881,6 +1881,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get customerMgmtCsvDescTaxNumber => 'Tax / VAT / GSTIN number';
 
   @override
+  String get customerMgmtCsvDescStateCode =>
+      'GST state code, e.g. 33 or 33-Tamil Nadu (used when there is no GSTIN)';
+
+  @override
   String customerMgmtCsvMaxRowsNote(int max) {
     return 'Maximum $max rows per import.';
   }
@@ -1940,6 +1944,11 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String customerMgmtRowMissingNameMessage(int n) {
     return 'Row $n: missing name — skipped';
+  }
+
+  @override
+  String customerMgmtRowDuplicateInFileMessage(int n, int first) {
+    return 'Row $n: same as row $first in this file — skipped';
   }
 
   @override
@@ -2376,6 +2385,14 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get productMgmtCsvDescLowStockLimit =>
       'Low-stock threshold for this product, blank = default 10';
+
+  @override
+  String get productMgmtCsvDescUqc =>
+      'GST unit code (UQC), e.g. PCS, KGS; NA for services';
+
+  @override
+  String get productMgmtCsvDescGstCategory =>
+      '0% tax only: blank = nil-rated, exempt, or non_gst';
 
   @override
   String get productMgmtCsvDescStorageLocation => 'Warehouse/shelf location';
@@ -5837,6 +5854,54 @@ class AppLocalizationsEn extends AppLocalizations {
   String get productFormCreateAnywayButton => 'Create anyway';
 
   @override
+  String get supplierMgmtSaveCsvDialogTitle => 'Save suppliers CSV';
+
+  @override
+  String get supplierMgmtImportCsvTitle => 'Import suppliers from CSV';
+
+  @override
+  String supplierMgmtImportCsvHelp(int max) {
+    return 'Columns: name (required), business_name, phone, email, address, gstin, notes.\n\nExisting suppliers are matched by GSTIN, phone or email. When updating them, a column missing from the file keeps the stored value. Maximum $max rows.';
+  }
+
+  @override
+  String supplierMgmtImportSummary(int newCount, int matched) {
+    return '$newCount new · $matched matching existing suppliers';
+  }
+
+  @override
+  String get supplierMgmtUpdateMatchedLabel => 'Update matching suppliers';
+
+  @override
+  String supplierMgmtImportedMessage(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Imported $count suppliers',
+      one: 'Imported 1 supplier',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get productFormDuplicateSkuTitle => 'SKU already used';
+
+  @override
+  String productFormDuplicateSkuMessage(String sku, String name) {
+    return 'SKU \"$sku\" is already used by \"$name\". Save anyway?';
+  }
+
+  @override
+  String get productMgmtCsvDuplicateSkuLabel =>
+      'Duplicate SKU codes (will still be imported)';
+
+  @override
+  String productMgmtCsvDuplicateSkuLine(
+      String name, String sku, String others) {
+    return '$name: SKU \"$sku\" also used by $others';
+  }
+
+  @override
   String get productFormNewProductButton => 'New product';
 
   @override
@@ -6555,4 +6620,148 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get gstDocNatureDebitNote => 'Debit Note';
+
+  @override
+  String get pdfLayoutPreviewGenerating =>
+      'Preview is still generating, please wait...';
+
+  @override
+  String pdfLayoutPrintError(String error) {
+    return 'Print error: $error';
+  }
+
+  @override
+  String get pdfLayoutRemoveTitle => 'Remove Custom Layout';
+
+  @override
+  String pdfLayoutRemoveConfirm(String name) {
+    return 'Are you sure you want to remove \'$name\'? Default templates cannot be removed.';
+  }
+
+  @override
+  String pdfLayoutRemovedSnackbar(String name) {
+    return 'Removed layout \'$name\'';
+  }
+
+  @override
+  String get pdfLayoutAddTitle => 'Add Custom Layout';
+
+  @override
+  String get pdfLayoutAddSubtitle =>
+      'Import a custom .json layout file or save current customizations as a new layout.';
+
+  @override
+  String get pdfLayoutCreateEditJsonTitle => 'Create / Edit JSON';
+
+  @override
+  String get pdfLayoutCreateEditJsonSubtitle =>
+      'Paste or edit the layout configuration with a live validation check';
+
+  @override
+  String get pdfLayoutImportFileTitle => 'Import from JSON File';
+
+  @override
+  String get pdfLayoutImportFileSubtitle =>
+      'Select a .json file from your device';
+
+  @override
+  String get pdfLayoutSaveCurrentTitle => 'Save Current Settings as Layout';
+
+  @override
+  String get pdfLayoutSaveCurrentSubtitle =>
+      'Create a reusable template from currently configured options';
+
+  @override
+  String get pdfLayoutDefaultName => 'My Custom Layout';
+
+  @override
+  String get pdfLayoutDefaultDescription =>
+      'Custom template with personal styling';
+
+  @override
+  String get pdfLayoutTooLarge => 'Layout is too large (max 512 KB).';
+
+  @override
+  String get pdfLayoutCreateFromJsonTitle => 'Create Layout from JSON';
+
+  @override
+  String get pdfLayoutEditJsonTitle => 'Edit Layout JSON';
+
+  @override
+  String get pdfLayoutEditJsonHelp =>
+      'Edit the JSON configuration. Invalid JSON is rejected and never replaces the saved layout.';
+
+  @override
+  String get pdfLayoutPreviewButton => 'Preview';
+
+  @override
+  String get pdfLayoutSaveApplyButton => 'Save & Apply';
+
+  @override
+  String get pdfLayoutAppliedToPreview =>
+      'Layout applied to preview. Use Save Settings to activate it.';
+
+  @override
+  String pdfLayoutCouldNotSave(String error) {
+    return 'Could not save layout: $error';
+  }
+
+  @override
+  String get pdfLayoutJsonError => 'Error on JSON file';
+
+  @override
+  String pdfLayoutImportedSnackbar(String name) {
+    return 'Imported custom layout \'$name\' successfully!';
+  }
+
+  @override
+  String get pdfLayoutSaveAsTitle => 'Save as Custom Layout';
+
+  @override
+  String get pdfLayoutNameLabel => 'Layout Name';
+
+  @override
+  String get pdfLayoutDescriptionLabel => 'Description';
+
+  @override
+  String get pdfLayoutSaveButton => 'Save Layout';
+
+  @override
+  String get pdfLayoutFallbackName => 'Custom Layout';
+
+  @override
+  String pdfLayoutSavedSnackbar(String name) {
+    return 'Saved custom layout \'$name\'!';
+  }
+
+  @override
+  String get pdfLayoutAddButton => 'Add Layout';
+
+  @override
+  String get pdfLayoutInsertedSection => 'YOUR INSERTED LAYOUTS';
+
+  @override
+  String get pdfLayoutDefaultSection => 'DEFAULT TEMPLATES';
+
+  @override
+  String get pdfLayoutInsertButton => 'Insert Layout';
+
+  @override
+  String get pdfLayoutPreviewModePdf => 'PDF';
+
+  @override
+  String get pdfLayoutPreviewModeMock => 'Mock';
+
+  @override
+  String get pdfLayoutGeneratingPreview =>
+      'Generating accurate print preview...';
+
+  @override
+  String get pdfLayoutEditTooltip => 'Edit layout JSON';
+
+  @override
+  String get pdfLayoutRemoveTooltip => 'Remove inserted layout';
+
+  @override
+  String get pdfLayoutInsertedBadge => 'Inserted';
 }

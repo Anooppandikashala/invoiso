@@ -8,6 +8,7 @@ import 'package:invoiso/database/settings_service.dart';
 import 'package:invoiso/models/customer.dart';
 import 'package:invoiso/models/invoice.dart';
 import 'package:invoiso/models/invoice_item.dart';
+import 'package:invoiso/models/invoice_payment.dart';
 import 'package:invoiso/models/product.dart';
 import 'package:invoiso/repositories/sqlite/sqlite_company_info_repository.dart';
 import 'package:invoiso/repositories/sqlite/sqlite_installation_repository.dart';
@@ -112,6 +113,35 @@ void main() {
         csv,
         '"Quotation ID","Total","Notes","Private Notes"\n'
         '"7","200.00","Thank you","Paid cash to painter"');
+  });
+
+  test('ID column uses the per-type number; payment / GST columns', () async {
+    final inv = _invoice()
+      ..invoiceNumber = '003'
+      ..placeOfSupply = '32'
+      ..payments = [
+        InvoicePayment(
+            id: 'pay1', invoiceId: '7', invoiceNumber: '003', receiptNumber: 'R1',
+            amountPaid: 50, taxAmountPaid: 0, previouslyPaid: 0, balanceAfter: 150,
+            datePaid: DateTime(2026, 11, 5)),
+      ];
+    final csv = await ExportService.buildInvoicesCsv([inv], columns: [
+      InvoiceCsvColumn.id,
+      InvoiceCsvColumn.placeOfSupply,
+      InvoiceCsvColumn.discount,
+      InvoiceCsvColumn.charges,
+      InvoiceCsvColumn.paid,
+      InvoiceCsvColumn.balance,
+    ]);
+    expect(
+        csv,
+        '"Invoice ID","Place of Supply","Discount","Charges","Paid","Balance Due"\n'
+        '"003","32-Kerala","0.00","0.00","50.00","150.00"');
+
+    await SettingsService.setSetting(SettingKey.showGstFields, 'false');
+    final noGst = await ExportService.buildInvoicesCsv([inv],
+        columns: [InvoiceCsvColumn.id, InvoiceCsvColumn.placeOfSupply]);
+    expect(noGst, '"Invoice ID"\n"003"');
   });
 
   test('saved choice: round-trip, unknown names, bad JSON', () async {

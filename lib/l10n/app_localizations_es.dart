@@ -1907,6 +1907,10 @@ class AppLocalizationsEs extends AppLocalizations {
   String get customerMgmtCsvDescTaxNumber => 'Número de impuesto / IVA / GSTIN';
 
   @override
+  String get customerMgmtCsvDescStateCode =>
+      'GST state code, e.g. 33 or 33-Tamil Nadu (used when there is no GSTIN)';
+
+  @override
   String customerMgmtCsvMaxRowsNote(int max) {
     return 'Máximo $max filas por importación.';
   }
@@ -1966,6 +1970,11 @@ class AppLocalizationsEs extends AppLocalizations {
   @override
   String customerMgmtRowMissingNameMessage(int n) {
     return 'Fila $n: falta el nombre — omitida';
+  }
+
+  @override
+  String customerMgmtRowDuplicateInFileMessage(int n, int first) {
+    return 'Row $n: same as row $first in this file — skipped';
   }
 
   @override
@@ -2409,6 +2418,14 @@ class AppLocalizationsEs extends AppLocalizations {
   @override
   String get productMgmtCsvDescLowStockLimit =>
       'Umbral de stock bajo del producto, vacío = 10 por defecto';
+
+  @override
+  String get productMgmtCsvDescUqc =>
+      'GST unit code (UQC), e.g. PCS, KGS; NA for services';
+
+  @override
+  String get productMgmtCsvDescGstCategory =>
+      '0% tax only: blank = nil-rated, exempt, or non_gst';
 
   @override
   String get productMgmtCsvDescStorageLocation =>
@@ -5953,6 +5970,54 @@ class AppLocalizationsEs extends AppLocalizations {
   String get productFormCreateAnywayButton => 'Create anyway';
 
   @override
+  String get supplierMgmtSaveCsvDialogTitle => 'Save suppliers CSV';
+
+  @override
+  String get supplierMgmtImportCsvTitle => 'Import suppliers from CSV';
+
+  @override
+  String supplierMgmtImportCsvHelp(int max) {
+    return 'Columns: name (required), business_name, phone, email, address, gstin, notes.\n\nExisting suppliers are matched by GSTIN, phone or email. When updating them, a column missing from the file keeps the stored value. Maximum $max rows.';
+  }
+
+  @override
+  String supplierMgmtImportSummary(int newCount, int matched) {
+    return '$newCount new · $matched matching existing suppliers';
+  }
+
+  @override
+  String get supplierMgmtUpdateMatchedLabel => 'Update matching suppliers';
+
+  @override
+  String supplierMgmtImportedMessage(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Imported $count suppliers',
+      one: 'Imported 1 supplier',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get productFormDuplicateSkuTitle => 'SKU already used';
+
+  @override
+  String productFormDuplicateSkuMessage(String sku, String name) {
+    return 'SKU \"$sku\" is already used by \"$name\". Save anyway?';
+  }
+
+  @override
+  String get productMgmtCsvDuplicateSkuLabel =>
+      'Duplicate SKU codes (will still be imported)';
+
+  @override
+  String productMgmtCsvDuplicateSkuLine(
+      String name, String sku, String others) {
+    return '$name: SKU \"$sku\" also used by $others';
+  }
+
+  @override
   String get productFormNewProductButton => 'New product';
 
   @override
@@ -6672,4 +6737,150 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get gstDocNatureDebitNote => 'Debit Note';
+
+  @override
+  String get pdfLayoutPreviewGenerating =>
+      'La vista previa aún se está generando, espera...';
+
+  @override
+  String pdfLayoutPrintError(String error) {
+    return 'Error de impresión: $error';
+  }
+
+  @override
+  String get pdfLayoutRemoveTitle => 'Quitar diseño personalizado';
+
+  @override
+  String pdfLayoutRemoveConfirm(String name) {
+    return '¿Seguro que quieres quitar \'$name\'? Las plantillas predeterminadas no se pueden quitar.';
+  }
+
+  @override
+  String pdfLayoutRemovedSnackbar(String name) {
+    return 'Diseño \'$name\' quitado';
+  }
+
+  @override
+  String get pdfLayoutAddTitle => 'Añadir diseño personalizado';
+
+  @override
+  String get pdfLayoutAddSubtitle =>
+      'Importa un archivo de diseño .json o guarda la personalización actual como un nuevo diseño.';
+
+  @override
+  String get pdfLayoutCreateEditJsonTitle => 'Crear / editar JSON';
+
+  @override
+  String get pdfLayoutCreateEditJsonSubtitle =>
+      'Pega o edita la configuración del diseño con validación en tiempo real';
+
+  @override
+  String get pdfLayoutImportFileTitle => 'Importar desde archivo JSON';
+
+  @override
+  String get pdfLayoutImportFileSubtitle =>
+      'Selecciona un archivo .json de tu dispositivo';
+
+  @override
+  String get pdfLayoutSaveCurrentTitle =>
+      'Guardar la configuración actual como diseño';
+
+  @override
+  String get pdfLayoutSaveCurrentSubtitle =>
+      'Crea una plantilla reutilizable con las opciones configuradas';
+
+  @override
+  String get pdfLayoutDefaultName => 'Mi diseño personalizado';
+
+  @override
+  String get pdfLayoutDefaultDescription =>
+      'Plantilla personalizada con estilo propio';
+
+  @override
+  String get pdfLayoutTooLarge =>
+      'El diseño es demasiado grande (máx. 512 KB).';
+
+  @override
+  String get pdfLayoutCreateFromJsonTitle => 'Crear diseño desde JSON';
+
+  @override
+  String get pdfLayoutEditJsonTitle => 'Editar JSON del diseño';
+
+  @override
+  String get pdfLayoutEditJsonHelp =>
+      'Edita la configuración JSON. Un JSON no válido se rechaza y nunca reemplaza el diseño guardado.';
+
+  @override
+  String get pdfLayoutPreviewButton => 'Vista previa';
+
+  @override
+  String get pdfLayoutSaveApplyButton => 'Guardar y aplicar';
+
+  @override
+  String get pdfLayoutAppliedToPreview =>
+      'Diseño aplicado a la vista previa. Usa Guardar configuración para activarlo.';
+
+  @override
+  String pdfLayoutCouldNotSave(String error) {
+    return 'No se pudo guardar el diseño: $error';
+  }
+
+  @override
+  String get pdfLayoutJsonError => 'Error en el archivo JSON';
+
+  @override
+  String pdfLayoutImportedSnackbar(String name) {
+    return '¡Diseño personalizado \'$name\' importado correctamente!';
+  }
+
+  @override
+  String get pdfLayoutSaveAsTitle => 'Guardar como diseño personalizado';
+
+  @override
+  String get pdfLayoutNameLabel => 'Nombre del diseño';
+
+  @override
+  String get pdfLayoutDescriptionLabel => 'Descripción';
+
+  @override
+  String get pdfLayoutSaveButton => 'Guardar diseño';
+
+  @override
+  String get pdfLayoutFallbackName => 'Diseño personalizado';
+
+  @override
+  String pdfLayoutSavedSnackbar(String name) {
+    return '¡Diseño personalizado \'$name\' guardado!';
+  }
+
+  @override
+  String get pdfLayoutAddButton => 'Añadir diseño';
+
+  @override
+  String get pdfLayoutInsertedSection => 'TUS DISEÑOS AÑADIDOS';
+
+  @override
+  String get pdfLayoutDefaultSection => 'PLANTILLAS PREDETERMINADAS';
+
+  @override
+  String get pdfLayoutInsertButton => 'Insertar diseño';
+
+  @override
+  String get pdfLayoutPreviewModePdf => 'PDF';
+
+  @override
+  String get pdfLayoutPreviewModeMock => 'Boceto';
+
+  @override
+  String get pdfLayoutGeneratingPreview =>
+      'Generando una vista previa de impresión exacta...';
+
+  @override
+  String get pdfLayoutEditTooltip => 'Editar JSON del diseño';
+
+  @override
+  String get pdfLayoutRemoveTooltip => 'Quitar diseño añadido';
+
+  @override
+  String get pdfLayoutInsertedBadge => 'Añadido';
 }

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:invoiso/common/common.dart';
 import 'package:invoiso/common/constants.dart';
 import 'package:invoiso/l10n/app_localizations.dart';
+import 'package:invoiso/widgets/block_layout_sketch.dart';
 
 /// Shared invoice-template catalog (template + thumbnail asset per
 /// InvoiceTemplate), used by both the PDF Settings screen and the
@@ -75,6 +76,14 @@ class TemplateListTile extends StatelessWidget {
   final String? disabledLabel;
   final VoidCallback onTap;
   final bool thermalDetailedTemplate;
+  final bool isInserted;
+  final VoidCallback? onEdit;
+  final VoidCallback? onDelete;
+
+  /// Imported block document (`page` + `theme` + `layout`). When present the
+  /// thumbnail renders the inserted layout itself instead of the built-in
+  /// template sketch.
+  final Map<String, dynamic>? blockLayout;
 
   const TemplateListTile({
     super.key,
@@ -88,11 +97,16 @@ class TemplateListTile extends StatelessWidget {
     required this.onTap,
     this.isDisabled = false,
     this.disabledLabel,
-    required this.thermalDetailedTemplate
+    required this.thermalDetailedTemplate,
+    this.isInserted = false,
+    this.onEdit,
+    this.onDelete,
+    this.blockLayout,
   });
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final primaryColor = Theme.of(context).primaryColor;
 
     return GestureDetector(
@@ -119,7 +133,14 @@ class TemplateListTile extends StatelessWidget {
               // Thumbnail
               ClipRRect(
                 borderRadius: BorderRadius.circular(5),
-                child: TemplatePreviewSketch(
+                child: blockLayout?['layout'] is List
+                    ? BlockLayoutSketch(
+                        document: blockLayout,
+                        themeColor: themeColor,
+                        width: 64,
+                        height: 74,
+                      )
+                    : TemplatePreviewSketch(
                   template: template,
                   themeColor: themeColor,
                   width: 64,
@@ -150,6 +171,26 @@ class TemplateListTile extends StatelessWidget {
                         if (isSaved)
                           Icon(Icons.check_circle_rounded,
                               color: primaryColor, size: 16),
+                        if (onEdit != null)
+                          IconButton(
+                            icon: Icon(Icons.code_rounded,
+                                size: 16, color: primaryColor),
+                            onPressed: onEdit,
+                            tooltip: l10n.pdfLayoutEditTooltip,
+                            padding: EdgeInsets.zero,
+                            constraints: const BoxConstraints(
+                                minWidth: 24, minHeight: 24),
+                          ),
+                        if (onDelete != null)
+                          IconButton(
+                            icon: const Icon(Icons.delete_outline,
+                                size: 16, color: Colors.red),
+                            onPressed: onDelete,
+                            tooltip: l10n.pdfLayoutRemoveTooltip,
+                            padding: EdgeInsets.zero,
+                            constraints: const BoxConstraints(
+                                minWidth: 24, minHeight: 24),
+                          ),
                       ],
                     ),
                     const SizedBox(height: 2),
@@ -177,6 +218,25 @@ class TemplateListTile extends StatelessWidget {
                             fontSize: AppFontSize.xsmall,
                             color: Theme.of(context).colorScheme.onSurfaceVariant,
                             fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ),
+                    ],
+                    if (isInserted) ...[
+                      const SizedBox(height: 4),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 5, vertical: 1),
+                        decoration: BoxDecoration(
+                          color: primaryColor.withValues(alpha: 0.15),
+                          borderRadius: BorderRadius.circular(3),
+                        ),
+                        child: Text(
+                          l10n.pdfLayoutInsertedBadge,
+                          style: TextStyle(
+                            fontSize: AppFontSize.xsmall,
+                            color: primaryColor,
+                            fontWeight: FontWeight.w600,
                           ),
                         ),
                       ),
@@ -220,6 +280,8 @@ class TemplatePreviewSketch extends StatelessWidget {
   final double height;
   final bool showDetails;
   final bool thermalDetailedTemplate;
+  final bool isInserted;
+  final VoidCallback? onDelete;
 
   const TemplatePreviewSketch({
     super.key,
@@ -229,6 +291,8 @@ class TemplatePreviewSketch extends StatelessWidget {
     required this.height,
     this.showDetails = false,
     required this.thermalDetailedTemplate,
+    this.isInserted = false,
+    this.onDelete,
   });
 
   @override

@@ -11,6 +11,7 @@ import 'package:invoiso/l10n/app_localizations.dart';
 import 'package:invoiso/models/product.dart';
 import 'package:invoiso/models/user.dart';
 import 'package:invoiso/providers/repositories.dart';
+import 'package:invoiso/repositories/product_repository.dart';
 import 'package:invoiso/utils/formatters.dart';
 import 'package:invoiso/widgets/long_text_expand_button.dart';
 
@@ -194,6 +195,10 @@ class ProductFormState extends ConsumerState<ProductForm> {
     final duplicate = await productRepo.findDuplicateByName(name);
     if (!mounted) return null;
     if (duplicate != null && !await _confirmDuplicate(name)) return null;
+    if (!mounted) return null;
+    if (!await confirmDuplicateSku(context, productRepo, _skuCodeController.text)) {
+      return null;
+    }
 
     final price = double.parse(_priceController.text.trim());
     final purchasePrice =
@@ -788,6 +793,36 @@ Future<bool> confirmSellingAtLoss(
           '$currencySymbol${AmountFormat.money(price)}',
         ),
       ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(ctx, false),
+          child: Text(l10n.actionCancel),
+        ),
+        FilledButton(
+          onPressed: () => Navigator.pop(ctx, true),
+          child: Text(l10n.actionSaveAnyway),
+        ),
+      ],
+    ),
+  );
+  return proceed ?? false;
+}
+
+/// Warns when [sku] is already used by another product (not [excludeId]).
+/// True = fine to save. Only the matching row is read.
+Future<bool> confirmDuplicateSku(BuildContext context, ProductRepository repo,
+    String sku, {String? excludeId}) async {
+  if (sku.trim().isEmpty) return true;
+  final owner = (await repo.findProductsBySku([sku]))
+      .where((o) => o.id != excludeId)
+      .firstOrNull;
+  if (owner == null || !context.mounted) return owner == null;
+  final l10n = AppLocalizations.of(context)!;
+  final proceed = await showDialog<bool>(
+    context: context,
+    builder: (ctx) => AlertDialog(
+      title: Text(l10n.productFormDuplicateSkuTitle),
+      content: Text(l10n.productFormDuplicateSkuMessage(sku.trim(), owner.name)),
       actions: [
         TextButton(
           onPressed: () => Navigator.pop(ctx, false),

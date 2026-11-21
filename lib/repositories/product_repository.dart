@@ -33,6 +33,7 @@ abstract class ProductRepository {
   Future<void> updateProductStock(String id, int newStock);
   Future<bool> hasSufficientStock(String productId, int quantity);
   Future<Product?> findDuplicateByName(String name);
+  Future<List<({String id, String name, String sku})>> findProductsBySku(List<String> skus);
   Future<void> deleteAllProducts();
   Future<void> insertBatch(List<Product> products, {int batchSize = 50});
   Future<List<Product>> getOutOfStockProducts();

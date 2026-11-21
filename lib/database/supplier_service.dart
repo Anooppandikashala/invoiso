@@ -25,6 +25,44 @@ class SupplierService {
     );
   }
 
+  /// First active supplier with the same GSTIN, phone or email (CSV import
+  /// match); blank values never match.
+  static Future<Supplier?> findDuplicate(
+      String gstin, String phone, String email) async {
+    final conditions = <String>[];
+    final args = <String>[];
+    if (gstin.trim().isNotEmpty) {
+      conditions.add('UPPER(gstin) = ?');
+      args.add(gstin.trim().toUpperCase());
+    }
+    if (phone.trim().isNotEmpty) {
+      conditions.add('phone = ?');
+      args.add(phone.trim());
+    }
+    if (email.trim().isNotEmpty) {
+      conditions.add('LOWER(email) = ?');
+      args.add(email.trim().toLowerCase());
+    }
+    if (conditions.isEmpty) return null;
+    final db = await dbHelper.database;
+    final maps = await db.query(
+      'suppliers',
+      where: 'deleted_at IS NULL AND (${conditions.join(' OR ')})',
+      whereArgs: args,
+      limit: 1,
+    );
+    return maps.isNotEmpty ? Supplier.fromMap(maps.first) : null;
+  }
+
+  static Future<void> insertBatch(List<Supplier> suppliers) async {
+    final db = await dbHelper.database;
+    await db.transaction((txn) async {
+      for (final s in suppliers) {
+        await txn.insert('suppliers', s.toMap());
+      }
+    });
+  }
+
   static Future<Supplier?> getSupplierById(String id) async {
     final db = await dbHelper.database;
     final maps = await db.query(

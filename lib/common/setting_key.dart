@@ -123,6 +123,8 @@ enum SettingKey {
   paymentQrEntries, // JSON list of PaymentQrEntry objects (uploaded payment QR images, base64)
   chargesIncludeTax, // 'true' = new taxable additional charges are entered tax-inclusive (default false); stamped per charge
   customerDetailsBannerDismissed, // '1' once user dismisses the customer-fields discovery banner on Customers
+  customInvoiceLayouts, // JSON list of user-inserted CustomInvoiceLayout definitions
+  activeCustomLayout, // JSON of the custom layout currently active for PDF rendering (empty = built-in template)
 }
 
 extension SettingKeyExtension on SettingKey {
@@ -376,6 +378,10 @@ extension SettingKeyExtension on SettingKey {
         return 'charges_include_tax';
       case SettingKey.customerDetailsBannerDismissed:
         return 'customer_details_banner_dismissed';
+      case SettingKey.customInvoiceLayouts:
+        return 'custom_invoice_layouts';
+      case SettingKey.activeCustomLayout:
+        return 'active_custom_layout';
 
     }
   }

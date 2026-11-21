@@ -1916,6 +1916,10 @@ class AppLocalizationsFr extends AppLocalizations {
   String get customerMgmtCsvDescTaxNumber => 'Numéro de taxe / TVA / GSTIN';
 
   @override
+  String get customerMgmtCsvDescStateCode =>
+      'GST state code, e.g. 33 or 33-Tamil Nadu (used when there is no GSTIN)';
+
+  @override
   String customerMgmtCsvMaxRowsNote(int max) {
     return 'Maximum $max lignes par importation.';
   }
@@ -1977,6 +1981,11 @@ class AppLocalizationsFr extends AppLocalizations {
   @override
   String customerMgmtRowMissingNameMessage(int n) {
     return 'Ligne $n : nom manquant — ignorée';
+  }
+
+  @override
+  String customerMgmtRowDuplicateInFileMessage(int n, int first) {
+    return 'Row $n: same as row $first in this file — skipped';
   }
 
   @override
@@ -2417,6 +2426,14 @@ class AppLocalizationsFr extends AppLocalizations {
   @override
   String get productMgmtCsvDescLowStockLimit =>
       'Seuil de stock bas du produit, vide = 10 par défaut';
+
+  @override
+  String get productMgmtCsvDescUqc =>
+      'GST unit code (UQC), e.g. PCS, KGS; NA for services';
+
+  @override
+  String get productMgmtCsvDescGstCategory =>
+      '0% tax only: blank = nil-rated, exempt, or non_gst';
 
   @override
   String get productMgmtCsvDescStorageLocation =>
@@ -5967,6 +5984,54 @@ class AppLocalizationsFr extends AppLocalizations {
   String get productFormCreateAnywayButton => 'Create anyway';
 
   @override
+  String get supplierMgmtSaveCsvDialogTitle => 'Save suppliers CSV';
+
+  @override
+  String get supplierMgmtImportCsvTitle => 'Import suppliers from CSV';
+
+  @override
+  String supplierMgmtImportCsvHelp(int max) {
+    return 'Columns: name (required), business_name, phone, email, address, gstin, notes.\n\nExisting suppliers are matched by GSTIN, phone or email. When updating them, a column missing from the file keeps the stored value. Maximum $max rows.';
+  }
+
+  @override
+  String supplierMgmtImportSummary(int newCount, int matched) {
+    return '$newCount new · $matched matching existing suppliers';
+  }
+
+  @override
+  String get supplierMgmtUpdateMatchedLabel => 'Update matching suppliers';
+
+  @override
+  String supplierMgmtImportedMessage(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Imported $count suppliers',
+      one: 'Imported 1 supplier',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get productFormDuplicateSkuTitle => 'SKU already used';
+
+  @override
+  String productFormDuplicateSkuMessage(String sku, String name) {
+    return 'SKU \"$sku\" is already used by \"$name\". Save anyway?';
+  }
+
+  @override
+  String get productMgmtCsvDuplicateSkuLabel =>
+      'Duplicate SKU codes (will still be imported)';
+
+  @override
+  String productMgmtCsvDuplicateSkuLine(
+      String name, String sku, String others) {
+    return '$name: SKU \"$sku\" also used by $others';
+  }
+
+  @override
   String get productFormNewProductButton => 'New product';
 
   @override
@@ -6686,4 +6751,152 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get gstDocNatureDebitNote => 'Debit Note';
+
+  @override
+  String get pdfLayoutPreviewGenerating =>
+      'L\'aperçu est en cours de génération, veuillez patienter...';
+
+  @override
+  String pdfLayoutPrintError(String error) {
+    return 'Erreur d\'impression : $error';
+  }
+
+  @override
+  String get pdfLayoutRemoveTitle => 'Supprimer la mise en page personnalisée';
+
+  @override
+  String pdfLayoutRemoveConfirm(String name) {
+    return 'Voulez-vous vraiment supprimer « $name » ? Les modèles par défaut ne peuvent pas être supprimés.';
+  }
+
+  @override
+  String pdfLayoutRemovedSnackbar(String name) {
+    return 'Mise en page « $name » supprimée';
+  }
+
+  @override
+  String get pdfLayoutAddTitle => 'Ajouter une mise en page personnalisée';
+
+  @override
+  String get pdfLayoutAddSubtitle =>
+      'Importez un fichier de mise en page .json ou enregistrez les réglages actuels comme nouvelle mise en page.';
+
+  @override
+  String get pdfLayoutCreateEditJsonTitle => 'Créer / modifier le JSON';
+
+  @override
+  String get pdfLayoutCreateEditJsonSubtitle =>
+      'Collez ou modifiez la configuration avec une vérification en direct';
+
+  @override
+  String get pdfLayoutImportFileTitle => 'Importer depuis un fichier JSON';
+
+  @override
+  String get pdfLayoutImportFileSubtitle =>
+      'Sélectionnez un fichier .json sur votre appareil';
+
+  @override
+  String get pdfLayoutSaveCurrentTitle =>
+      'Enregistrer les réglages actuels comme mise en page';
+
+  @override
+  String get pdfLayoutSaveCurrentSubtitle =>
+      'Créez un modèle réutilisable à partir des options actuelles';
+
+  @override
+  String get pdfLayoutDefaultName => 'Ma mise en page personnalisée';
+
+  @override
+  String get pdfLayoutDefaultDescription =>
+      'Modèle personnalisé avec votre style';
+
+  @override
+  String get pdfLayoutTooLarge =>
+      'La mise en page est trop volumineuse (512 Ko max).';
+
+  @override
+  String get pdfLayoutCreateFromJsonTitle =>
+      'Créer une mise en page depuis un JSON';
+
+  @override
+  String get pdfLayoutEditJsonTitle => 'Modifier le JSON de la mise en page';
+
+  @override
+  String get pdfLayoutEditJsonHelp =>
+      'Modifiez la configuration JSON. Un JSON invalide est refusé et ne remplace jamais la mise en page enregistrée.';
+
+  @override
+  String get pdfLayoutPreviewButton => 'Aperçu';
+
+  @override
+  String get pdfLayoutSaveApplyButton => 'Enregistrer et appliquer';
+
+  @override
+  String get pdfLayoutAppliedToPreview =>
+      'Mise en page appliquée à l\'aperçu. Enregistrez les paramètres pour l\'activer.';
+
+  @override
+  String pdfLayoutCouldNotSave(String error) {
+    return 'Impossible d\'enregistrer la mise en page : $error';
+  }
+
+  @override
+  String get pdfLayoutJsonError => 'Erreur dans le fichier JSON';
+
+  @override
+  String pdfLayoutImportedSnackbar(String name) {
+    return 'Mise en page « $name » importée avec succès !';
+  }
+
+  @override
+  String get pdfLayoutSaveAsTitle =>
+      'Enregistrer comme mise en page personnalisée';
+
+  @override
+  String get pdfLayoutNameLabel => 'Nom de la mise en page';
+
+  @override
+  String get pdfLayoutDescriptionLabel => 'Description';
+
+  @override
+  String get pdfLayoutSaveButton => 'Enregistrer la mise en page';
+
+  @override
+  String get pdfLayoutFallbackName => 'Mise en page personnalisée';
+
+  @override
+  String pdfLayoutSavedSnackbar(String name) {
+    return 'Mise en page « $name » enregistrée !';
+  }
+
+  @override
+  String get pdfLayoutAddButton => 'Ajouter une mise en page';
+
+  @override
+  String get pdfLayoutInsertedSection => 'VOS MISES EN PAGE AJOUTÉES';
+
+  @override
+  String get pdfLayoutDefaultSection => 'MODÈLES PAR DÉFAUT';
+
+  @override
+  String get pdfLayoutInsertButton => 'Insérer une mise en page';
+
+  @override
+  String get pdfLayoutPreviewModePdf => 'PDF';
+
+  @override
+  String get pdfLayoutPreviewModeMock => 'Maquette';
+
+  @override
+  String get pdfLayoutGeneratingPreview =>
+      'Génération d\'un aperçu d\'impression fidèle...';
+
+  @override
+  String get pdfLayoutEditTooltip => 'Modifier le JSON';
+
+  @override
+  String get pdfLayoutRemoveTooltip => 'Supprimer la mise en page ajoutée';
+
+  @override
+  String get pdfLayoutInsertedBadge => 'Ajouté';
 }

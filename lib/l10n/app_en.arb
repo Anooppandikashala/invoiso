@@ -1139,6 +1139,7 @@
   "customerMgmtCsvDescAddress": "Full address",
   "customerMgmtCsvDescBusinessName": "Company / business name",
   "customerMgmtCsvDescTaxNumber": "Tax / VAT / GSTIN number",
+  "customerMgmtCsvDescStateCode": "GST state code, e.g. 33 or 33-Tamil Nadu (used when there is no GSTIN)",
   "customerMgmtCsvMaxRowsNote": "Maximum {max} rows per import.",
   "@customerMgmtCsvMaxRowsNote": {
     "placeholders": {
@@ -1187,6 +1188,17 @@
     }
   },
   "customerMgmtRowMissingNameMessage": "Row {n}: missing name — skipped",
+  "customerMgmtRowDuplicateInFileMessage": "Row {n}: same as row {first} in this file — skipped",
+  "@customerMgmtRowDuplicateInFileMessage": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      },
+      "first": {
+        "type": "int"
+      }
+    }
+  },
   "@customerMgmtRowMissingNameMessage": {
     "placeholders": {
       "n": {
@@ -1511,6 +1523,8 @@
   "productMgmtCsvDescUnlimitedStock": "1/true for unlimited stock, default 0",
   "productMgmtCsvDescPriceIncludesTax": "1/true if price already includes tax, default 0",
   "productMgmtCsvDescLowStockLimit": "Low-stock threshold for this product, blank = default 10",
+  "productMgmtCsvDescUqc": "GST unit code (UQC), e.g. PCS, KGS; NA for services",
+  "productMgmtCsvDescGstCategory": "0% tax only: blank = nil-rated, exempt, or non_gst",
   "productMgmtCsvDescStorageLocation": "Warehouse/shelf location",
   "productMgmtCsvDescContainerNumber": "Container/box number",
   "productMgmtCsvDescBatchNumber": "Batch/lot number",
@@ -3193,6 +3207,63 @@
     }
   },
   "productFormCreateAnywayButton": "Create anyway",
+  "supplierMgmtSaveCsvDialogTitle": "Save suppliers CSV",
+  "supplierMgmtImportCsvTitle": "Import suppliers from CSV",
+  "supplierMgmtImportCsvHelp": "Columns: name (required), business_name, phone, email, address, gstin, notes.\n\nExisting suppliers are matched by GSTIN, phone or email. When updating them, a column missing from the file keeps the stored value. Maximum {max} rows.",
+  "@supplierMgmtImportCsvHelp": {
+    "placeholders": {
+      "max": {
+        "type": "int"
+      }
+    }
+  },
+  "supplierMgmtImportSummary": "{newCount} new · {matched} matching existing suppliers",
+  "@supplierMgmtImportSummary": {
+    "placeholders": {
+      "newCount": {
+        "type": "int"
+      },
+      "matched": {
+        "type": "int"
+      }
+    }
+  },
+  "supplierMgmtUpdateMatchedLabel": "Update matching suppliers",
+  "supplierMgmtImportedMessage": "{count, plural, =1{Imported 1 supplier} other{Imported {count} suppliers}}",
+  "@supplierMgmtImportedMessage": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "productFormDuplicateSkuTitle": "SKU already used",
+  "productFormDuplicateSkuMessage": "SKU \"{sku}\" is already used by \"{name}\". Save anyway?",
+  "@productFormDuplicateSkuMessage": {
+    "placeholders": {
+      "sku": {
+        "type": "String"
+      },
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "productMgmtCsvDuplicateSkuLabel": "Duplicate SKU codes (will still be imported)",
+  "productMgmtCsvDuplicateSkuLine": "{name}: SKU \"{sku}\" also used by {others}",
+  "@productMgmtCsvDuplicateSkuLine": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "sku": {
+        "type": "String"
+      },
+      "others": {
+        "type": "String"
+      }
+    }
+  },
   "productFormNewProductButton": "New product",
   "productFormPurchaseStockHelper": "Opening stock. Finalizing this purchase bill adds the purchased quantity on top.",
   "invoiceDraftBadge": "DRAFT",
@@ -3596,5 +3667,88 @@
   "reportsGstCancelledLabel": "Cancelled",
   "gstDocNatureOutward": "Invoices for outward supply",
   "gstDocNatureCreditNote": "Credit Note",
-  "gstDocNatureDebitNote": "Debit Note"
+  "gstDocNatureDebitNote": "Debit Note",
+  "pdfLayoutPreviewGenerating": "Preview is still generating, please wait...",
+  "pdfLayoutPrintError": "Print error: {error}",
+  "@pdfLayoutPrintError": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "pdfLayoutRemoveTitle": "Remove Custom Layout",
+  "pdfLayoutRemoveConfirm": "Are you sure you want to remove '{name}'? Default templates cannot be removed.",
+  "@pdfLayoutRemoveConfirm": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "pdfLayoutRemovedSnackbar": "Removed layout '{name}'",
+  "@pdfLayoutRemovedSnackbar": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "pdfLayoutAddTitle": "Add Custom Layout",
+  "pdfLayoutAddSubtitle": "Import a custom .json layout file or save current customizations as a new layout.",
+  "pdfLayoutCreateEditJsonTitle": "Create / Edit JSON",
+  "pdfLayoutCreateEditJsonSubtitle": "Paste or edit the layout configuration with a live validation check",
+  "pdfLayoutImportFileTitle": "Import from JSON File",
+  "pdfLayoutImportFileSubtitle": "Select a .json file from your device",
+  "pdfLayoutSaveCurrentTitle": "Save Current Settings as Layout",
+  "pdfLayoutSaveCurrentSubtitle": "Create a reusable template from currently configured options",
+  "pdfLayoutDefaultName": "My Custom Layout",
+  "pdfLayoutDefaultDescription": "Custom template with personal styling",
+  "pdfLayoutTooLarge": "Layout is too large (max 512 KB).",
+  "pdfLayoutCreateFromJsonTitle": "Create Layout from JSON",
+  "pdfLayoutEditJsonTitle": "Edit Layout JSON",
+  "pdfLayoutEditJsonHelp": "Edit the JSON configuration. Invalid JSON is rejected and never replaces the saved layout.",
+  "pdfLayoutPreviewButton": "Preview",
+  "pdfLayoutSaveApplyButton": "Save & Apply",
+  "pdfLayoutAppliedToPreview": "Layout applied to preview. Use Save Settings to activate it.",
+  "pdfLayoutCouldNotSave": "Could not save layout: {error}",
+  "@pdfLayoutCouldNotSave": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "pdfLayoutJsonError": "Error on JSON file",
+  "pdfLayoutImportedSnackbar": "Imported custom layout '{name}' successfully!",
+  "@pdfLayoutImportedSnackbar": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "pdfLayoutSaveAsTitle": "Save as Custom Layout",
+  "pdfLayoutNameLabel": "Layout Name",
+  "pdfLayoutDescriptionLabel": "Description",
+  "pdfLayoutSaveButton": "Save Layout",
+  "pdfLayoutFallbackName": "Custom Layout",
+  "pdfLayoutSavedSnackbar": "Saved custom layout '{name}'!",
+  "@pdfLayoutSavedSnackbar": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "pdfLayoutAddButton": "Add Layout",
+  "pdfLayoutInsertedSection": "YOUR INSERTED LAYOUTS",
+  "pdfLayoutDefaultSection": "DEFAULT TEMPLATES",
+  "pdfLayoutInsertButton": "Insert Layout",
+  "pdfLayoutPreviewModePdf": "PDF",
+  "pdfLayoutPreviewModeMock": "Mock",
+  "pdfLayoutGeneratingPreview": "Generating accurate print preview...",
+  "pdfLayoutEditTooltip": "Edit layout JSON",
+  "pdfLayoutRemoveTooltip": "Remove inserted layout",
+  "pdfLayoutInsertedBadge": "Inserted"
 }

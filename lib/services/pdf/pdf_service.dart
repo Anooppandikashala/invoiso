@@ -15,6 +15,7 @@ import 'package:syncfusion_flutter_pdfviewer/pdfviewer.dart';
 import 'package:invoiso/common/common.dart';
 import 'package:invoiso/common/constants.dart';
 import 'package:invoiso/models/company_info.dart';
+import 'package:invoiso/models/custom_invoice_layout.dart';
 import 'package:invoiso/models/customer_field_settings.dart';
 import 'package:invoiso/models/invoice.dart';
 import 'package:invoiso/services/pdf/pdf_font_service.dart';
@@ -28,6 +29,7 @@ import 'pdf_template_executive.dart';
 import 'pdf_template_compact.dart';
 import 'pdf_template_thermal.dart';
 import 'pdf_template_gridclassic.dart';
+import 'pdf_template_block_layout.dart';
 import 'package:invoiso/utils/formatters.dart';
 
 class PDFService {
@@ -149,6 +151,7 @@ class PDFService {
       BackendServices.settings.getSetting(SettingKey.attachmentLayout), // 65
       BackendServices.settings.getSetting(SettingKey.paymentQrSource), // 66
       BackendServices.settings.getSetting(SettingKey.paymentQrEntries), // 67
+      BackendServices.settings.getSetting(SettingKey.activeCustomLayout), // 68
     ]);
 
     final rawPrefix = (results[2] as String?) ?? 'INV';
@@ -246,7 +249,24 @@ class PDFService {
       attachmentsAsList: results[65] == 'list',
       paymentQrFromImage: results[66] == 'image',
       paymentQrEntries: PaymentQrEntry.listFromJson(results[67] as String?),
+      blockLayout: _activeCustomLayoutFromJson(results[68] as String?)?.blockLayout,
     );
+  }
+
+  /// Reads the persisted "currently active custom layout" JSON.
+  /// Stored layouts must never break normal PDF generation, so malformed
+  /// data is ignored here.
+  static CustomInvoiceLayout? _activeCustomLayoutFromJson(String? raw) {
+    if (raw == null || raw.trim().isEmpty) return null;
+    try {
+      final decoded = jsonDecode(raw);
+      if (decoded is! Map) return null;
+      return CustomInvoiceLayout.fromMap(
+        decoded.map((key, value) => MapEntry(key.toString(), value)),
+      );
+    } catch (_) {
+      return null;
+    }
   }
 
   /// Build a PDF document using pre-fetched settings — no DB reads.
@@ -304,6 +324,50 @@ class PDFService {
       }
       effectiveBank ??= s.bankAccounts.where((e) => e.isDefault).firstOrNull ??
           s.bankAccounts.firstOrNull;
+    }
+
+    // Imported block layouts replace the built-in templates entirely.
+    final blockLayout = s.blockLayout;
+    final blocks = blockLayout?['layout'];
+    if (blockLayout != null && blocks is List && blocks.isNotEmpty) {
+      // A broken imported layout must never stop invoices from printing: build
+      // it in its own document and fall back to the built-in template below.
+      try {
+        final blockPdf = pw.Document(theme: s.pdfTheme);
+        blockPdf.addPage(buildBlockLayoutTemplate(
+          invoice,
+          s.company,
+          currencySymbol,
+          s.prefixFor(invoice.type),
+          blockLayout,
+          upiId: effectiveUpiId,
+          showUpiQr: showUpiQr,
+          showGst: s.showGst,
+          showSlNo: s.showSlNo,
+          showQuantity: s.showQuantity,
+          showDiscount: s.showDiscount,
+          showTypeTag: s.showTypeTag,
+          showAliasName: s.showAliasName,
+          showDescription: s.showDescription,
+          showTaxColumn: s.showTaxColumn,
+          showCgstSgst: effectiveShowCgstSgst,
+          showIgst: showIgst,
+          showLeadingZeros: s.showLeadingZeros,
+          datePattern: s.datePattern,
+          bankAccount: effectiveBank,
+          logoBytes: s.logoBytes,
+          signatureBytes: s.signatureBytes,
+          signaturePosition: s.signaturePosition,
+          signatureSizePx: s.signatureSizePx,
+          showFooterBranding: s.showFooterBranding,
+          thankYouNote: s.thankYouNote,
+          pageFormat: s.pageFormat,
+          themeColor: s.themeColor,
+        ));
+        return blockPdf;
+      } catch (e, st) {
+        debugPrint('Custom layout failed, using built-in template: $e\n$st');
+      }
     }
 
     switch (s.template) {
