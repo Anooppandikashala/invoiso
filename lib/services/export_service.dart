@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:flutter/foundation.dart' show visibleForTesting;
 import 'package:invoiso/common/common.dart';
+import 'package:invoiso/common/gst_utils.dart';
 import 'package:invoiso/services/backend_services.dart';
 import 'dart:io';
 import 'dart:typed_data';
@@ -22,13 +23,19 @@ enum InvoiceCsvColumn {
   dueDate,
   customer,
   phone,
+  email,
   address,
   customerGstin, // only exported while GST fields are on
+  placeOfSupply, // only exported while GST fields are on
   type,
   status,
   subtotal,
+  discount,
+  charges,
   tax,
   total,
+  paid,
+  balance,
   currency,
   upi,
   items,
@@ -41,6 +48,9 @@ enum InvoiceCsvColumn {
     status, subtotal, tax, total, currency, upi, items,
   ];
 
+  /// Columns shown / exported only while GST fields are on.
+  bool get gstOnly => this == customerGstin || this == placeOfSupply;
+
   /// CSV header (also the picker label); [docType] names the ID column.
   String header(String docType) => switch (this) {
         id => '$docType ID',
@@ -48,13 +58,19 @@ enum InvoiceCsvColumn {
         dueDate => 'Due Date',
         customer => 'Customer',
         phone => 'Phone',
+        email => 'Email',
         address => 'Address',
         customerGstin => 'Customer GSTIN',
+        placeOfSupply => 'Place of Supply',
         type => 'Type',
         status => 'Status',
         subtotal => 'Subtotal',
+        discount => 'Discount',
+        charges => 'Charges',
         tax => 'Tax',
         total => 'Total',
+        paid => 'Paid',
+        balance => 'Balance Due',
         currency => 'Currency',
         upi => 'UPI',
         items => 'Items',
@@ -117,9 +133,7 @@ class ExportService {
       {String type = 'Invoice',
       List<InvoiceCsvColumn> columns = InvoiceCsvColumn.defaults}) async {
     final showGst = await BackendServices.settings.getShowGstFields();
-    final cols = columns
-        .where((c) => showGst || c != InvoiceCsvColumn.customerGstin)
-        .toList();
+    final cols = columns.where((c) => showGst || !c.gstOnly).toList();
 
     final header = cols.map((c) => c.header(type)).toList();
 
@@ -139,21 +153,31 @@ class ExportService {
       return <dynamic>[
         for (final c in cols)
           switch (c) {
-            InvoiceCsvColumn.id => inv.id,
+            // Same number the invoice list shows (per-type), not the global id.
+            InvoiceCsvColumn.id => inv.invoiceNumber ?? inv.id,
             InvoiceCsvColumn.date => AppFormatters.formatShortDate(inv.date),
             InvoiceCsvColumn.dueDate => inv.dueDate != null
                 ? AppFormatters.formatShortDate(inv.dueDate!)
                 : '',
             InvoiceCsvColumn.customer => inv.customer.name,
             InvoiceCsvColumn.phone => inv.customer.phone,
+            InvoiceCsvColumn.email => inv.customer.email,
             InvoiceCsvColumn.address => inv.customer.address,
             InvoiceCsvColumn.customerGstin => inv.customer.gstin,
+            InvoiceCsvColumn.placeOfSupply => inv.placeOfSupply == null
+                ? ''
+                : GstUtils.stateLabel(inv.placeOfSupply!),
             InvoiceCsvColumn.type => inv.type,
             InvoiceCsvColumn.status =>
               inv.status ?? (inv.type == 'Quotation' ? 'draft' : ''),
             InvoiceCsvColumn.subtotal => inv.subtotal.toStringAsFixed(2),
+            InvoiceCsvColumn.discount =>
+              (inv.totalDiscount + inv.invoiceDiscountAmount).toStringAsFixed(2),
+            InvoiceCsvColumn.charges => inv.additionalCostsTotal.toStringAsFixed(2),
             InvoiceCsvColumn.tax => inv.tax.toStringAsFixed(2),
             InvoiceCsvColumn.total => inv.total.toStringAsFixed(2),
+            InvoiceCsvColumn.paid => inv.amountPaid.toStringAsFixed(2),
+            InvoiceCsvColumn.balance => inv.outstandingBalance.toStringAsFixed(2),
             InvoiceCsvColumn.currency => inv.currencyCode,
             InvoiceCsvColumn.upi => inv.upiId ?? '',
             InvoiceCsvColumn.items => itemsSummary,

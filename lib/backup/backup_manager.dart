@@ -32,6 +32,7 @@ class BackupManager {
   static const List<String> _restoreTableOrder = [
     'customers',
     'products',
+    'product_metadata',
     'company_info',
     'settings',
     'invoices',
@@ -45,6 +46,8 @@ class BackupManager {
     'purchase_bill_items',
     'supplier_payments',
     'stock_transactions',
+    'cash_ledger',
+    'cash_ledger_history',
   ];
 
   // Create backup of the entire database

@@ -71,6 +71,9 @@ class SqliteProductRepository implements ProductRepository {
   @override
   Future<Product?> findDuplicateByName(String name) => ProductService.findDuplicateByName(name);
   @override
+  Future<List<({String id, String name, String sku})>> findProductsBySku(List<String> skus) =>
+      ProductService.findProductsBySku(skus);
+  @override
   Future<void> deleteAllProducts() => ProductService.deleteAllProducts();
   @override
   Future<void> insertBatch(List<Product> products, {int batchSize = 50}) =>

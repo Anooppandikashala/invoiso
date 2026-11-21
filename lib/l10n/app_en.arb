@@ -1139,6 +1139,7 @@
   "customerMgmtCsvDescAddress": "Full address",
   "customerMgmtCsvDescBusinessName": "Company / business name",
   "customerMgmtCsvDescTaxNumber": "Tax / VAT / GSTIN number",
+  "customerMgmtCsvDescStateCode": "GST state code, e.g. 33 or 33-Tamil Nadu (used when there is no GSTIN)",
   "customerMgmtCsvMaxRowsNote": "Maximum {max} rows per import.",
   "@customerMgmtCsvMaxRowsNote": {
     "placeholders": {
@@ -1187,6 +1188,17 @@
     }
   },
   "customerMgmtRowMissingNameMessage": "Row {n}: missing name — skipped",
+  "customerMgmtRowDuplicateInFileMessage": "Row {n}: same as row {first} in this file — skipped",
+  "@customerMgmtRowDuplicateInFileMessage": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      },
+      "first": {
+        "type": "int"
+      }
+    }
+  },
   "@customerMgmtRowMissingNameMessage": {
     "placeholders": {
       "n": {
@@ -1511,6 +1523,8 @@
   "productMgmtCsvDescUnlimitedStock": "1/true for unlimited stock, default 0",
   "productMgmtCsvDescPriceIncludesTax": "1/true if price already includes tax, default 0",
   "productMgmtCsvDescLowStockLimit": "Low-stock threshold for this product, blank = default 10",
+  "productMgmtCsvDescUqc": "GST unit code (UQC), e.g. PCS, KGS; NA for services",
+  "productMgmtCsvDescGstCategory": "0% tax only: blank = nil-rated, exempt, or non_gst",
   "productMgmtCsvDescStorageLocation": "Warehouse/shelf location",
   "productMgmtCsvDescContainerNumber": "Container/box number",
   "productMgmtCsvDescBatchNumber": "Batch/lot number",
@@ -3193,6 +3207,63 @@
     }
   },
   "productFormCreateAnywayButton": "Create anyway",
+  "supplierMgmtSaveCsvDialogTitle": "Save suppliers CSV",
+  "supplierMgmtImportCsvTitle": "Import suppliers from CSV",
+  "supplierMgmtImportCsvHelp": "Columns: name (required), business_name, phone, email, address, gstin, notes.\n\nExisting suppliers are matched by GSTIN, phone or email. When updating them, a column missing from the file keeps the stored value. Maximum {max} rows.",
+  "@supplierMgmtImportCsvHelp": {
+    "placeholders": {
+      "max": {
+        "type": "int"
+      }
+    }
+  },
+  "supplierMgmtImportSummary": "{newCount} new · {matched} matching existing suppliers",
+  "@supplierMgmtImportSummary": {
+    "placeholders": {
+      "newCount": {
+        "type": "int"
+      },
+      "matched": {
+        "type": "int"
+      }
+    }
+  },
+  "supplierMgmtUpdateMatchedLabel": "Update matching suppliers",
+  "supplierMgmtImportedMessage": "{count, plural, =1{Imported 1 supplier} other{Imported {count} suppliers}}",
+  "@supplierMgmtImportedMessage": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "productFormDuplicateSkuTitle": "SKU already used",
+  "productFormDuplicateSkuMessage": "SKU \"{sku}\" is already used by \"{name}\". Save anyway?",
+  "@productFormDuplicateSkuMessage": {
+    "placeholders": {
+      "sku": {
+        "type": "String"
+      },
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "productMgmtCsvDuplicateSkuLabel": "Duplicate SKU codes (will still be imported)",
+  "productMgmtCsvDuplicateSkuLine": "{name}: SKU \"{sku}\" also used by {others}",
+  "@productMgmtCsvDuplicateSkuLine": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "sku": {
+        "type": "String"
+      },
+      "others": {
+        "type": "String"
+      }
+    }
+  },
   "productFormNewProductButton": "New product",
   "productFormPurchaseStockHelper": "Opening stock. Finalizing this purchase bill adds the purchased quantity on top.",
   "invoiceDraftBadge": "DRAFT",

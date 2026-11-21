@@ -2769,18 +2769,21 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
   void _filterProducts(String query) {
     if (!mounted) return;
     _productSearchDebounce?.cancel();
-    _productSearchDebounce = Timer(const Duration(milliseconds: 400), () async {
-      final requestId = ++_productSearchRequestId;
-      final repo = ref.read(productRepositoryProvider);
-      final results = await repo.getProductsPaginated(
-          offset: 0, limit: _productFetchLimit, query: query, type: _businessType.key);
-      final metadata =
-          await repo.getProductMetadataForIds(results.map((e) => e.id).toList());
-      if (requestId != _productSearchRequestId || !mounted) return;
-      setState(() {
-        filteredProducts = results;
-        _productMetadata = {..._productMetadata, ...metadata};
-      });
+    _productSearchDebounce = Timer(
+        const Duration(milliseconds: 400), () => _runProductSearch(query));
+  }
+
+  Future<void> _runProductSearch(String query) async {
+    final requestId = ++_productSearchRequestId;
+    final repo = ref.read(productRepositoryProvider);
+    final results = await repo.getProductsPaginated(
+        offset: 0, limit: _productFetchLimit, query: query, type: _businessType.key);
+    final metadata =
+        await repo.getProductMetadataForIds(results.map((e) => e.id).toList());
+    if (requestId != _productSearchRequestId || !mounted) return;
+    setState(() {
+      filteredProducts = results;
+      _productMetadata = {..._productMetadata, ...metadata};
     });
   }
 
@@ -6215,7 +6218,14 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
                   _highlightedProductIndexV2 = 0;
                 });
               },
-              onSubmitted: (_) {
+              onSubmitted: (_) async {
+                // Enter before the debounce fired (fast typing / scanner):
+                // search now so the stale list isn't picked from.
+                if (_productSearchDebounce?.isActive ?? false) {
+                  _productSearchDebounce!.cancel();
+                  await _runProductSearch(searchController.text);
+                  if (!mounted) return;
+                }
                 if (_showProductDropdownV2 && filteredProducts.isNotEmpty) {
                   final index = _highlightedProductIndexV2.clamp(
                       0, filteredProducts.length - 1);
@@ -6356,6 +6366,7 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
                   final storageLocation =
                       _columnsConfig.metaStorageLocation ? meta?.storageLocation : null;
                   final hasStorage = storageLocation != null && storageLocation.isNotEmpty;
+                  final sku = _columnsConfig.metaSkuCode ? meta?.skuCode?.trim() ?? '' : '';
 
                   return Container(
                     color: isHighlighted
@@ -6382,7 +6393,8 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
                             TextSpan(
                                 text:
                                     '$_currencySymbol${AmountFormat.money(product.price)}  ·  Stock: ${product.stock}'
-                                    '${product.hsncode.trim().isEmpty ? '' : '  ·  HSN ${product.hsncode}'}'),
+                                    '${product.hsncode.trim().isEmpty ? '' : '  ·  HSN ${product.hsncode}'}'
+                                    '${sku.isEmpty ? '' : '  ·  SKU $sku'}'),
                             if (hasStorage) ...[
                               const TextSpan(text: '  ·  '),
                               TextSpan(

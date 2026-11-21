@@ -1116,6 +1116,9 @@ class InvoiceService {
     if (invoiceMaps.isEmpty) return [];
 
     final invoices = <Invoice>[];
+    // All items for these invoices in one batched query (was one per invoice).
+    final itemsByInvoice = await InvoiceItemService.getInvoiceItemsForInvoiceIds(
+        invoiceMaps.map((m) => m['id'] as String?).nonNulls.toList());
 
     for (var map in invoiceMaps) {
       final invoiceId = map['id'] as String?;
@@ -1144,8 +1147,7 @@ class InvoiceService {
         'custom_fields': map['customer_custom_fields'],
       });
 
-      final items =
-          await InvoiceItemService.getInvoiceItemsByInvoiceId(invoiceId);
+      final items = itemsByInvoice[invoiceId] ?? [];
       invoices.add(
         Invoice(
           id: invoiceId,

@@ -119,19 +119,7 @@ class ProductService {
     final order = orderASC ? "ASC" : "DESC";
     final typeFilter = (type != null && type != 'both') ? type : null;
 
-    String? where;
-    List<dynamic>? whereArgs;
-    final queryLOwer = query.toLowerCase();
-    if (query.isNotEmpty && typeFilter != null) {
-      where = '(LOWER(name) LIKE ? OR LOWER(description) LIKE ? OR LOWER(hsncode) LIKE ?) AND type = ?';
-      whereArgs = ['%$queryLOwer%', '%$queryLOwer%', '%$queryLOwer%', typeFilter];
-    } else if (query.isNotEmpty) {
-      where = 'LOWER(name) LIKE ? OR LOWER(description) LIKE ? OR LOWER(hsncode) LIKE ?';
-      whereArgs = ['%$queryLOwer%', '%$queryLOwer%', '%$queryLOwer%'];
-    } else if (typeFilter != null) {
-      where = 'type = ?';
-      whereArgs = [typeFilter];
-    }
+    final (where, whereArgs) = _pickerWhere(query, typeFilter);
 
     final maps = await db.query(
       'products',
@@ -148,25 +136,37 @@ class ProductService {
   static Future<int> getProductCount([String query = '', String? type]) async {
     final db = await dbHelper.database;
     final typeFilter = (type != null && type != 'both') ? type : null;
-    final queryLOwer = query.toLowerCase();
-    if (query.isNotEmpty && typeFilter != null) {
-      return Sqflite.firstIntValue(await db.rawQuery(
-        "SELECT COUNT(*) FROM products WHERE (LOWER(name) LIKE ? OR LOWER(description) LIKE ? OR LOWER(hsncode) LIKE ?) AND type = ?",
-        ['%$queryLOwer%', '%$queryLOwer%', '%$queryLOwer%', typeFilter],
-      ))!;
-    } else if (query.isNotEmpty) {
-      return Sqflite.firstIntValue(await db.rawQuery(
-        "SELECT COUNT(*) FROM products WHERE LOWER(name) LIKE ? OR LOWER(description) LIKE ? OR LOWER(hsncode) LIKE ?",
-        ['%$queryLOwer%', '%$queryLOwer%', '%$queryLOwer%'],
-      ))!;
-    } else if (typeFilter != null) {
-      return Sqflite.firstIntValue(await db.rawQuery(
-        "SELECT COUNT(*) FROM products WHERE type = ?",
-        [typeFilter],
-      ))!;
+    final (where, whereArgs) = _pickerWhere(query, typeFilter);
+    return Sqflite.firstIntValue(await db.rawQuery(
+      "SELECT COUNT(*) FROM products${where == null ? '' : ' WHERE $where'}",
+      whereArgs,
+    ))!;
+  }
+
+  /// Picker search (invoice / purchase bill item search): name, alias,
+  /// description, HSN, or SKU (product_metadata) — one SQL query, no
+  /// metadata loaded into memory.
+  static (String?, List<Object?>) _pickerWhere(String query, String? typeFilter) {
+    final parts = <String>[];
+    final args = <Object?>[];
+    if (query.trim().isNotEmpty) {
+      final escaped = query
+          .trim()
+          .toLowerCase()
+          .replaceAll(r'\', r'\\')
+          .replaceAll('%', r'\%')
+          .replaceAll('_', r'\_');
+      final q = '%$escaped%';
+      parts.add(r"(LOWER(name) LIKE ? ESCAPE '\' OR LOWER(alias_name) LIKE ? ESCAPE '\' "
+          r"OR LOWER(description) LIKE ? ESCAPE '\' OR LOWER(hsncode) LIKE ? ESCAPE '\' "
+          r"OR id IN (SELECT product_id FROM product_metadata WHERE LOWER(sku_code) LIKE ? ESCAPE '\'))");
+      args.addAll([q, q, q, q, q]);
     }
-    return Sqflite.firstIntValue(
-        await db.rawQuery("SELECT COUNT(*) FROM products"))!;
+    if (typeFilter != null) {
+      parts.add('$_typeExpr = ?');
+      args.add(typeFilter);
+    }
+    return (parts.isEmpty ? null : parts.join(' AND '), args);
   }
 
   // ─────────────────────────────────────────────
@@ -195,8 +195,9 @@ class ProductService {
           .replaceAll('%', r'\%')
           .replaceAll('_', r'\_');
       parts.add(r"(name LIKE ? ESCAPE '\' OR alias_name LIKE ? ESCAPE '\' "
-          r"OR hsncode LIKE ? ESCAPE '\')");
-      args.addAll(['%$q%', '%$q%', '%$q%']);
+          r"OR hsncode LIKE ? ESCAPE '\' OR id IN (SELECT product_id FROM "
+          r"product_metadata WHERE sku_code LIKE ? ESCAPE '\'))");
+      args.addAll(['%$q%', '%$q%', '%$q%', '%$q%']);
     }
     switch (tab) {
       case 'product':
@@ -379,6 +380,32 @@ class ProductService {
       limit: 1,
     );
     return maps.isNotEmpty ? Product.fromMap(maps.first) : null;
+  }
+
+  /// Products already using any of [skus] (case-insensitive) — only the
+  /// matching rows, for the duplicate-SKU warning.
+  static Future<List<({String id, String name, String sku})>> findProductsBySku(
+      List<String> skus) async {
+    final keys = skus
+        .map((s) => s.trim().toLowerCase())
+        .where((s) => s.isNotEmpty)
+        .toSet()
+        .toList();
+    if (keys.isEmpty) return [];
+    final db = await dbHelper.database;
+    final rows = await queryInChunks(
+      keys,
+      (chunk, placeholders) => db.rawQuery(
+        'SELECT p.id, p.name, m.sku_code FROM product_metadata m '
+        'JOIN products p ON p.id = m.product_id '
+        'WHERE LOWER(TRIM(m.sku_code)) IN ($placeholders)',
+        chunk,
+      ),
+    );
+    return [
+      for (final r in rows)
+        (id: r['id'] as String, name: r['name'] as String? ?? '', sku: r['sku_code'] as String)
+    ];
   }
 
   static Future<void> deleteAllProducts() async {

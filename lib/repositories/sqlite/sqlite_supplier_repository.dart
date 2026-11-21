@@ -10,6 +10,12 @@ class SqliteSupplierRepository implements SupplierRepository {
   @override
   Future<Supplier?> getSupplierById(String id) => SupplierService.getSupplierById(id);
   @override
+  Future<Supplier?> findDuplicate(String gstin, String phone, String email) =>
+      SupplierService.findDuplicate(gstin, phone, email);
+  @override
+  Future<void> insertBatch(List<Supplier> suppliers) =>
+      SupplierService.insertBatch(suppliers);
+  @override
   Future<List<Supplier>> getAllSuppliers() => SupplierService.getAllSuppliers();
   @override
   Future<int> getTotalSupplierCount() => SupplierService.getTotalSupplierCount();
