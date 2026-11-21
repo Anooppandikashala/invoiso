@@ -42,6 +42,17 @@
 /// `{{totals.taxInWords}}`, `{{invoice.custom.Vehicle No}}`,
 /// `{{invoice.datetime}}`. Numbers under `totals` print as money (quantities
 /// stay plain). Lists (items, taxSummary, charges) are for tables.
+///
+/// Engine 2 (`"engine": 2` in the document) adds building blocks:
+/// `box` (border, background, padding, margin, radius, width/height, child),
+/// `row` (children side by side; child `width` "30%"/points or `flex`;
+/// `border` → equal-height bordered cells), `column` (stacked, `gap`),
+/// `text` (`style` + size/bold/italic/color/align/uppercase/letterSpacing/
+/// maxLines), `divider` (thickness/color), `pageNumber`. Document-level:
+/// `page.frame` (border on every page), `pageHeader` / `pageFooter` (blocks
+/// repeated per page; `{{page}}` / `{{pages}}`), `styles` (named text
+/// styles), `gap` (space between top-level blocks, default 12). Documents
+/// without `engine` (or `engine: 1`) render exactly as before.
 library;
 
 export 'src/block_layout_renderer.dart' show buildBlockLayoutPage;
@@ -50,4 +61,4 @@ export 'src/template_options.dart';
 
 /// Layout engine version. Layout documents and template packs record the
 /// version they need; renderer changes must keep older versions' output.
-const int kTemplateEngineVersion = 1;
+const int kTemplateEngineVersion = 2;

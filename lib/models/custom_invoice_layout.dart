@@ -479,6 +479,10 @@ class CustomInvoiceLayout {
           _asMap(document?['theme']) ??
           <String, dynamic>{},
       'layout': normalized,
+      // Template engine v2 document settings (engine version, block gap,
+      // named styles, repeated page header/footer).
+      for (final key in const ['engine', 'gap', 'styles', 'pageHeader', 'pageFooter'])
+        if ((wrapped ?? document)?[key] != null) key: (wrapped ?? document)![key],
     };
   }
 

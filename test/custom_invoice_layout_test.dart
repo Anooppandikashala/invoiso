@@ -324,6 +324,37 @@ void main() {
     });
   });
 
+  test('keeps engine v2 document settings through import and storage', () {
+    final imported = CustomInvoiceLayout.fromJson(jsonEncode({
+      'name': 'V2',
+      'engine': 2,
+      'gap': 0,
+      'styles': {
+        'h': {'size': 14},
+      },
+      'pageHeader': [
+        {'type': 'text', 'value': 'H'},
+      ],
+      'pageFooter': [
+        {'type': 'pageNumber', 'value': '{{page}}'},
+      ],
+      'layout': [
+        {'type': 'text', 'value': 'Body'},
+      ],
+    }));
+    final reloaded = CustomInvoiceLayout.fromMap(
+        jsonDecode(imported.toJson()) as Map<String, dynamic>);
+    for (final layout in [imported, reloaded]) {
+      expect(layout.blockLayout!['engine'], 2);
+      expect(layout.blockLayout!['gap'], 0);
+      expect(layout.blockLayout!['styles'], {
+        'h': {'size': 14},
+      });
+      expect(layout.blockLayout!['pageHeader'], hasLength(1));
+      expect(layout.blockLayout!['pageFooter'], hasLength(1));
+    }
+  });
+
   group('CustomInvoiceLayout persistence', () {
     late Database db;
 
