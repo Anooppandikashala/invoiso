@@ -16,7 +16,6 @@ import 'package:invoiso/models/purchase_bill_item.dart';
 import 'package:invoiso/models/supplier.dart';
 import 'package:invoiso/models/supplier_payment.dart';
 import 'package:invoiso/models/user.dart';
-import 'package:invoiso/providers/product_provider.dart';
 import 'package:invoiso/providers/repositories.dart';
 import 'package:invoiso/providers/supplier_provider.dart';
 import 'package:invoiso/utils/app_date.dart';
@@ -1612,6 +1611,9 @@ class _PurchaseBillFormScreenState extends ConsumerState<_PurchaseBillFormScreen
   String _currencySymbol = '₹';
   bool _isSaving = false;
   String _productQuery = '';
+  List<Product> _productResults = [];
+  Timer? _productSearchDebounce;
+  int _productSearchRequestId = 0;
 
   bool get _isEditing => widget.billToEdit != null;
 
@@ -1651,6 +1653,7 @@ class _PurchaseBillFormScreenState extends ConsumerState<_PurchaseBillFormScreen
     _notesController.dispose();
     _productSearchController.dispose();
     _productSearchFocus.dispose();
+    _productSearchDebounce?.cancel();
     _supplierNameController.dispose();
     super.dispose();
   }
@@ -1973,8 +1976,6 @@ class _PurchaseBillFormScreenState extends ConsumerState<_PurchaseBillFormScreen
     if (product == null || !mounted) return;
     _productSearchController.clear();
     setState(() => _productQuery = '');
-    await ref.read(productsProvider.notifier).refresh();
-    if (!mounted) return;
     _addProductItemDialog(product);
   }
 
@@ -2606,17 +2607,24 @@ class _PurchaseBillFormScreenState extends ConsumerState<_PurchaseBillFormScreen
     );
   }
 
+  // Matching page from SQL (name/alias/HSN/SKU), never the whole catalog.
+  void _onProductQueryChanged(String v) {
+    setState(() => _productQuery = v);
+    _productSearchDebounce?.cancel();
+    if (v.trim().isEmpty) return;
+    _productSearchDebounce = Timer(const Duration(milliseconds: 300), () async {
+      final requestId = ++_productSearchRequestId;
+      final results = await ref
+          .read(productRepositoryProvider)
+          .getProductsPaginated(offset: 0, limit: 8, query: v, type: 'product');
+      if (requestId != _productSearchRequestId || !mounted) return;
+      setState(() => _productResults = results);
+    });
+  }
+
   Widget _buildItemsCard(bool isWide) {
     final l10n = AppLocalizations.of(context)!;
-    final products = ref.watch(productsProvider);
-    final filteredProducts = products.maybeWhen(
-      data: (list) => list
-          .where((p) => p.type == 'product')
-          .where((p) => _productQuery.isEmpty ||
-              p.name.toLowerCase().contains(_productQuery.toLowerCase()))
-          .toList(),
-      orElse: () => <Product>[],
-    );
+    final filteredProducts = _productResults;
 
     return Container(
       decoration: _flatCardDecorationV2(),
@@ -2744,7 +2752,7 @@ class _PurchaseBillFormScreenState extends ConsumerState<_PurchaseBillFormScreen
               filled: true,
               fillColor: Theme.of(context).colorScheme.surfaceContainerHighest,
             ),
-            onChanged: (v) => setState(() => _productQuery = v),
+            onChanged: _onProductQueryChanged,
           ),
         ],
       ),

@@ -133,6 +133,33 @@ void main() {
         [{'key': 'onboarding_completed', 'value': 'true'}]);
   });
 
+  test('JSON restore replaces every company table (none left with stale rows)',
+      () async {
+    final live = await DatabaseHelper().database;
+    const kept = {'users', '_migration_log', 'sqlite_sequence', 'android_metadata'};
+    final tables = (await live.rawQuery(
+            "SELECT name FROM sqlite_master WHERE type='table'"))
+        .map((r) => r['name'] as String)
+        .where((t) => !kept.contains(t))
+        .toList();
+    for (final t in tables) {
+      final cols = await live.rawQuery('PRAGMA table_info($t)');
+      await live.insert(t, {
+        for (final c in cols)
+          if (!(c['pk'] == 1 && c['type'] == 'INTEGER')) c['name'] as String: 'x'
+      });
+    }
+    final path = writeJson('empty.json', {'settings': <Map<String, dynamic>>[]});
+
+    final result = await BackupManager().restoreBackup(backupPath: path);
+    expect(result.success, isTrue, reason: result.message);
+
+    final db = await DatabaseHelper().database;
+    for (final t in tables) {
+      expect(await db.query(t), isEmpty, reason: '$t kept rows after restore');
+    }
+  });
+
   test('JSON from a newer build is refused with a readable message', () async {
     final db = await DatabaseHelper().database;
     await db.insert('customers', {'id': 'keep', 'name': 'Keep Me'});

@@ -1,4 +1,7 @@
 import 'dart:io';
+import 'dart:typed_data';
+
+import 'package:file_picker/file_picker.dart';
 
 /// Creates [path] and every missing ancestor, one level at a time.
 ///
@@ -22,4 +25,23 @@ Future<Directory> ensureDirectory(String path) async {
     if (!await dir.exists()) await dir.create(recursive: true);
   }
   return dir;
+}
+
+/// "Save As" for [bytes]: native dialog + write on desktop; on Android /
+/// iOS the platform save flow writes the bytes itself (file_picker throws
+/// there without them). Returns the saved path, or null if cancelled.
+Future<String?> saveBytesAs(Uint8List bytes,
+    {required String dialogTitle,
+    required String fileName,
+    required String extension}) async {
+  final mobile = Platform.isAndroid || Platform.isIOS;
+  final path = await FilePicker.platform.saveFile(
+    dialogTitle: dialogTitle,
+    fileName: fileName,
+    type: FileType.custom,
+    allowedExtensions: [extension],
+    bytes: mobile ? bytes : null,
+  );
+  if (path != null && !mobile) await File(path).writeAsBytes(bytes);
+  return path;
 }

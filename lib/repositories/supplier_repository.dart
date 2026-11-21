@@ -4,6 +4,8 @@ abstract class SupplierRepository {
   Future<void> insertSupplier(Supplier supplier);
   Future<void> updateSupplier(Supplier supplier);
   Future<Supplier?> getSupplierById(String id);
+  Future<Supplier?> findDuplicate(String gstin, String phone, String email);
+  Future<void> insertBatch(List<Supplier> suppliers);
   Future<List<Supplier>> getAllSuppliers();
   Future<int> getTotalSupplierCount();
   Future<List<Supplier>> getSuppliersPaginated({

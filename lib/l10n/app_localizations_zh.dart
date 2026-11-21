@@ -1825,6 +1825,10 @@ class AppLocalizationsZh extends AppLocalizations {
   String get customerMgmtCsvDescTaxNumber => '税号 / 增值税号 / GSTIN';
 
   @override
+  String get customerMgmtCsvDescStateCode =>
+      'GST state code, e.g. 33 or 33-Tamil Nadu (used when there is no GSTIN)';
+
+  @override
   String customerMgmtCsvMaxRowsNote(int max) {
     return '每次导入最多 $max 行。';
   }
@@ -1881,6 +1885,11 @@ class AppLocalizationsZh extends AppLocalizations {
   @override
   String customerMgmtRowMissingNameMessage(int n) {
     return '第 $n 行：缺少姓名 — 已跳过';
+  }
+
+  @override
+  String customerMgmtRowDuplicateInFileMessage(int n, int first) {
+    return 'Row $n: same as row $first in this file — skipped';
   }
 
   @override
@@ -2295,6 +2304,14 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get productMgmtCsvDescLowStockLimit => '该产品的低库存阈值，留空 = 默认 10';
+
+  @override
+  String get productMgmtCsvDescUqc =>
+      'GST unit code (UQC), e.g. PCS, KGS; NA for services';
+
+  @override
+  String get productMgmtCsvDescGstCategory =>
+      '0% tax only: blank = nil-rated, exempt, or non_gst';
 
   @override
   String get productMgmtCsvDescStorageLocation => '仓库/货架位置';
@@ -5619,6 +5636,54 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get productFormCreateAnywayButton => 'Create anyway';
+
+  @override
+  String get supplierMgmtSaveCsvDialogTitle => 'Save suppliers CSV';
+
+  @override
+  String get supplierMgmtImportCsvTitle => 'Import suppliers from CSV';
+
+  @override
+  String supplierMgmtImportCsvHelp(int max) {
+    return 'Columns: name (required), business_name, phone, email, address, gstin, notes.\n\nExisting suppliers are matched by GSTIN, phone or email. When updating them, a column missing from the file keeps the stored value. Maximum $max rows.';
+  }
+
+  @override
+  String supplierMgmtImportSummary(int newCount, int matched) {
+    return '$newCount new · $matched matching existing suppliers';
+  }
+
+  @override
+  String get supplierMgmtUpdateMatchedLabel => 'Update matching suppliers';
+
+  @override
+  String supplierMgmtImportedMessage(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Imported $count suppliers',
+      one: 'Imported 1 supplier',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get productFormDuplicateSkuTitle => 'SKU already used';
+
+  @override
+  String productFormDuplicateSkuMessage(String sku, String name) {
+    return 'SKU \"$sku\" is already used by \"$name\". Save anyway?';
+  }
+
+  @override
+  String get productMgmtCsvDuplicateSkuLabel =>
+      'Duplicate SKU codes (will still be imported)';
+
+  @override
+  String productMgmtCsvDuplicateSkuLine(
+      String name, String sku, String others) {
+    return '$name: SKU \"$sku\" also used by $others';
+  }
 
   @override
   String get productFormNewProductButton => 'New product';

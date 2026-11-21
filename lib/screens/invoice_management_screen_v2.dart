@@ -714,9 +714,8 @@ class _InvoiceManagementScreenV2State
     final picked = (await ExportService.loadCsvColumns()).toSet();
     if (!mounted) return null;
     final l10n = AppLocalizations.of(context)!;
-    final available = InvoiceCsvColumn.values
-        .where((c) => showGst || c != InvoiceCsvColumn.customerGstin)
-        .toList();
+    final available =
+        InvoiceCsvColumn.values.where((c) => showGst || !c.gstOnly).toList();
     final result = await showDialog<List<InvoiceCsvColumn>>(
       context: context,
       builder: (ctx) => StatefulBuilder(

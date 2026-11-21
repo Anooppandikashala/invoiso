@@ -44,47 +44,66 @@ class InvoiceItemService {
   static Future<List<InvoiceItem>> getInvoiceItemsByInvoiceId(String invoiceId) async {
     final db = await dbHelper.database;
     final maps = await db.query('invoice_items', where: 'invoice_id = ?', whereArgs: [invoiceId], orderBy: 'rowid ASC');
-    final List<InvoiceItem> items = [];
+    return maps.map(_itemFromMap).nonNulls.toList();
+  }
 
-    for (var map in maps) {
-      try {
-        final product = Product.fromInvoiceItemsMap(map);
-        final rawUnitPrice = map['unit_price'];
-        final unitPrice = rawUnitPrice == null
-            ? null
-            : (rawUnitPrice is int ? rawUnitPrice.toDouble() : rawUnitPrice as double);
-        final rawExtraCost = map['extra_cost'];
-        final extraCost = rawExtraCost == null
-            ? null
-            : (rawExtraCost is int ? rawExtraCost.toDouble() : rawExtraCost as double);
-        items.add(
-          InvoiceItem(
-            id: map['id'] as String?,
-            product: product,
-            quantity: (map['quantity'] is int)
-                ? (map['quantity'] as int).toDouble()
-                : (map['quantity'] ?? 1.0) as double,
-            discount: (map['discount'] is int)
-                ? (map['discount'] as int).toDouble()
-                : (map['discount'] ?? 0.0) as double,
-            unitPrice: unitPrice,
-            extraCost: extraCost,
-            unit: map['unit'] as String?,
-            description: map['description'] as String?,
-            metadata: ProductMetadata.fromJsonString(map['line_metadata']),
-            discountPerUnit: (map['discount_per_unit'] as int? ?? 0) == 1,
-            discountIsPercent: (map['discount_is_percent'] as int? ?? 0) == 1,
-            isProductSaved: (map['is_product_saved'] as int? ?? 0) == 1,
-            restocked: (map['restocked'] as int? ?? 1) == 1,
-          ),
-        );
-      } catch (e, stackTrace) {
-        AppLogger.e(_tag, 'Error parsing invoice item row', e, stackTrace);
-        continue;
+  /// Items of many invoices in one query per 900 ids (not one per invoice),
+  /// keyed by invoice id, each list in row order.
+  static Future<Map<String, List<InvoiceItem>>> getInvoiceItemsForInvoiceIds(
+      List<String> invoiceIds) async {
+    if (invoiceIds.isEmpty) return {};
+    final db = await dbHelper.database;
+    final maps = await queryInChunks(
+      invoiceIds,
+      (chunk, placeholders) => db.query('invoice_items',
+          where: 'invoice_id IN ($placeholders)',
+          whereArgs: chunk,
+          orderBy: 'invoice_id, rowid ASC'),
+    );
+    final byInvoice = <String, List<InvoiceItem>>{};
+    for (final map in maps) {
+      final item = _itemFromMap(map);
+      if (item != null) {
+        (byInvoice[map['invoice_id'] as String] ??= []).add(item);
       }
     }
+    return byInvoice;
+  }
 
-    return items;
+  static InvoiceItem? _itemFromMap(Map<String, Object?> map) {
+    try {
+      final product = Product.fromInvoiceItemsMap(map);
+      final rawUnitPrice = map['unit_price'];
+      final unitPrice = rawUnitPrice == null
+          ? null
+          : (rawUnitPrice is int ? rawUnitPrice.toDouble() : rawUnitPrice as double);
+      final rawExtraCost = map['extra_cost'];
+      final extraCost = rawExtraCost == null
+          ? null
+          : (rawExtraCost is int ? rawExtraCost.toDouble() : rawExtraCost as double);
+      return InvoiceItem(
+        id: map['id'] as String?,
+        product: product,
+        quantity: (map['quantity'] is int)
+            ? (map['quantity'] as int).toDouble()
+            : (map['quantity'] ?? 1.0) as double,
+        discount: (map['discount'] is int)
+            ? (map['discount'] as int).toDouble()
+            : (map['discount'] ?? 0.0) as double,
+        unitPrice: unitPrice,
+        extraCost: extraCost,
+        unit: map['unit'] as String?,
+        description: map['description'] as String?,
+        metadata: ProductMetadata.fromJsonString(map['line_metadata']),
+        discountPerUnit: (map['discount_per_unit'] as int? ?? 0) == 1,
+        discountIsPercent: (map['discount_is_percent'] as int? ?? 0) == 1,
+        isProductSaved: (map['is_product_saved'] as int? ?? 0) == 1,
+        restocked: (map['restocked'] as int? ?? 1) == 1,
+      );
+    } catch (e, stackTrace) {
+      AppLogger.e(_tag, 'Error parsing invoice item row', e, stackTrace);
+      return null;
+    }
   }
 
   static Future<void> markProductSaved(String invoiceId, String productId) async {

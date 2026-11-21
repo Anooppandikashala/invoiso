@@ -27,6 +27,7 @@ import 'package:csv/csv.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'dart:io';
+import 'package:invoiso/utils/fs_utils.dart';
 
 class CustomerManagementScreenV2 extends ConsumerStatefulWidget {
   final User user;
@@ -583,21 +584,46 @@ class _CustomerManagementScreenV2State extends ConsumerState<CustomerManagementS
   }
 
   Future<void> _downloadSampleCSV() async {
-    const sample = '"name","email","phone","address","business_name","tax_number"\n'
-        '"John Smith","john@example.com","+27821234567","123 Main St, Cape Town","Acme (Pty) Ltd","ZA123456789"\n'
-        '"Jane Doe","jane@example.com","+27831234567","456 Oak Ave, Johannesburg","",""\n';
+    // Same optional columns as export / the rules table (fields switched on).
+    final s = _fieldSettings;
+    final customDefs = s.customFields ? s.customFieldDefs : const [];
+    final sample = buildQuotedCsv([
+      [
+        'name', 'email', 'phone', 'address', 'business_name', 'tax_number', 'state_code',
+        if (s.shipping) ...['shipping_name', 'shipping_phone', 'shipping_address'],
+        if (s.dob) 'dob',
+        if (s.age) 'age',
+        if (s.gender) 'gender',
+        for (final d in customDefs) '$customerCsvCustomPrefix${d.label}',
+      ],
+      [
+        'John Smith', 'john@example.com', '+27821234567', '123 Main St, Cape Town',
+        'Acme (Pty) Ltd', 'ZA123456789', '',
+        if (s.shipping) ...['John Smith', '+27821234567', 'Unit 5, Dock Rd, Cape Town'],
+        if (s.dob) '1985-04-12',
+        if (s.age) '',
+        if (s.gender) 'male',
+        for (final _ in customDefs) '',
+      ],
+      [
+        'Jane Doe', 'jane@example.com', '+919876543210', 'MG Road, Kochi', '', '', '32',
+        // Blank shipping_address = same as billing.
+        if (s.shipping) ...['', '', ''],
+        if (s.dob) '',
+        if (s.age) '34',
+        if (s.gender) 'female',
+        for (final _ in customDefs) '',
+      ],
+    ]);
     final l10n = AppLocalizations.of(context)!;
 
-    final savePath = await FilePicker.platform.saveFile(
-      dialogTitle: l10n.customerMgmtSaveSampleCsvDialogTitle,
-      fileName: 'customers_sample.csv',
-      type: FileType.custom,
-      allowedExtensions: ['csv'],
-    );
-    if (savePath == null) return;
-
     try {
-      await File(savePath).writeAsBytes(utf8.encode('\uFEFF$sample'));
+      final savePath = await saveBytesAs(
+          Uint8List.fromList(utf8.encode('\uFEFF$sample\n')),
+          dialogTitle: l10n.customerMgmtSaveSampleCsvDialogTitle,
+          fileName: 'customers_sample.csv',
+          extension: 'csv');
+      if (savePath == null) return;
       _showSnackBar(l10n.customerMgmtSampleSavedMessage);
     } catch (e) {
       _showSnackBar(l10n.customerMgmtErrorSavingSampleMessage(e.toString()), isError: true);
@@ -610,6 +636,7 @@ class _CustomerManagementScreenV2State extends ConsumerState<CustomerManagementS
   static const _csvHeaders = [
     'name', 'email', 'phone', 'address', 'business_name', 'tax_number',
     'shipping_name', 'shipping_phone', 'shipping_address', 'dob', 'age', 'gender',
+    'state_code',
   ];
 
   Future<void> _showImportDialog() async {
@@ -657,6 +684,7 @@ class _CustomerManagementScreenV2State extends ConsumerState<CustomerManagementS
                     _csvRuleRow(context, 'address',       AppLocalizations.of(context)!.commonNoLabel,  AppLocalizations.of(context)!.customerMgmtCsvDescAddress),
                     _csvRuleRow(context, 'business_name', AppLocalizations.of(context)!.commonNoLabel,  AppLocalizations.of(context)!.customerMgmtCsvDescBusinessName),
                     _csvRuleRow(context, 'tax_number',    AppLocalizations.of(context)!.commonNoLabel,  AppLocalizations.of(context)!.customerMgmtCsvDescTaxNumber),
+                    _csvRuleRow(context, 'state_code',    AppLocalizations.of(context)!.commonNoLabel,  AppLocalizations.of(context)!.customerMgmtCsvDescStateCode),
                     if (_fieldSettings.shipping) ...[
                       _csvRuleRow(context, 'shipping_name',    AppLocalizations.of(context)!.commonNoLabel, AppLocalizations.of(context)!.customerMgmtCsvDescShippingName),
                       _csvRuleRow(context, 'shipping_phone',   AppLocalizations.of(context)!.commonNoLabel, AppLocalizations.of(context)!.customerMgmtCsvDescShippingPhone),
@@ -784,8 +812,13 @@ class _CustomerManagementScreenV2State extends ConsumerState<CustomerManagementS
         setState(() => _isLoading = false);
         return;
       }
+      final customCols = {
+        for (final d in _fieldSettings.customFieldDefs)
+          '$customerCsvCustomPrefix${d.label.trim().toLowerCase()}'
+      };
       for (final col in headers) {
-        if (!_csvHeaders.contains(col) && !col.startsWith(customerCsvCustomPrefix)) {
+        // custom:<label> must name an existing custom field (else silently dropped).
+        if (!_csvHeaders.contains(col) && !customCols.contains(col)) {
           _showSnackBar(l10n.customerMgmtUnknownColumnMessage(col, [..._csvHeaders, '$customerCsvCustomPrefix<field>'].join(', ')), isError: true);
           if(!mounted) return;
           setState(() => _isLoading = false);
@@ -812,6 +845,8 @@ class _CustomerManagementScreenV2State extends ConsumerState<CustomerManagementS
       final List<Customer> valid = [];
       final List<Customer> duplicates = [];
       final List<String> errors = [];
+      // Email / phone → first row using it: a repeat inside the file is skipped.
+      final seenInFile = <String, int>{};
 
       final progress = ValueNotifier<int>(0);
       if (!mounted) return;
@@ -854,17 +889,42 @@ class _CustomerManagementScreenV2State extends ConsumerState<CustomerManagementS
         }
         final email = getField(row, 'email');
         final phone = getField(row, 'phone');
+        final keys = [
+          if (email.isNotEmpty) 'e:${email.toLowerCase()}',
+          if (phone.isNotEmpty) 'p:$phone',
+        ];
+        final firstRow = keys.map((k) => seenInFile[k]).nonNulls.firstOrNull;
+        if (firstRow != null) {
+          errors.add(l10n.customerMgmtRowDuplicateInFileMessage(i + 2, firstRow));
+          continue;
+        }
+        for (final k in keys) {
+          seenInFile[k] = i + 2;
+        }
         final existing = await ref.read(customerRepositoryProvider).findDuplicate(email, phone);
+        // Overwrite: a column missing from the CSV keeps the existing value
+        // (a present-but-blank cell still clears it).
+        String field(String col, String? old) =>
+            existing != null && !headers.contains(col) ? (old ?? '') : getField(row, col);
+        final gstin = field('tax_number', existing?.gstin);
+        // State: GSTIN's state wins; else a valid state_code cell ("33" or
+        // "33-Tamil Nadu"); else the existing one.
+        final stateCell = getField(row, 'state_code');
+        final stateCode = stateCell.length >= 2 &&
+                GstUtils.states.containsKey(stateCell.substring(0, 2))
+            ? stateCell.substring(0, 2)
+            : (headers.contains('state_code') && stateCell.isEmpty
+                ? ''
+                : existing?.stateCode ?? '');
         final customer = Customer(
           id: existing?.id ?? const Uuid().v4(),
           name: name,
-          email: email,
-          phone: phone,
-          address: getField(row, 'address'),
-          gstin: getField(row, 'tax_number'),
-          businessName: getField(row, 'business_name'),
-          stateCode: GstUtils.stateCodeFromGstin(getField(row, 'tax_number')) ??
-              existing?.stateCode ?? '',
+          email: field('email', existing?.email),
+          phone: field('phone', existing?.phone),
+          address: field('address', existing?.address),
+          gstin: gstin,
+          businessName: field('business_name', existing?.businessName),
+          stateCode: GstUtils.stateCodeFromGstin(gstin) ?? stateCode,
         );
         applyCustomerCsvExtraFields(customer, headers, (col) => getField(row, col),
             existing, _fieldSettings.customFieldDefs);
@@ -1113,7 +1173,7 @@ class _CustomerManagementScreenV2State extends ConsumerState<CustomerManagementS
       final customDefs = s.customFields ? s.customFieldDefs : const [];
       List<List<String>> csvData = [
         [
-          'name', 'email', 'phone', 'address', 'business_name', 'tax_number',
+          'name', 'email', 'phone', 'address', 'business_name', 'tax_number', 'state_code',
           if (s.shipping) ...['shipping_name', 'shipping_phone', 'shipping_address'],
           if (s.dob) 'dob',
           if (s.age) 'age',
@@ -1127,6 +1187,7 @@ class _CustomerManagementScreenV2State extends ConsumerState<CustomerManagementS
           c.address,
           c.businessName,
           c.gstin,
+          c.stateCode,
           // Same-as-billing exports an empty shipping_address, which
           // re-imports as same-as-billing.
           if (s.shipping) ...[
@@ -1143,14 +1204,11 @@ class _CustomerManagementScreenV2State extends ConsumerState<CustomerManagementS
       ];
 
       final csv = buildQuotedCsv(csvData);
-      final savePath = await FilePicker.platform.saveFile(
-        dialogTitle: l10n.customerMgmtSaveCsvDialogTitle,
-        fileName: 'customers.csv',
-        type: FileType.custom,
-        allowedExtensions: ['csv'],
-      );
+      final savePath = await saveBytesAs(Uint8List.fromList(utf8.encode('\uFEFF$csv')),
+          dialogTitle: l10n.customerMgmtSaveCsvDialogTitle,
+          fileName: 'customers.csv',
+          extension: 'csv');
       if (savePath == null) return;
-      await File(savePath).writeAsBytes(utf8.encode('\uFEFF$csv'));
       _showSnackBar(l10n.customerMgmtCsvExportedMessage);
     } catch (e) {
       _showSnackBar(l10n.customerMgmtCsvExportErrorMessage(e.toString()), isError: true);
@@ -1210,14 +1268,11 @@ class _CustomerManagementScreenV2State extends ConsumerState<CustomerManagementS
         ),
       );
 
-      final savePath = await FilePicker.platform.saveFile(
-        dialogTitle: l10n.customerMgmtSavePdfDialogTitle,
-        fileName: 'customers.pdf',
-        type: FileType.custom,
-        allowedExtensions: ['pdf'],
-      );
+      final savePath = await saveBytesAs(await pdf.save(),
+          dialogTitle: l10n.customerMgmtSavePdfDialogTitle,
+          fileName: 'customers.pdf',
+          extension: 'pdf');
       if (savePath == null) return;
-      await File(savePath).writeAsBytes(await pdf.save());
       _showSnackBar(l10n.customerMgmtPdfExportedMessage);
     } catch (e) {
       _showSnackBar(l10n.customerMgmtPdfExportErrorMessage(e.toString()), isError: true);

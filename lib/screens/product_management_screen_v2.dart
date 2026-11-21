@@ -1,10 +1,12 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
+import 'package:invoiso/utils/fs_utils.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:invoiso/common/constants.dart';
+import 'package:invoiso/common/gst_utils.dart';
 import 'package:invoiso/providers/repositories.dart';
 import 'package:uuid/uuid.dart';
 import 'package:pdf/pdf.dart';
@@ -96,6 +98,8 @@ class _ProductManagementScreenV2State extends ConsumerState<ProductManagementScr
     'unlimited_stock',
     'price_includes_tax',
     'low_stock_limit',
+    'uqc',
+    'gst_category',
     'storage_location',
     'container_number',
     'batch_number',
@@ -605,22 +609,18 @@ class _ProductManagementScreenV2State extends ConsumerState<ProductManagementScr
 
   Future<void> _downloadSampleCSV() async {
     const sample =
-        '"name","hsn_code","description","price","tax_rate","stock","type","default_discount","purchase_price","alias_name","unit","unlimited_stock","price_includes_tax","low_stock_limit","storage_location","container_number","batch_number","expiry_date","manufacture_date","manufacture_name","supplier_name","sku_code","notes"\n'
-        '"Wireless Mouse","84716010","Ergonomic wireless mouse","599.00","18","50","product","5.00","400.00","","pcs","0","0","10","Rack A1","","","","","","",""\n'
-        '"USB Hub","84734000","4-port USB 3.0 hub","299.00","18","100","product","0","180.00","","pcs","0","0","5","","CNT-1023","","","","","",""\n'
-        '"Annual Support","998314","Annual technical support plan","4999.00","18","0","service","10.00","0","","unit","1","1","","","","","","","","",""\n';
+        '"name","hsn_code","description","price","tax_rate","stock","type","default_discount","purchase_price","alias_name","unit","unlimited_stock","price_includes_tax","low_stock_limit","uqc","gst_category","storage_location","container_number","batch_number","expiry_date","manufacture_date","manufacture_name","supplier_name","sku_code","notes"\n'
+        '"Wireless Mouse","84716010","Ergonomic wireless mouse","599.00","18","50","product","5.00","400.00","","pcs","0","0","10","PCS","","Rack A1","","","","","","","",""\n'
+        '"USB Hub","84734000","4-port USB 3.0 hub","299.00","18","100","product","0","180.00","","pcs","0","0","5","PCS","","","CNT-1023","","","","","","",""\n'
+        '"Annual Support","998314","Annual technical support plan","4999.00","18","0","service","10.00","0","","unit","1","1","","NA","","","","","","","","","",""\n';
 
     final l10n = AppLocalizations.of(context)!;
-    final savePath = await FilePicker.platform.saveFile(
-      dialogTitle: l10n.customerMgmtSaveSampleCsvDialogTitle,
-      fileName: 'products_sample.csv',
-      type: FileType.custom,
-      allowedExtensions: ['csv'],
-    );
-    if (savePath == null) return;
-
     try {
-      await File(savePath).writeAsBytes(utf8.encode('\uFEFF$sample'));
+      final savePath = await saveBytesAs(Uint8List.fromList(utf8.encode('\uFEFF$sample')),
+          dialogTitle: l10n.customerMgmtSaveSampleCsvDialogTitle,
+          fileName: 'products_sample.csv',
+          extension: 'csv');
+      if (savePath == null) return;
       _showSnackBar(l10n.customerMgmtSampleSavedMessage);
     } catch (e) {
       _showSnackBar(l10n.customerMgmtErrorSavingSampleMessage(e.toString()), isError: true);
@@ -682,6 +682,8 @@ class _ProductManagementScreenV2State extends ConsumerState<ProductManagementScr
                     _csvRuleRow(context, 'unlimited_stock', false, l10n.productMgmtCsvDescUnlimitedStock),
                     _csvRuleRow(context, 'price_includes_tax', false, l10n.productMgmtCsvDescPriceIncludesTax),
                     _csvRuleRow(context, 'low_stock_limit', false, l10n.productMgmtCsvDescLowStockLimit),
+                    _csvRuleRow(context, 'uqc', false, l10n.productMgmtCsvDescUqc),
+                    _csvRuleRow(context, 'gst_category', false, l10n.productMgmtCsvDescGstCategory),
                     _csvRuleRow(context, 'storage_location', false, l10n.productMgmtCsvDescStorageLocation),
                     _csvRuleRow(context, 'container_number', false, l10n.productMgmtCsvDescContainerNumber),
                     _csvRuleRow(context, 'batch_number', false, l10n.productMgmtCsvDescBatchNumber),
@@ -849,9 +851,16 @@ class _ProductManagementScreenV2State extends ConsumerState<ProductManagementScr
         return i < 0 || i >= row.length ? '' : stripCsvFormulaGuard(row[i].toString().trim());
       }
 
+      const metaCols = ['storage_location', 'container_number', 'batch_number',
+        'expiry_date', 'manufacture_date', 'manufacture_name', 'supplier_name',
+        'sku_code', 'notes'];
+      final missingMetaCol = metaCols.any((c) => !headers.contains(c));
+
       final List<Product> valid = [];
       final List<Product> duplicates = [];
       final List<String> errors = [];
+      // Lower-case name → first row using it: a repeat inside the file is skipped.
+      final seenInFile = <String, int>{};
       final Map<String, ProductMetadata> metadataById = {};
 
       final progress = ValueNotifier<int>(0);
@@ -900,6 +909,12 @@ class _ProductManagementScreenV2State extends ConsumerState<ProductManagementScr
           errors.add(l10n.productMgmtRowInvalidPriceMessage(i + 2, priceStr));
           continue;
         }
+        final firstRow = seenInFile[name.toLowerCase()];
+        if (firstRow != null) {
+          errors.add(l10n.customerMgmtRowDuplicateInFileMessage(i + 2, firstRow));
+          continue;
+        }
+        seenInFile[name.toLowerCase()] = i + 2;
 
         final taxStr = getField(row, 'tax_rate');
         final stockStr = getField(row, 'stock');
@@ -918,43 +933,70 @@ class _ProductManagementScreenV2State extends ConsumerState<ProductManagementScr
         final discount = discountStr.isEmpty ? 0.0 : (double.tryParse(discountStr) ?? 0.0);
         final purchasePrice = purchasePriceStr.isEmpty ? 0.0 : (double.tryParse(purchasePriceStr) ?? 0.0);
         final type = (typeStr == 'service') ? 'service' : 'product';
+        // "PCS" or "PCS-PIECES"; unknown code → blank (GSTR-1 falls back to OTH).
+        final uqcStr = getField(row, 'uqc').split('-').first.trim().toUpperCase();
+        final uqc = GstUtils.uqcCodes.containsKey(uqcStr) ? uqcStr : '';
+        final gstCategoryStr = getField(row, 'gst_category').toLowerCase();
+        final gstCategory =
+            const ['exempt', 'non_gst'].contains(gstCategoryStr) ? gstCategoryStr : '';
 
         final existing = await ref.read(productRepositoryProvider).findDuplicateByName(name);
+        // Overwrite: a column missing from the CSV keeps the existing value
+        // (a present-but-blank cell still clears it).
+        bool keep(String col) => existing != null && !headers.contains(col);
         final product = Product(
           id: existing?.id ?? const Uuid().v4(),
           name: name,
-          hsncode: getField(row, 'hsn_code'),
-          description: getField(row, 'description'),
+          hsncode: keep('hsn_code') ? existing!.hsncode : getField(row, 'hsn_code'),
+          description: keep('description') ? existing!.description : getField(row, 'description'),
           price: price,
-          tax_rate: taxRate.clamp(0.0, 100.0),
-          stock: stock < 0 ? 0 : stock,
-          type: type,
-          defaultDiscount: discount < 0 ? 0.0 : discount,
-          purchasePrice: _hidePurchasePrice
+          tax_rate: keep('tax_rate') ? existing!.tax_rate : taxRate.clamp(0.0, 100.0),
+          stock: keep('stock') ? existing!.stock : (stock < 0 ? 0 : stock),
+          type: keep('type') ? existing!.type : type,
+          defaultDiscount: keep('default_discount')
+              ? existing!.defaultDiscount
+              : (discount < 0 ? 0.0 : discount),
+          purchasePrice: _hidePurchasePrice || keep('purchase_price')
               ? (existing?.purchasePrice ?? 0.0)
               : (purchasePrice < 0 ? 0.0 : purchasePrice),
-          aliasName: aliasNameStr.isEmpty ? null : aliasNameStr,
-          unit: unitStr,
-          unlimitedStock: unlimitedStock,
-          priceIncludesTax: priceIncludesTax,
+          aliasName: keep('alias_name')
+              ? existing!.aliasName
+              : (aliasNameStr.isEmpty ? null : aliasNameStr),
+          unit: keep('unit') ? existing!.unit : unitStr,
+          unlimitedStock: keep('unlimited_stock') ? existing!.unlimitedStock : unlimitedStock,
+          priceIncludesTax:
+              keep('price_includes_tax') ? existing!.priceIncludesTax : priceIncludesTax,
           lowStockLimit: (lowStockLimit != null && lowStockLimit >= 0)
               ? lowStockLimit
               : existing?.lowStockLimit,
-          uqc: existing?.uqc ?? '',
-          gstCategory: existing?.gstCategory ?? '',
+          lastPurchaseDate: existing?.lastPurchaseDate,
+          uqc: keep('uqc') ? existing!.uqc : uqc,
+          // Like the product form: only a 0 % item carries a category.
+          gstCategory: (keep('tax_rate') ? existing!.tax_rate : taxRate) != 0
+              ? ''
+              : keep('gst_category')
+                  ? existing!.gstCategory
+                  : gstCategory,
         );
 
+        // Overwrite keeps existing values for metadata columns the CSV lacks.
+        // Old metadata read only for duplicates, and only if a column is missing.
+        final oldMeta = existing != null && missingMetaCol
+            ? await ref.read(productRepositoryProvider).getProductMetadata(existing.id)
+            : null;
+        String? metaField(String col, String? old) =>
+            headers.contains(col) ? getField(row, col) : old;
         metadataById[product.id] = ProductMetadata(
           productId: product.id,
-          storageLocation: getField(row, 'storage_location'),
-          containerNumber: getField(row, 'container_number'),
-          batchNumber: getField(row, 'batch_number'),
-          expiryDate: getField(row, 'expiry_date'),
-          manufactureDate: getField(row, 'manufacture_date'),
-          manufactureName: getField(row, 'manufacture_name'),
-          supplierName: getField(row, 'supplier_name'),
-          skuCode: getField(row, 'sku_code'),
-          notes: getField(row, 'notes'),
+          storageLocation: metaField('storage_location', oldMeta?.storageLocation),
+          containerNumber: metaField('container_number', oldMeta?.containerNumber),
+          batchNumber: metaField('batch_number', oldMeta?.batchNumber),
+          expiryDate: metaField('expiry_date', oldMeta?.expiryDate),
+          manufactureDate: metaField('manufacture_date', oldMeta?.manufactureDate),
+          manufactureName: metaField('manufacture_name', oldMeta?.manufactureName),
+          supplierName: metaField('supplier_name', oldMeta?.supplierName),
+          skuCode: metaField('sku_code', oldMeta?.skuCode),
+          notes: metaField('notes', oldMeta?.notes),
         );
 
         if (existing != null) {
@@ -966,10 +1008,37 @@ class _ProductManagementScreenV2State extends ConsumerState<ProductManagementScr
       if (progressDialogShown && mounted) {
         Navigator.of(context, rootNavigator: true).pop();
       }
+      // Duplicate SKU warning (import still allowed): repeats inside the file
+      // + other products already holding one of this file's SKUs (only those
+      // rows are read). DB rows of products in this file are superseded by it.
+      final fileIds = {for (final p in [...valid, ...duplicates]) p.id};
+      final rowSkus = [
+        for (final p in [...valid, ...duplicates])
+          if ((metadataById[p.id]?.skuCode ?? '').trim().isNotEmpty)
+            (id: p.id, name: p.name, sku: metadataById[p.id]!.skuCode!.trim()),
+      ];
+      final owners = (await ref
+              .read(productRepositoryProvider)
+              .findProductsBySku(rowSkus.map((r) => r.sku).toList()))
+          .where((o) => !fileIds.contains(o.id));
+      final namesBySku = <String, Map<String, String>>{};
+      for (final o in [...rowSkus, ...owners]) {
+        (namesBySku[o.sku.trim().toLowerCase()] ??= {})[o.id] = o.name;
+      }
+      final skuWarnings = <String>[];
+      for (final r in rowSkus) {
+        final others = {...?namesBySku[r.sku.toLowerCase()]}..remove(r.id);
+        if (others.isNotEmpty) {
+          skuWarnings.add(l10n.productMgmtCsvDuplicateSkuLine(
+              r.name, r.sku, others.values.join(', ')));
+        }
+      }
+
       if(!mounted) return;
       setState(() => _isLoading = false);
       if (!mounted) return;
-      await _showImportPreviewDialog(valid, duplicates, errors, metadataById);
+      await _showImportPreviewDialog(
+          valid, duplicates, errors, metadataById, skuWarnings);
     } catch (e) {
       if (progressDialogShown && mounted) {
         Navigator.of(context, rootNavigator: true).pop();
@@ -984,6 +1053,7 @@ class _ProductManagementScreenV2State extends ConsumerState<ProductManagementScr
     List<Product> duplicates,
     List<String> errors,
     Map<String, ProductMetadata> metadataById,
+    List<String> skuWarnings,
   ) async {
     final overwriteFlags = List<bool>.filled(duplicates.length, false);
     final l10n = AppLocalizations.of(context)!;
@@ -1080,6 +1150,19 @@ class _ProductManagementScreenV2State extends ConsumerState<ProductManagementScr
                           ),
                         );
                       }),
+                    ],
+                    if (skuWarnings.isNotEmpty) ...[
+                      const SizedBox(height: 16),
+                      Text(l10n.productMgmtCsvDuplicateSkuLabel,
+                          style: TextStyle(
+                              fontWeight: FontWeight.bold, color: Colors.orange.shade800)),
+                      const SizedBox(height: 8),
+                      ...skuWarnings.map((w) => Padding(
+                            padding: const EdgeInsets.only(bottom: 4),
+                            child: Text(l10n.customerMgmtErrorBulletLabel(w),
+                                style: TextStyle(
+                                    fontSize: 12, color: Colors.orange.shade800)),
+                          )),
                     ],
                     if (errors.isNotEmpty) ...[
                       const SizedBox(height: 16),
@@ -1207,8 +1290,10 @@ class _ProductManagementScreenV2State extends ConsumerState<ProductManagementScr
       final repo = ref.read(productRepositoryProvider);
       final allProducts = await repo.getAllProducts();
       final allMetadata = await repo.getAllProductMetadata();
+      // Hidden purchase price: column left out (not blank), so re-importing
+      // this file keeps the stored purchase prices.
       final List<List<dynamic>> rows = [
-        ['name', 'hsn_code', 'description', 'price', 'tax_rate', 'stock', 'type', 'default_discount', 'purchase_price', 'alias_name', 'unit', 'unlimited_stock', 'price_includes_tax', 'low_stock_limit', 'storage_location', 'container_number', 'batch_number', 'expiry_date', 'manufacture_date', 'manufacture_name', 'supplier_name', 'sku_code', 'notes'],
+        ['name', 'hsn_code', 'description', 'price', 'tax_rate', 'stock', 'type', 'default_discount', if (!_hidePurchasePrice) 'purchase_price', 'alias_name', 'unit', 'unlimited_stock', 'price_includes_tax', 'low_stock_limit', 'uqc', 'gst_category', 'storage_location', 'container_number', 'batch_number', 'expiry_date', 'manufacture_date', 'manufacture_name', 'supplier_name', 'sku_code', 'notes'],
         ...allProducts.map((p) {
           final meta = allMetadata[p.id];
           return [
@@ -1220,12 +1305,14 @@ class _ProductManagementScreenV2State extends ConsumerState<ProductManagementScr
               p.stock,
               p.type,
               p.defaultDiscount,
-              _hidePurchasePrice ? '' : p.purchasePrice,
+              if (!_hidePurchasePrice) p.purchasePrice,
               p.aliasName ?? '',
               p.unit,
               p.unlimitedStock ? 1 : 0,
               p.priceIncludesTax ? 1 : 0,
               p.lowStockLimit ?? '',
+              p.uqc,
+              p.gstCategory,
               meta?.storageLocation ?? '',
               meta?.containerNumber ?? '',
               meta?.batchNumber ?? '',
@@ -1239,14 +1326,11 @@ class _ProductManagementScreenV2State extends ConsumerState<ProductManagementScr
         }),
       ];
       final csvData = buildQuotedCsv(rows);
-      final savePath = await FilePicker.platform.saveFile(
-        dialogTitle: l10n.productMgmtSaveProductsCsvDialogTitle,
-        fileName: 'products.csv',
-        type: FileType.custom,
-        allowedExtensions: ['csv'],
-      );
+      final savePath = await saveBytesAs(Uint8List.fromList(utf8.encode('\uFEFF$csvData')),
+          dialogTitle: l10n.productMgmtSaveProductsCsvDialogTitle,
+          fileName: 'products.csv',
+          extension: 'csv');
       if (savePath == null) return;
-      await File(savePath).writeAsBytes(utf8.encode('\uFEFF$csvData'));
       _showSnackBar(l10n.customerMgmtCsvExportedMessage);
     } catch (e) {
       _showSnackBar(l10n.customerMgmtCsvExportErrorMessage(e.toString()), isError: true);
@@ -1337,14 +1421,11 @@ class _ProductManagementScreenV2State extends ConsumerState<ProductManagementScr
         ),
       );
 
-      final savePath = await FilePicker.platform.saveFile(
-        dialogTitle: l10n.productMgmtSaveProductsPdfDialogTitle,
-        fileName: 'products.pdf',
-        type: FileType.custom,
-        allowedExtensions: ['pdf'],
-      );
+      final savePath = await saveBytesAs(await pdf.save(),
+          dialogTitle: l10n.productMgmtSaveProductsPdfDialogTitle,
+          fileName: 'products.pdf',
+          extension: 'pdf');
       if (savePath == null) return;
-      await File(savePath).writeAsBytes(await pdf.save());
       _showSnackBar(l10n.customerMgmtPdfExportedMessage);
     } catch (e) {
       _showSnackBar(l10n.customerMgmtPdfExportErrorMessage(e.toString()), isError: true);
@@ -2630,6 +2711,14 @@ class _ProductManagementScreenV2State extends ConsumerState<ProductManagementScr
             final price = double.parse(priceCtrl.text.trim());
             final purchasePrice = double.tryParse(purchaseCtrl.text.trim()) ?? 0.0;
             if (!await _confirmIfSellingAtLoss(price, purchasePrice)) return;
+            // Warn only when the SKU was changed — no lookup otherwise.
+            if (skuCtrl.text.trim() != (metadata?.skuCode ?? '').trim() &&
+                (!mounted ||
+                    !await confirmDuplicateSku(
+                        context, ref.read(productRepositoryProvider), skuCtrl.text,
+                        excludeId: product.id))) {
+              return;
+            }
             setDialogState(() => isSaving = true);
             try {
               final updated = Product(
@@ -2653,6 +2742,7 @@ class _ProductManagementScreenV2State extends ConsumerState<ProductManagementScr
                 lowStockLimit: _stockLocked
                     ? product.lowStockLimit
                     : int.tryParse(lowStockLimitCtrl.text.trim()),
+                lastPurchaseDate: product.lastPurchaseDate,
                 uqc: uqc,
                 gstCategory:
                     double.parse(taxCtrl.text.trim()) == 0 ? gstCategory : '',

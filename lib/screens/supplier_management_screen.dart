@@ -1,5 +1,10 @@
 import 'dart:async';
+import 'dart:convert';
+import 'dart:io';
+import 'dart:typed_data';
 
+import 'package:csv/csv.dart';
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:invoiso/common/constants.dart';
@@ -11,6 +16,7 @@ import 'package:invoiso/providers/supplier_provider.dart';
 import 'package:invoiso/utils/error_handler.dart';
 import 'package:uuid/uuid.dart';
 import 'package:invoiso/utils/formatters.dart';
+import 'package:invoiso/utils/fs_utils.dart';
 
 class SupplierManagementScreen extends ConsumerStatefulWidget {
   final User user;
@@ -303,6 +309,263 @@ class _SupplierManagementScreenState
     if (mounted) AppError.showSuccess(context, l10n.supplierMgmtMovedToTrashMessage);
   }
 
+  // ── CSV import / export ───────────────────────────────────────────────────
+
+  static const _csvHeaders = [
+    'name', 'business_name', 'phone', 'email', 'address', 'gstin', 'notes',
+  ];
+  static const _csvMaxRows = 200;
+
+  Future<void> _exportCsv() async {
+    final l10n = AppLocalizations.of(context)!;
+    try {
+      final suppliers =
+          await ref.read(supplierRepositoryProvider).getAllSuppliers();
+      final csv = buildQuotedCsv([
+        _csvHeaders,
+        for (final s in suppliers)
+          [s.name, s.businessName, s.phone, s.email, s.address, s.gstin, s.notes],
+      ]);
+      final savePath = await saveBytesAs(Uint8List.fromList(utf8.encode('\uFEFF$csv')),
+          dialogTitle: l10n.supplierMgmtSaveCsvDialogTitle,
+          fileName: 'suppliers.csv',
+          extension: 'csv');
+      if (savePath == null) return;
+      if (mounted) AppError.showSuccess(context, l10n.customerMgmtCsvExportedMessage);
+    } catch (e) {
+      if (mounted) {
+        AppError.show(context, l10n.customerMgmtCsvExportErrorMessage(e.toString()));
+      }
+    }
+  }
+
+  Future<void> _downloadSampleCsv() async {
+    final l10n = AppLocalizations.of(context)!;
+    final sample = buildQuotedCsv([
+      _csvHeaders,
+      ['Ravi Traders', 'Ravi Traders Pvt Ltd', '+919876500001', 'ravi@example.com',
+        'Broadway, Kochi', '32ABCDE1234F1Z5', 'Monthly credit'],
+      ['City Packaging', '', '+919876500002', '', 'Industrial Estate, Chennai', '', ''],
+    ]);
+    try {
+      final savePath = await saveBytesAs(Uint8List.fromList(utf8.encode('\uFEFF$sample\n')),
+          dialogTitle: l10n.customerMgmtSaveSampleCsvDialogTitle,
+          fileName: 'suppliers_sample.csv',
+          extension: 'csv');
+      if (savePath != null && mounted) {
+        AppError.showSuccess(context, l10n.customerMgmtSampleSavedMessage);
+      }
+    } catch (e) {
+      if (mounted) {
+        AppError.show(context, l10n.customerMgmtErrorSavingSampleMessage(e.toString()));
+      }
+    }
+  }
+
+  Future<void> _importCsv() async {
+    final l10n = AppLocalizations.of(context)!;
+    final proceed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(l10n.supplierMgmtImportCsvTitle),
+        content: SizedBox(
+          width: 420,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(l10n.supplierMgmtImportCsvHelp(_csvMaxRows)),
+              const SizedBox(height: 16),
+              OutlinedButton.icon(
+                onPressed: () async {
+                  Navigator.pop(ctx, false);
+                  await _downloadSampleCsv();
+                },
+                icon: const Icon(Icons.download),
+                label: Text(l10n.customerMgmtDownloadSampleCsvButton),
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: Text(l10n.actionCancel)),
+          FilledButton.icon(
+            onPressed: () => Navigator.pop(ctx, true),
+            icon: const Icon(Icons.folder_open),
+            label: Text(l10n.customerMgmtChooseFileButton),
+          ),
+        ],
+      ),
+    );
+    if (proceed != true || !mounted) return;
+    final picked = await FilePicker.platform.pickFiles(
+      type: FileType.custom,
+      allowedExtensions: ['csv'],
+      dialogTitle: l10n.supplierMgmtImportCsvTitle,
+    );
+    final path = picked?.files.single.path;
+    if (path == null || !mounted) return;
+
+    try {
+      final bytes = await File(path).readAsBytes();
+      final content = utf8.decode(
+        bytes.length >= 3 && bytes[0] == 0xEF && bytes[1] == 0xBB && bytes[2] == 0xBF
+            ? bytes.sublist(3)
+            : bytes,
+      );
+      final rows = const CsvToListConverter(eol: '\n').convert(content);
+      String? problem;
+      final headers = rows.isEmpty
+          ? <String>[]
+          : rows.first.map((h) => h.toString().trim().toLowerCase()).toList();
+      if (rows.isEmpty) {
+        problem = l10n.customerMgmtCsvEmptyMessage;
+      } else if (!headers.contains('name')) {
+        problem = l10n.customerMgmtCsvMissingNameColumnMessage;
+      } else if (headers.any((h) => !_csvHeaders.contains(h))) {
+        problem = l10n.customerMgmtUnknownColumnMessage(
+            headers.firstWhere((h) => !_csvHeaders.contains(h)), _csvHeaders.join(', '));
+      } else if (rows.length - 1 > _csvMaxRows) {
+        problem = l10n.customerMgmtCsvTooManyRowsMessage(rows.length - 1, _csvMaxRows);
+      }
+      if (problem != null) {
+        if (mounted) AppError.show(context, problem);
+        return;
+      }
+
+      String cell(List<dynamic> row, String col) {
+        final i = headers.indexOf(col);
+        return i < 0 || i >= row.length ? '' : stripCsvFormulaGuard(row[i].toString().trim());
+      }
+
+      final repo = ref.read(supplierRepositoryProvider);
+      final newSuppliers = <Supplier>[];
+      final matched = <Supplier>[];
+      final errors = <String>[];
+      // GSTIN / phone / email → first row using it: a repeat inside the file is skipped.
+      final seenInFile = <String, int>{};
+      for (var i = 1; i < rows.length; i++) {
+        final row = rows[i];
+        final name = cell(row, 'name');
+        if (name.isEmpty) {
+          errors.add(l10n.customerMgmtRowMissingNameMessage(i + 1));
+          continue;
+        }
+        final gstin = cell(row, 'gstin').toUpperCase();
+        final phone = cell(row, 'phone');
+        final email = cell(row, 'email');
+        final keys = [
+          if (gstin.isNotEmpty) 'g:$gstin',
+          if (phone.isNotEmpty) 'p:$phone',
+          if (email.isNotEmpty) 'e:${email.toLowerCase()}',
+        ];
+        final firstRow = keys.map((k) => seenInFile[k]).nonNulls.firstOrNull;
+        if (firstRow != null) {
+          errors.add(l10n.customerMgmtRowDuplicateInFileMessage(i + 1, firstRow));
+          continue;
+        }
+        for (final k in keys) {
+          seenInFile[k] = i + 1;
+        }
+        final existing = await repo.findDuplicate(gstin, phone, email);
+        // Update: a column missing from the CSV keeps the stored value.
+        String field(String col, String? old) =>
+            existing != null && !headers.contains(col) ? (old ?? '') : cell(row, col);
+        final supplier = Supplier(
+          id: existing?.id ?? const Uuid().v4(),
+          name: name,
+          businessName: field('business_name', existing?.businessName),
+          phone: field('phone', existing?.phone),
+          email: field('email', existing?.email),
+          address: field('address', existing?.address),
+          gstin: existing != null && !headers.contains('gstin') ? existing.gstin : gstin,
+          notes: field('notes', existing?.notes),
+        );
+        (existing == null ? newSuppliers : matched).add(supplier);
+      }
+      if (!mounted) return;
+      await _showImportPreview(newSuppliers, matched, errors);
+    } catch (e) {
+      if (mounted) AppError.show(context, l10n.customerMgmtCsvReadErrorMessage(e.toString()));
+    }
+  }
+
+  Future<void> _showImportPreview(
+      List<Supplier> newSuppliers, List<Supplier> matched, List<String> errors) async {
+    final l10n = AppLocalizations.of(context)!;
+    var overwrite = false;
+    final go = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setDialogState) {
+          final total = newSuppliers.length + (overwrite ? matched.length : 0);
+          return AlertDialog(
+            title: Text(l10n.customerMgmtImportPreviewTitle),
+            content: SizedBox(
+              width: 480,
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(l10n.supplierMgmtImportSummary(newSuppliers.length, matched.length)),
+                    if (matched.isNotEmpty)
+                      SwitchListTile(
+                        contentPadding: EdgeInsets.zero,
+                        title: Text(l10n.supplierMgmtUpdateMatchedLabel),
+                        subtitle: Text(matched.map((s) => s.name).join(', '),
+                            maxLines: 3, overflow: TextOverflow.ellipsis),
+                        value: overwrite,
+                        onChanged: (v) => setDialogState(() => overwrite = v),
+                      ),
+                    if (errors.isNotEmpty) ...[
+                      const SizedBox(height: 12),
+                      Text(l10n.customerMgmtSkippedRowsLabel,
+                          style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.red)),
+                      const SizedBox(height: 4),
+                      ...errors.map((e) => Text(l10n.customerMgmtErrorBulletLabel(e),
+                          style: const TextStyle(fontSize: 12, color: Colors.red))),
+                    ],
+                  ],
+                ),
+              ),
+            ),
+            actions: [
+              TextButton(
+                  onPressed: () => Navigator.pop(ctx, false),
+                  child: Text(l10n.actionCancel)),
+              FilledButton.icon(
+                onPressed: total == 0 ? null : () => Navigator.pop(ctx, true),
+                icon: const Icon(Icons.upload),
+                label: Text(l10n.customerMgmtImportCountButton(total)),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+    if (go != true || !mounted) return;
+    try {
+      final repo = ref.read(supplierRepositoryProvider);
+      if (newSuppliers.isNotEmpty) await repo.insertBatch(newSuppliers);
+      if (overwrite) {
+        for (final s in matched) {
+          await repo.updateSupplier(s);
+        }
+      }
+      ref.read(suppliersProvider.notifier).refresh();
+      await _loadPage();
+      if (mounted) {
+        AppError.showSuccess(context, l10n.supplierMgmtImportedMessage(
+            newSuppliers.length + (overwrite ? matched.length : 0)));
+      }
+    } catch (e) {
+      if (mounted) AppError.show(context, l10n.customerMgmtImportErrorMessage(e.toString()));
+    }
+  }
+
   void _showTrashDialog() async {
     final deleted = await ref.read(supplierRepositoryProvider).getDeletedSuppliers();
     if (!mounted) return;
@@ -402,6 +665,16 @@ class _SupplierManagementScreenState
             spacing: 8,
             runSpacing: 8,
             children: [
+              OutlinedButton.icon(
+                onPressed: _importCsv,
+                icon: const Icon(Icons.upload_file_outlined, size: 16),
+                label: Text(l10n.actionImport),
+              ),
+              OutlinedButton.icon(
+                onPressed: _exportCsv,
+                icon: const Icon(Icons.file_download_outlined, size: 16),
+                label: Text(l10n.actionExport),
+              ),
               IconButton(
                 onPressed: _showTrashDialog,
                 icon: const Icon(Icons.delete_sweep_outlined),

@@ -3234,6 +3234,12 @@ abstract class AppLocalizations {
   /// **'Tax / VAT / GSTIN number'**
   String get customerMgmtCsvDescTaxNumber;
 
+  /// No description provided for @customerMgmtCsvDescStateCode.
+  ///
+  /// In en, this message translates to:
+  /// **'GST state code, e.g. 33 or 33-Tamil Nadu (used when there is no GSTIN)'**
+  String get customerMgmtCsvDescStateCode;
+
   /// No description provided for @customerMgmtCsvMaxRowsNote.
   ///
   /// In en, this message translates to:
@@ -3317,6 +3323,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Row {n}: missing name — skipped'**
   String customerMgmtRowMissingNameMessage(int n);
+
+  /// No description provided for @customerMgmtRowDuplicateInFileMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Row {n}: same as row {first} in this file — skipped'**
+  String customerMgmtRowDuplicateInFileMessage(int n, int first);
 
   /// No description provided for @customerMgmtCsvReadErrorMessage.
   ///
@@ -3971,6 +3983,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Low-stock threshold for this product, blank = default 10'**
   String get productMgmtCsvDescLowStockLimit;
+
+  /// No description provided for @productMgmtCsvDescUqc.
+  ///
+  /// In en, this message translates to:
+  /// **'GST unit code (UQC), e.g. PCS, KGS; NA for services'**
+  String get productMgmtCsvDescUqc;
+
+  /// No description provided for @productMgmtCsvDescGstCategory.
+  ///
+  /// In en, this message translates to:
+  /// **'0% tax only: blank = nil-rated, exempt, or non_gst'**
+  String get productMgmtCsvDescGstCategory;
 
   /// No description provided for @productMgmtCsvDescStorageLocation.
   ///
@@ -9996,6 +10020,66 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Create anyway'**
   String get productFormCreateAnywayButton;
+
+  /// No description provided for @supplierMgmtSaveCsvDialogTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Save suppliers CSV'**
+  String get supplierMgmtSaveCsvDialogTitle;
+
+  /// No description provided for @supplierMgmtImportCsvTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Import suppliers from CSV'**
+  String get supplierMgmtImportCsvTitle;
+
+  /// No description provided for @supplierMgmtImportCsvHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'Columns: name (required), business_name, phone, email, address, gstin, notes.\n\nExisting suppliers are matched by GSTIN, phone or email. When updating them, a column missing from the file keeps the stored value. Maximum {max} rows.'**
+  String supplierMgmtImportCsvHelp(int max);
+
+  /// No description provided for @supplierMgmtImportSummary.
+  ///
+  /// In en, this message translates to:
+  /// **'{newCount} new · {matched} matching existing suppliers'**
+  String supplierMgmtImportSummary(int newCount, int matched);
+
+  /// No description provided for @supplierMgmtUpdateMatchedLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Update matching suppliers'**
+  String get supplierMgmtUpdateMatchedLabel;
+
+  /// No description provided for @supplierMgmtImportedMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{Imported 1 supplier} other{Imported {count} suppliers}}'**
+  String supplierMgmtImportedMessage(int count);
+
+  /// No description provided for @productFormDuplicateSkuTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'SKU already used'**
+  String get productFormDuplicateSkuTitle;
+
+  /// No description provided for @productFormDuplicateSkuMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'SKU \"{sku}\" is already used by \"{name}\". Save anyway?'**
+  String productFormDuplicateSkuMessage(String sku, String name);
+
+  /// No description provided for @productMgmtCsvDuplicateSkuLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Duplicate SKU codes (will still be imported)'**
+  String get productMgmtCsvDuplicateSkuLabel;
+
+  /// No description provided for @productMgmtCsvDuplicateSkuLine.
+  ///
+  /// In en, this message translates to:
+  /// **'{name}: SKU \"{sku}\" also used by {others}'**
+  String productMgmtCsvDuplicateSkuLine(String name, String sku, String others);
 
   /// No description provided for @productFormNewProductButton.
   ///
