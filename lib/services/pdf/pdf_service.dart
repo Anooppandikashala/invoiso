@@ -344,6 +344,8 @@ class PDFService {
             showLeadingZeros: s.showLeadingZeros,
             bankAccount: effectiveBank,
             upiId: effectiveUpiId,
+            showUpiQr: showUpiQr,
+            qrLabel: qrLabel,
             previousBalanceDue: effectivePreviousBalance,
           ),
           options: TemplateOptions(
@@ -361,7 +363,10 @@ class PDFService {
             thankYouNote: s.thankYouNote,
             themeColor: s.themeColor,
           ),
-          assets: TemplateAssets(logo: s.logoBytes, signature: s.signatureBytes),
+          assets: TemplateAssets(
+              logo: s.logoBytes,
+              signature: s.signatureBytes,
+              paymentQr: qrImageBytes),
           fallbackPageFormat: s.pageFormat,
         ));
         return blockPdf;

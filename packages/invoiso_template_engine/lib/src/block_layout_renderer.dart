@@ -104,6 +104,9 @@ class _BlockLayoutRenderer {
   /// Set while a v2 page header/footer is built, for {{page}} / {{pages}}.
   pw.Context? _pageContext;
 
+  /// Current list item while a v2 table / repeat renders (`{{row.*}}`).
+  Map<String, dynamic>? _row;
+
   final List<Map<String, dynamic>> blocks;
   final pw.PageTheme pageTheme;
 
@@ -176,14 +179,24 @@ class _BlockLayoutRenderer {
   /// page child (not wrapped in a Column) so MultiPage can split long item
   /// lists across pages.
   List<pw.Widget> pageWidgets(Map<String, dynamic> block) {
-    if (_tableTypes.contains(_typeOf(block))) return _tableParts(block);
+    if (_tableTypes.contains(_typeOf(block))) {
+      if (!isV2) return _tableParts(block);
+      return _truthy(block['if']) ? tableV2Parts(block) : const [];
+    }
     final widget = buildBlock(block);
     return widget == null ? const [] : [widget];
   }
 
   pw.Widget? buildBlock(Map<String, dynamic> block) {
     final type = _typeOf(block);
-    if (isV2 && _BlocksV2.types.contains(type)) return buildV2(type, block);
+    if (isV2) {
+      if (!_truthy(block['if'])) return null;
+      if (_BlocksV2.types.contains(type)) return buildV2(type, block);
+      if (_tableTypes.contains(type)) {
+        final parts = tableV2Parts(block);
+        return parts.isEmpty ? null : pw.Column(children: parts);
+      }
+    }
     switch (type) {
       case 'header':
         return _header(block);
@@ -1178,7 +1191,15 @@ class _BlockLayoutRenderer {
   }
 
   String _placeholder(String rawKey) {
+    // `{{path|filter}}`: money, qty, number, percent, upper, lower, capitalize.
+    final bar = rawKey.indexOf('|');
+    if (bar >= 0) {
+      final path = rawKey.substring(0, bar).trim();
+      final filter = rawKey.substring(bar + 1).trim().toLowerCase();
+      return _filter(_rawLookup(path.toLowerCase()) ?? _placeholder(path), filter);
+    }
     final key = rawKey.toLowerCase();
+    if (key.startsWith('row.')) return _lookup(key);
     final tax = _n(_totals, 'tax');
     final interState = _invoice['isInterState'] == true;
     switch (key) {
@@ -1290,16 +1311,7 @@ class _BlockLayoutRenderer {
   /// numbers as quantities.
   String _lookup(String path) {
     final parts = path.split('.');
-    dynamic node = data;
-    for (final part in parts) {
-      if (node is! Map) return '';
-      Object? match;
-      for (final k in node.keys) {
-        if (k.toString().toLowerCase() == part) match = k;
-      }
-      if (match == null) return '';
-      node = node[match];
-    }
+    final node = _rawLookup(path);
     if (node is num) {
       return parts.first == 'totals' && !parts.last.contains('qty')
           ? _money(node.toDouble())
@@ -1307,6 +1319,89 @@ class _BlockLayoutRenderer {
     }
     return node is String ? node : '';
   }
+
+  /// Raw value at a (lower-case) data path; `row.*` reads the table/repeat row
+  /// being rendered. `row.displayName` honours the alias setting and
+  /// `row.description` the description setting. null when missing.
+  dynamic _rawLookup(String path) {
+    final parts = path.split('.');
+    dynamic node = data;
+    if (parts.first == 'row') {
+      final row = _row;
+      if (row == null || parts.length < 2) return null;
+      if (parts[1] == 'displayname') {
+        final alias = _s(row, 'alias');
+        return options.showAliasName && alias.trim().isNotEmpty
+            ? alias
+            : row['name'];
+      }
+      if (parts[1] == 'description' && !options.showDescription) return '';
+      node = row;
+      parts.removeAt(0);
+    }
+    for (final part in parts) {
+      if (node is! Map) return null;
+      Object? match;
+      for (final k in node.keys) {
+        if (k.toString().toLowerCase() == part) match = k;
+      }
+      if (match == null) return null;
+      node = node[match];
+    }
+    return node;
+  }
+
+  String _filter(dynamic value, String filter) {
+    final number = value is num
+        ? value.toDouble()
+        : (value is String ? double.tryParse(value.trim()) : null);
+    switch (filter) {
+      case 'money':
+        return number == null ? '' : _money(number);
+      case 'number':
+        return number == null ? '' : formatAmount(number, options.amountSeparator);
+      case 'qty':
+        return number == null ? '' : _quantity(number);
+      case 'percent':
+        return number == null
+            ? ''
+            : '${number.toStringAsFixed(2).replaceFirst(RegExp(r'\.?0+$'), '')}%';
+      case 'upper':
+        return (value ?? '').toString().toUpperCase();
+      case 'lower':
+        return (value ?? '').toString().toLowerCase();
+      case 'capitalize':
+        final text = (value ?? '').toString();
+        return text.isEmpty ? text : text[0].toUpperCase() + text.substring(1);
+      default:
+        return value is num ? _quantity(value.toDouble()) : (value ?? '').toString();
+    }
+  }
+
+  /// `if` conditions: "path" (true when the value is non-empty / non-zero /
+  /// true), "!path", or {"path": .., "equals": ..}.
+  bool _truthy(dynamic condition) {
+    if (condition == null) return true;
+    if (condition is bool) return condition;
+    if (condition is Map) {
+      final value = _rawLookup(condition['path'].toString().toLowerCase());
+      if (condition.containsKey('equals')) {
+        return value?.toString() == condition['equals']?.toString();
+      }
+      return _isSet(value);
+    }
+    final text = condition.toString().trim();
+    if (text.startsWith('!')) return !_truthy(text.substring(1));
+    return _isSet(_rawLookup(text.toLowerCase()));
+  }
+
+  static bool _isSet(dynamic v) =>
+      v != null &&
+      v != false &&
+      !(v is num && v == 0) &&
+      !(v is String && v.trim().isEmpty) &&
+      !(v is Iterable && v.isEmpty) &&
+      !(v is Map && v.isEmpty);
 
   String _money(double value) =>
       '${options.currencySymbol} ${formatAmount(value, options.amountSeparator)}';

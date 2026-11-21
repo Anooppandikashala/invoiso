@@ -33,6 +33,7 @@
 ///             igst, totalQty, charges, previousBalanceDue, totalDue,
 ///             roundedTotal, roundOff, totalInWords, taxInWords
 /// bank:       name, account, ifsc, iban, upi
+/// payment:    upiPayload (empty when UPI QR is off), upiAmount, qrLabel
 /// ```
 /// Amounts are numbers; the engine formats them with [TemplateOptions]
 /// (currency, amount separator, date pattern, time format).
@@ -53,6 +54,19 @@
 /// repeated per page; `{{page}}` / `{{pages}}`), `styles` (named text
 /// styles), `gap` (space between top-level blocks, default 12). Documents
 /// without `engine` (or `engine: 1`) render exactly as before.
+///
+/// Also in engine 2: `table` over any data list (`source`: items /
+/// taxSummary / charges) with columns (`value` template, multi-line `cell`,
+/// `width`, `align`, `if`), `border` grid|horizontal|outer|none, `header`
+/// style, `zebra`, `footerRows` (cells by column `id`, `if`); header row
+/// repeats on every page. `if` block (`when` / `then` / `else`) and an `if`
+/// property on any block; `repeat` (one child per list item); `qr` (UPI
+/// link from `payment.upiPayload` or the uploaded payment QR asset).
+/// Inside tables / repeat, `{{row.*}}` is the current item
+/// (`row.displayName` honours the alias setting). Filters:
+/// `{{path|money|number|qty|percent|upper|lower|capitalize}}`.
+/// Conditions: "path" (set / non-zero / true), "!path",
+/// {"path": .., "equals": ..}.
 library;
 
 export 'src/block_layout_renderer.dart' show buildBlockLayoutPage;

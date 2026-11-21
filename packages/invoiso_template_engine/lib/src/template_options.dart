@@ -48,5 +48,8 @@ class TemplateAssets {
   final Uint8List? logo;
   final Uint8List? signature;
 
-  const TemplateAssets({this.logo, this.signature});
+  /// Uploaded payment QR picked for this invoice (`qr` block, source image).
+  final Uint8List? paymentQr;
+
+  const TemplateAssets({this.logo, this.signature, this.paymentQr});
 }

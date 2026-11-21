@@ -16,6 +16,8 @@ Map<String, dynamic> buildTemplateData(
   required bool showLeadingZeros,
   BankAccount? bankAccount,
   String? upiId,
+  bool showUpiQr = false,
+  String? qrLabel,
   double previousBalanceDue = 0,
 }) {
   String customField(List<String> labels) {
@@ -167,6 +169,18 @@ Map<String, dynamic> buildTemplateData(
       'roundOff': net.roundOff,
       'totalInWords': AmountInWords.amount(net.rounded, indian: indianWords),
       'taxInWords': AmountInWords.amount(invoice.tax, indian: indianWords),
+    },
+    'payment': {
+      // Same UPI link as the built-in templates' QR (amount = balance due).
+      'upiPayload': showUpiQr && (upiId ?? '').trim().isNotEmpty
+          ? 'upi://pay?pa=${upiId!.trim()}'
+              '&pn=${Uri.encodeComponent(company?.name ?? '')}'
+              '&am=${invoice.outstandingBalance.toStringAsFixed(2)}'
+              '&cu=${invoice.currencyCode.toUpperCase()}'
+              '&tn=${Uri.encodeComponent('Invoice ${invoice.id}')}'
+          : '',
+      'upiAmount': invoice.outstandingBalance,
+      'qrLabel': qrLabel ?? '',
     },
     'bank': {
       'name': bankAccount?.bankName ?? '',

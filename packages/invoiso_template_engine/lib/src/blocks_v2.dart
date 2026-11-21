@@ -4,7 +4,9 @@ part of 'block_layout_renderer.dart';
 /// v1 layouts keep their exact output. Other block types (header, table,
 /// summary, signature, …) fall through to the v1 builders.
 extension _BlocksV2 on _BlockLayoutRenderer {
-  static const types = {'box', 'row', 'column', 'text', 'divider', 'pagenumber'};
+  static const types = {
+    'box', 'row', 'column', 'text', 'divider', 'pagenumber', 'if', 'repeat', 'qr',
+  };
 
   pw.Widget? buildV2(String type, Map<String, dynamic> block) {
     switch (type) {
@@ -20,6 +22,13 @@ extension _BlocksV2 on _BlockLayoutRenderer {
           thickness: _BlockLayoutRenderer._double(block['thickness'], fallback: 0.8),
           height: _BlockLayoutRenderer._double(block['height'], fallback: 8),
         );
+      case 'if':
+        return buildBlock(_BlockLayoutRenderer._asMap(
+            _truthy(block['when']) ? block['then'] : block['else']));
+      case 'repeat':
+        return _repeatV2(block);
+      case 'qr':
+        return _qrV2(block);
       default: // text, pageNumber
         return _textV2(block);
     }
@@ -260,5 +269,226 @@ extension _BlocksV2 on _BlockLayoutRenderer {
     } finally {
       _pageContext = null;
     }
+  }
+
+  /// One child block per list item (`source`: data path), `{{row.*}}` = item.
+  pw.Widget? _repeatV2(Map<String, dynamic> block) {
+    final list = _rawLookup((block['source'] ?? 'items').toString().toLowerCase());
+    if (list is! List || list.isEmpty) return null;
+    final child = _BlockLayoutRenderer._asMap(block['child']);
+    final gap = _BlockLayoutRenderer._double(block['gap'], fallback: 0);
+    final saved = _row;
+    final widgets = <pw.Widget>[];
+    try {
+      for (final item in list) {
+        _row = _BlockLayoutRenderer._asMap(item);
+        final widget = buildBlock(child);
+        if (widget == null) continue;
+        if (widgets.isNotEmpty && gap > 0) widgets.add(pw.SizedBox(height: gap));
+        widgets.add(widget);
+      }
+    } finally {
+      _row = saved;
+    }
+    if (widgets.isEmpty) return null;
+    return pw.Column(
+        crossAxisAlignment: pw.CrossAxisAlignment.start, children: widgets);
+  }
+
+  /// Payment QR. `source`: "upi" (UPI link from data `payment.upiPayload`),
+  /// "image" (uploaded payment QR asset) or "auto" (image if set, else UPI).
+  /// Optional `title` / `caption` text, `size` in points.
+  pw.Widget? _qrV2(Map<String, dynamic> block) {
+    final source = (block['source'] ?? 'auto').toString().toLowerCase();
+    final size = _BlockLayoutRenderer._double(block['size'], fallback: 90);
+    final payload = _BlockLayoutRenderer._s(_BlockLayoutRenderer._asMap(data['payment']), 'upiPayload');
+    pw.Widget? code;
+    if (source != 'upi' && assets.paymentQr != null) {
+      code = pw.Image(pw.MemoryImage(assets.paymentQr!),
+          width: size, height: size, fit: pw.BoxFit.contain);
+    } else if (source != 'image' && payload.isNotEmpty) {
+      code = pw.BarcodeWidget(
+          barcode: pw.Barcode.qrCode(), data: payload, width: size, height: size);
+    }
+    if (code == null) return null;
+    final title = _resolveLine((block['title'] ?? '').toString());
+    final caption = _resolveLine((block['caption'] ?? '').toString());
+    return pw.Column(
+      mainAxisSize: pw.MainAxisSize.min,
+      children: [
+        if (title.isNotEmpty)
+          pw.Padding(
+            padding: const pw.EdgeInsets.only(bottom: 4),
+            child: pw.Text(title,
+                style: pw.TextStyle(
+                    fontSize: 10, fontWeight: pw.FontWeight.bold, color: textColor)),
+          ),
+        code,
+        if (caption.isNotEmpty)
+          pw.Padding(
+            padding: const pw.EdgeInsets.only(top: 3),
+            child: pw.Text(caption,
+                textAlign: pw.TextAlign.center,
+                style: pw.TextStyle(fontSize: 7.5, color: mutedColor)),
+          ),
+      ],
+    );
+  }
+
+  /// Table over any data list. Columns: `label`, `width`, `align`, `if`, and
+  /// cell content as `value` (template, `{{row.x|money}}`), `cell` (several
+  /// text lines with their own style) or v1 `key` (items only). Options:
+  /// `source`, `border` grid|horizontal|outer|none, `borderWidth`,
+  /// `borderColor`, `header` {background, color, bold, size} or false,
+  /// `size`, `cellPadding`, `zebra` colour, `footerRows` [{cells: {columnId:
+  /// text|{value, bold, italic, align}}, bold, italic, background, if}].
+  /// Returned as separate widgets so a top-level table splits across pages.
+  List<pw.Widget> tableV2Parts(Map<String, dynamic> block) {
+    final columns = [
+      for (final c in (block['columns'] is List ? block['columns'] as List : const []))
+        if (_truthy(_BlockLayoutRenderer._asMap(c)['if'])) _BlockLayoutRenderer._asMap(c),
+    ];
+    if (columns.isEmpty) return _tableParts(block); // no columns → v1 default
+    final sourcePath = (block['source'] ?? 'items').toString().toLowerCase();
+    final list = _rawLookup(sourcePath);
+    final rows = list is List ? list : const [];
+    final size = _BlockLayoutRenderer._double(block['size'], fallback: 9);
+    final padding = _insets(block['cellPadding']) ??
+        const pw.EdgeInsets.symmetric(horizontal: 5, vertical: 4);
+    final lineColor =
+        _BlockLayoutRenderer._color(block['borderColor'], fallback: borderColor);
+    final lineWidth = _BlockLayoutRenderer._double(block['borderWidth'], fallback: 0.6);
+    final side = pw.BorderSide(color: lineColor, width: lineWidth);
+    final tableBorder = switch ((block['border'] ?? 'horizontal').toString()) {
+      'grid' => pw.TableBorder.all(color: lineColor, width: lineWidth),
+      'outer' => pw.TableBorder(top: side, bottom: side, left: side, right: side),
+      'none' => null,
+      _ => pw.TableBorder(top: side, bottom: side, horizontalInside: side),
+    };
+    final header = block['header'] == false
+        ? null
+        : _BlockLayoutRenderer._asMap(block['header']);
+    final zebra = block['zebra'] is String
+        ? _BlockLayoutRenderer._color(block['zebra'], fallback: PdfColors.white)
+        : null;
+
+    String columnId(int i) =>
+        (columns[i]['id'] ?? columns[i]['key'] ?? '$i').toString();
+
+    pw.Widget cellText(String text, Map<String, dynamic> style, dynamic align,
+        {bool bold = false, bool italic = false, double? fontSize, PdfColor? color}) {
+      return pw.Text(
+        text,
+        textAlign: _BlockLayoutRenderer._textAlign(style['align'] ?? align),
+        style: pw.TextStyle(
+          fontSize: _BlockLayoutRenderer._double(style['size'], fallback: fontSize ?? size),
+          color: _BlockLayoutRenderer._color(style['color'], fallback: color ?? textColor),
+          fontWeight: (style['bold'] ?? bold) == true ? pw.FontWeight.bold : null,
+          fontStyle: (style['italic'] ?? italic) == true ? pw.FontStyle.italic : null,
+        ),
+      );
+    }
+
+    pw.Widget bodyCell(Map<String, dynamic> column, int index) {
+      final lines = <pw.Widget>[];
+      if (column['cell'] is List) {
+        for (final raw in column['cell'] as List) {
+          final spec = raw is String ? {'value': raw} : _BlockLayoutRenderer._asMap(raw);
+          final text = _resolveLine((spec['value'] ?? '').toString());
+          if (text.isNotEmpty) lines.add(cellText(text, spec, column['align']));
+        }
+      } else {
+        final text = column['value'] != null
+            ? _resolve(column['value'].toString())
+            : _itemCell(column['key']?.toString() ?? '', _row ?? const {}, index);
+        lines.add(cellText(text, column, column['align']));
+      }
+      return pw.Padding(
+        padding: padding,
+        child: pw.Column(
+          crossAxisAlignment: switch (column['align']?.toString()) {
+            'right' => pw.CrossAxisAlignment.end,
+            'center' => pw.CrossAxisAlignment.center,
+            _ => pw.CrossAxisAlignment.start,
+          },
+          children: lines,
+        ),
+      );
+    }
+
+    final tableRows = <pw.TableRow>[];
+    if (header != null) {
+      tableRows.add(pw.TableRow(
+        repeat: true,
+        decoration: pw.BoxDecoration(
+            color: _BlockLayoutRenderer._color(header['background'], fallback: primary)),
+        children: [
+          for (final column in columns)
+            pw.Padding(
+              padding: padding,
+              child: cellText(_resolve((column['label'] ?? '').toString()), header,
+                  column['align'],
+                  bold: header['bold'] != false,
+                  color: _BlockLayoutRenderer._color(header['color'],
+                      fallback: PdfColors.white)),
+            ),
+        ],
+      ));
+    }
+    final saved = _row;
+    try {
+      for (var i = 0; i < rows.length; i++) {
+        _row = _BlockLayoutRenderer._asMap(rows[i]);
+        tableRows.add(pw.TableRow(
+          decoration: zebra != null && i.isOdd ? pw.BoxDecoration(color: zebra) : null,
+          children: [for (final c in columns) bodyCell(c, i)],
+        ));
+      }
+    } finally {
+      _row = saved;
+    }
+    for (final raw in (block['footerRows'] is List ? block['footerRows'] as List : const [])) {
+      final footer = _BlockLayoutRenderer._asMap(raw);
+      if (!_truthy(footer['if'])) continue;
+      final cells = _BlockLayoutRenderer._asMap(footer['cells']);
+      tableRows.add(pw.TableRow(
+        decoration: footer['background'] == null
+            ? null
+            : pw.BoxDecoration(
+                color: _BlockLayoutRenderer._color(footer['background'],
+                    fallback: PdfColors.white)),
+        children: [
+          for (var i = 0; i < columns.length; i++)
+            () {
+              final spec = cells[columnId(i)] is Map
+                  ? _BlockLayoutRenderer._asMap(cells[columnId(i)])
+                  : {'value': cells[columnId(i)] ?? ''};
+              return pw.Padding(
+                padding: padding,
+                child: cellText(_resolve(spec['value'].toString()), spec,
+                    columns[i]['align'],
+                    bold: footer['bold'] == true, italic: footer['italic'] == true),
+              );
+            }(),
+        ],
+      ));
+    }
+
+    final title = _resolve((block['title'] ?? '').toString());
+    return [
+      if (title.isNotEmpty) ...[
+        pw.Text(title,
+            style: pw.TextStyle(fontSize: 11, fontWeight: pw.FontWeight.bold, color: textColor)),
+        pw.SizedBox(height: 6),
+      ],
+      pw.Table(
+        border: tableBorder,
+        columnWidths: {
+          for (var i = 0; i < columns.length; i++)
+            i: _BlockLayoutRenderer._columnWidth(columns[i]['width']),
+        },
+        children: tableRows,
+      ),
+    ];
   }
 }

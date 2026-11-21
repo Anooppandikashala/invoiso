@@ -92,4 +92,21 @@ void main() {
     expect((data['items'] as List).first['slNo'], 1);
     expect(data['shipTo']['name'], isNotEmpty);
   });
+
+  test('UPI payload matches the built-in QR link and follows the setting', () {
+    final inv = _invoice();
+    Map<String, dynamic> payment(bool show) => buildTemplateData(
+          inv,
+          PdfPreviewSample.fallbackCompany(),
+          invoicePrefix: 'INV-',
+          showLeadingZeros: true,
+          upiId: 'sample@upi',
+          showUpiQr: show,
+        )['payment'] as Map<String, dynamic>;
+    final on = payment(true)['upiPayload'] as String;
+    expect(on, startsWith('upi://pay?pa=sample@upi&pn='));
+    expect(on, contains('&am=${inv.outstandingBalance.toStringAsFixed(2)}'));
+    expect(on, contains('&cu=INR'));
+    expect(payment(false)['upiPayload'], '');
+  });
 }
