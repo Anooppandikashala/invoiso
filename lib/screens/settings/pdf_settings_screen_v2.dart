@@ -41,6 +41,7 @@ class _PdfSettingsScreenV2State extends ConsumerState<PdfSettingsScreenV2> {
   Timer? _previewDebounceTimer;
   PdfGenerationSettings? _basePdfSettings;
   int _previewVersion = 0;
+  int _previewRequest = 0; // latest preview request; older results are dropped
 
   InvoiceTemplate _savedTemplate = InvoiceTemplate.classic;
   InvoiceTemplate _previewedTemplate = InvoiceTemplate.classic;
@@ -317,6 +318,7 @@ class _PdfSettingsScreenV2State extends ConsumerState<PdfSettingsScreenV2> {
 
   Future<void> _generatePdfPreview() async {
     if (!mounted) return;
+    final request = ++_previewRequest;
     setState(() => _previewIsLoading = true);
     try {
       _basePdfSettings ??= await PDFService.fetchPdfSettings();
@@ -423,7 +425,7 @@ class _PdfSettingsScreenV2State extends ConsumerState<PdfSettingsScreenV2> {
         previewSettings,
       );
       final bytes = await doc.save();
-      if (mounted) {
+      if (mounted && request == _previewRequest) {
         setState(() {
           _previewPdfBytes = bytes;
           _previewIsLoading = false;
@@ -432,7 +434,7 @@ class _PdfSettingsScreenV2State extends ConsumerState<PdfSettingsScreenV2> {
       }
     } catch (e, st) {
       debugPrint('Error generating PDF preview: $e\n$st');
-      if (mounted) {
+      if (mounted && request == _previewRequest) {
         setState(() => _previewIsLoading = false);
       }
     }
@@ -1000,6 +1002,18 @@ class _PdfSettingsScreenV2State extends ConsumerState<PdfSettingsScreenV2> {
       );
       if (result == null || result.files.isEmpty) return;
       final picked = result.files.single;
+      // Real layouts are a few KB; a huge file would be stored in settings
+      // and re-parsed on every PDF, so reject it up front.
+      if (picked.size > 512 * 1024) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Layout file is too large (max 512 KB).'),
+            backgroundColor: Colors.red,
+          ),
+        );
+        return;
+      }
       // Prefer in-memory bytes (always available on web); fall back to the
       // path for desktop/mobile pickers that only provide a file path.
       String content;

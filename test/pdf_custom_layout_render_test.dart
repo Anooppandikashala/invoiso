@@ -10,6 +10,7 @@ import 'package:pdf/widgets.dart' as pw;
 import 'test_pdf_font_service.dart';
 import 'package:invoiso/common/common.dart';
 import 'package:invoiso/models/custom_invoice_layout.dart';
+import 'package:invoiso/models/invoice.dart';
 import 'package:invoiso/services/pdf/pdf_preview_sample.dart';
 import 'package:invoiso/services/pdf/pdf_service.dart';
 import 'package:invoiso/services/pdf/pdf_settings.dart';
@@ -429,5 +430,46 @@ void main() {
     expect(await doc.save(), isNotEmpty);
     expect(_textOperatorCount(doc), greaterThan(0),
         reason: 'unrenderable layout should never preview as a blank page');
+  });
+
+  test('long item lists split the block layout table across pages', () async {
+    // The items table must be a direct page child; nested in a Column it
+    // cannot split and MultiPage throws TooManyPagesException.
+    final sample = PdfPreviewSample.createSampleInvoice();
+    final invoice = Invoice(
+      id: sample.id,
+      invoiceNumber: sample.invoiceNumber,
+      customer: sample.customer,
+      items: List.generate(120, (i) => sample.items[i % sample.items.length]),
+      date: sample.date,
+      type: sample.type,
+      taxRate: sample.taxRate,
+      taxMode: sample.taxMode,
+      currencyCode: sample.currencyCode,
+      currencySymbol: sample.currencySymbol,
+    );
+    final imported = CustomInvoiceLayout(
+      id: 'long-table',
+      name: 'Long Table',
+      description: 'Many items',
+      baseTemplate: InvoiceTemplate.classic,
+      pageSize: PageSize.a4,
+      blockLayout: {
+        'page': {'size': 'a4'},
+        'layout': [
+          {'type': 'header'},
+          {'type': 'table', 'title': 'Items'},
+          {'type': 'summary'},
+        ],
+      },
+      createdAt: DateTime(2026, 11, 21),
+    );
+
+    final doc = PDFService.generateInvoicePDFWithSettings(
+      invoice,
+      settingsFor(imported),
+    );
+    expect(await doc.save(), isNotEmpty);
+    expect(doc.document.pdfPageList.pages.length, greaterThan(1));
   });
 }

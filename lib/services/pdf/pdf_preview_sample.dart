@@ -8,14 +8,14 @@ import 'package:invoiso/models/product.dart';
 class PdfPreviewSample {
   static CompanyInfo fallbackCompany() {
     return CompanyInfo(
-      name: 'ACME ENTERPRISES LTD',
-      address: '102 Industrial Tech Park, Central Avenue, Sector 5',
-      phone: '+91 9876543210',
-      email: 'billing@acme-enterprises.com',
-      website: 'https://acme-enterprises.com',
-      gstin: '27AABCA1234A1Z5',
-      panNumber: 'AABCA1234A',
-      fssaiCode: '10012011000123',
+      name: 'YOUR COMPANY NAME',
+      address: '123 Sample Street, Sample City - 000000',
+      phone: '+91 00000 00000',
+      email: 'company@example.com',
+      website: 'https://example.com',
+      gstin: '00AAAAA0000A0Z0',
+      panNumber: 'AAAAA0000A',
+      fssaiCode: '00000000000000',
       country: 'India',
     );
   }
@@ -28,8 +28,8 @@ class PdfPreviewSample {
     final sampleProducts = [
       Product(
         id: 'sample-p1',
-        name: 'Precision Valve Assembly A-100',
-        description: 'Industrial grade stainless steel 316, pressure rated',
+        name: 'Sample Product A',
+        description: 'Sample product description',
         price: 450.00,
         stock: 50,
         hsncode: '8481',
@@ -38,8 +38,8 @@ class PdfPreviewSample {
       ),
       Product(
         id: 'sample-p2',
-        name: 'Hydraulic Seal Kit (Pack of 5)',
-        description: 'High-temperature resistant synthetic polymer',
+        name: 'Sample Product B',
+        description: 'Sample product description',
         price: 180.00,
         stock: 120,
         hsncode: '4016',
@@ -48,8 +48,8 @@ class PdfPreviewSample {
       ),
       Product(
         id: 'sample-p3',
-        name: 'Annual System Maintenance & Inspection',
-        description: 'Comprehensive calibration and preventative servicing',
+        name: 'Sample Service',
+        description: 'Sample service description',
         price: 750.00,
         stock: 999,
         hsncode: '9987',
@@ -65,7 +65,7 @@ class PdfPreviewSample {
         quantity: 2,
         unitPrice: 450.00,
         unit: 'pcs',
-        description: 'Batch #2026-B, Certified ISO 9001',
+        description: 'Sample item note',
       ),
       InvoiceItem(
         product: sampleProducts[1],
@@ -85,15 +85,15 @@ class PdfPreviewSample {
 
     return Invoice(
       id: 'sample-inv-preview',
-      invoiceNumber: 'INV-2026-0042',
+      invoiceNumber: 'INV-0001',
       customer: Customer(
         id: 'sample-c1',
-        name: 'BHARAT ENGINEERING WORKS',
-        businessName: 'Bharat Engineering Works Pvt Ltd',
-        email: 'procurement@bharateng.com',
-        phone: '+91 9123456789',
-        address: 'Plot 45, MIDC Industrial Area, Pune, Maharashtra - 411018',
-        gstin: '27AABCB9876B1Z2',
+        name: 'SAMPLE CUSTOMER',
+        businessName: 'Sample Customer Business',
+        email: 'customer@example.com',
+        phone: '+91 00000 00000',
+        address: '456 Sample Road, Sample Town - 000000',
+        gstin: '00BBBBB0000B0Z0',
       ),
       items: sampleItems,
       date: DateTime.now(),
@@ -103,7 +103,7 @@ class PdfPreviewSample {
       currencyCode: 'INR',
       currencySymbol: '₹',
       notes:
-          '1. Goods once sold will not be taken back without authorization.\n2. Payment due within 15 days of invoice date.\n3. Subject to local jurisdiction.',
+          'Sample notes and terms appear here.',
       previousBalance: 0.0,
     );
   }

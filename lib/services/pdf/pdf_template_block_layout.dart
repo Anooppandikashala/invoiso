@@ -96,9 +96,9 @@ pw.MultiPage buildBlockLayoutTemplate(
       final widgets = <pw.Widget>[];
       var renderedBlocks = 0;
       for (final block in renderer.blocks) {
-        final widget = renderer.buildBlock(block);
-        if (widget == null) continue;
-        widgets.add(widget);
+        final parts = renderer.pageWidgets(block);
+        if (parts.isEmpty) continue;
+        widgets.addAll(parts);
         renderedBlocks++;
         if (block['type'] != 'divider' && block['type'] != 'footer') {
           widgets.add(pw.SizedBox(height: 12));
@@ -184,6 +184,13 @@ class _BlockLayoutRenderer {
   final List<Map<String, dynamic>> blocks;
   final pw.PageTheme pageTheme;
 
+  // One image object per document, so repeated logo/signature blocks embed
+  // the bytes once instead of once per block.
+  late final pw.MemoryImage? _logoImage =
+      logoBytes == null ? null : pw.MemoryImage(logoBytes!);
+  late final pw.MemoryImage? _signatureImage =
+      signatureBytes == null ? null : pw.MemoryImage(signatureBytes!);
+
   late final Map<String, dynamic> _theme =
       _asMap(document['theme'] ?? document['colors']);
   late final PdfColor primary = _color(
@@ -202,12 +209,34 @@ class _BlockLayoutRenderer {
       _theme['border'] ?? _theme['borderColor'] ?? _theme['divider'],
       fallback: PdfColor.fromHex('#E5E7EB'));
 
+  String _typeOf(Map<String, dynamic> block) =>
+      (block['type'] ?? _inferBlockType(block))
+          ?.toString()
+          .trim()
+          .toLowerCase() ??
+      '';
+
+  static const _tableTypes = {
+    'table',
+    'items',
+    'lineitems',
+    'line_items',
+    'invoiceitems',
+    'invoice_items',
+    'products',
+  };
+
+  /// Widgets for one top-level block. An items table is returned as its own
+  /// page child (not wrapped in a Column) so MultiPage can split long item
+  /// lists across pages.
+  List<pw.Widget> pageWidgets(Map<String, dynamic> block) {
+    if (_tableTypes.contains(_typeOf(block))) return _tableParts(block);
+    final widget = buildBlock(block);
+    return widget == null ? const [] : [widget];
+  }
+
   pw.Widget? buildBlock(Map<String, dynamic> block) {
-    final type = (block['type'] ?? _inferBlockType(block))
-            ?.toString()
-            .trim()
-            .toLowerCase() ??
-        '';
+    final type = _typeOf(block);
     switch (type) {
       case 'header':
         return _header(block);
@@ -471,11 +500,11 @@ class _BlockLayoutRenderer {
   List<String> _fieldStrings(dynamic value) {
     final result = <String>[];
     if (value is String && value.trim().isNotEmpty) {
-      result.add(_resolve(value));
+      result.add(_resolveLine(value));
     } else if (value is List) {
       for (final entry in value) {
         if (entry is String && entry.trim().isNotEmpty) {
-          result.add(_resolve(entry));
+          result.add(_resolveLine(entry));
         } else {
           final map = _asMap(entry);
           if (map.isEmpty) continue;
@@ -485,11 +514,12 @@ class _BlockLayoutRenderer {
               map['content'] ??
               map['line'];
           if (text != null && text.toString().trim().isNotEmpty) {
-            result.add(_resolve(text.toString()));
+            result.add(_resolveLine(text.toString()));
           }
         }
       }
     }
+    result.removeWhere((line) => line.trim().isEmpty);
     return result;
   }
 
@@ -508,7 +538,7 @@ class _BlockLayoutRenderer {
           block['text'],
     );
     final effectiveFields = fields.isEmpty ? fallbackFields : fields;
-    if (title.isEmpty && effectiveFields.isEmpty) return null;
+    if (effectiveFields.isEmpty) return null;
     return pw.Column(
       crossAxisAlignment: pw.CrossAxisAlignment.start,
       children: [
@@ -603,14 +633,14 @@ class _BlockLayoutRenderer {
         .toString()
         .toLowerCase();
     final wantsSignature = source.contains('signature');
-    final bytes =
-        wantsSignature ? signatureBytes : (logoBytes ?? signatureBytes);
-    if (bytes == null) return null;
+    final image =
+        wantsSignature ? _signatureImage : (_logoImage ?? _signatureImage);
+    if (image == null) return null;
     final height = _double(block['height'], fallback: wantsSignature ? 40 : 42);
     return pw.Align(
       alignment: _alignment(block['align'] ?? 'left'),
       child: pw.Image(
-        pw.MemoryImage(bytes),
+        image,
         height: height.clamp(12.0, 120.0),
         fit: pw.BoxFit.contain,
       ),
@@ -668,10 +698,10 @@ class _BlockLayoutRenderer {
     ];
     final widgets = <pw.Widget>[];
     for (final block in defaults) {
-      final widget = buildBlock(block);
-      if (widget == null) continue;
+      final parts = pageWidgets(block);
+      if (parts.isEmpty) continue;
       if (widgets.isNotEmpty) widgets.add(pw.SizedBox(height: 12));
-      widgets.add(widget);
+      widgets.addAll(parts);
     }
     return widgets;
   }
@@ -724,7 +754,7 @@ class _BlockLayoutRenderer {
       mainAxisAlignment: pw.MainAxisAlignment.center,
       children: [
         if (showLogo) ...[
-          pw.Image(pw.MemoryImage(logoBytes!),
+          pw.Image(_logoImage!,
               height: 42, fit: pw.BoxFit.contain),
           pw.SizedBox(height: 6),
         ],
@@ -794,16 +824,22 @@ class _BlockLayoutRenderer {
 
   pw.Widget _columnSide(Map<String, dynamic> side) {
     final title = _resolve(side['title']?.toString() ?? '');
-    final text = _resolve(side['text']?.toString() ?? '');
+    final text = _resolveLine(side['text']?.toString() ?? '');
     final fields = <String>[];
     final rawFields = side['fields'];
     if (rawFields is List) {
       for (final field in rawFields) {
-        final value = _resolve(field?.toString() ?? '');
+        final value = _resolveLine(field?.toString() ?? '');
         if (value.trim().isNotEmpty) fields.add(value);
       }
     }
     final showSignature = side['signature'] == true;
+    // Nothing to show under the title (no bank, no signature…) → hide it too.
+    if (text.isEmpty &&
+        fields.isEmpty &&
+        !(showSignature && _signatureImage != null)) {
+      return pw.SizedBox();
+    }
 
     return pw.Column(
       crossAxisAlignment: pw.CrossAxisAlignment.start,
@@ -830,72 +866,45 @@ class _BlockLayoutRenderer {
                 style: pw.TextStyle(
                     fontSize: 9.5, color: textColor, lineSpacing: 2)),
           ),
-        if (showSignature) _signatureContent(),
+        // No signature image → nothing, same as the built-in templates.
+        if (showSignature && _signatureImage != null) _signatureContent(),
       ],
     );
   }
 
-  pw.Widget _signatureContent() {
-    if (signatureBytes != null) {
-      return buildSignatureWidget(
-        pw.MemoryImage(signatureBytes!),
+  pw.Widget _signatureContent() => buildSignatureWidget(
+        _signatureImage!,
         signaturePosition,
         imageHeight: signatureSizePx,
       );
-    }
-    final align = signaturePosition == 'right'
-        ? pw.CrossAxisAlignment.end
-        : pw.CrossAxisAlignment.start;
+
+  pw.Widget? _signature(Map<String, dynamic> block) {
+    // No signature image → nothing, same as the built-in templates.
+    if (_signatureImage == null) return null;
+    final label =
+        _resolve(block['label']?.toString() ?? 'Authorised Signature');
     return pw.Column(
-      crossAxisAlignment: align,
+      crossAxisAlignment: pw.CrossAxisAlignment.end,
       children: [
-        pw.SizedBox(height: signatureSizePx),
-        pw.Container(width: 120, height: 0.8, color: borderColor),
-        pw.SizedBox(height: 4),
-        pw.Text('Authorised Signature',
-            style: pw.TextStyle(fontSize: 8.5, color: mutedColor)),
+        buildSignatureWidget(
+          _signatureImage,
+          signaturePosition,
+          imageHeight: signatureSizePx,
+          labelFontSize: 8.5,
+        ),
+        if (label.isNotEmpty && label != 'Authorised Signature')
+          pw.Text(label,
+              style: pw.TextStyle(fontSize: 8.5, color: mutedColor)),
       ],
     );
   }
 
-  pw.Widget _signature(Map<String, dynamic> block) {
-    final label =
-        _resolve(block['label']?.toString() ?? 'Authorised Signature');
-    if (signatureBytes != null) {
-      return pw.Column(
-        crossAxisAlignment: pw.CrossAxisAlignment.end,
-        children: [
-          buildSignatureWidget(
-            pw.MemoryImage(signatureBytes!),
-            signaturePosition,
-            imageHeight: signatureSizePx,
-            labelFontSize: 8.5,
-          ),
-          if (label.isNotEmpty && label != 'Authorised Signature')
-            pw.Text(label,
-                style: pw.TextStyle(fontSize: 8.5, color: mutedColor)),
-        ],
+  pw.Widget _table(Map<String, dynamic> block) => pw.Column(
+        crossAxisAlignment: pw.CrossAxisAlignment.start,
+        children: _tableParts(block),
       );
-    }
-    return pw.Align(
-      alignment: signaturePosition == 'right'
-          ? pw.Alignment.centerRight
-          : pw.Alignment.centerLeft,
-      child: pw.Column(
-        crossAxisAlignment: signaturePosition == 'right'
-            ? pw.CrossAxisAlignment.end
-            : pw.CrossAxisAlignment.start,
-        children: [
-          pw.SizedBox(height: signatureSizePx),
-          pw.Container(width: 120, height: 0.8, color: borderColor),
-          pw.SizedBox(height: 4),
-          pw.Text(label, style: pw.TextStyle(fontSize: 8.5, color: mutedColor)),
-        ],
-      ),
-    );
-  }
 
-  pw.Widget _table(Map<String, dynamic> block) {
+  List<pw.Widget> _tableParts(Map<String, dynamic> block) {
     final title = _resolve(block['title']?.toString() ?? '');
     final columns = <Map<String, dynamic>>[];
     final rawColumns = block['columns'];
@@ -987,28 +996,25 @@ class _BlockLayoutRenderer {
       );
     }
 
-    return pw.Column(
-      crossAxisAlignment: pw.CrossAxisAlignment.start,
-      children: [
-        if (title.isNotEmpty) ...[
-          pw.Text(title,
-              style: pw.TextStyle(
-                  fontSize: 11,
-                  fontWeight: pw.FontWeight.bold,
-                  color: textColor)),
-          pw.SizedBox(height: 6),
-        ],
-        pw.Table(
-          columnWidths: columnWidths,
-          border: pw.TableBorder(
-            top: pw.BorderSide(color: borderColor, width: 0.7),
-            bottom: pw.BorderSide(color: borderColor, width: 0.7),
-            horizontalInside: pw.BorderSide(color: borderColor, width: 0.5),
-          ),
-          children: [header, ...rows],
-        ),
+    return [
+      if (title.isNotEmpty) ...[
+        pw.Text(title,
+            style: pw.TextStyle(
+                fontSize: 11,
+                fontWeight: pw.FontWeight.bold,
+                color: textColor)),
+        pw.SizedBox(height: 6),
       ],
-    );
+      pw.Table(
+        columnWidths: columnWidths,
+        border: pw.TableBorder(
+          top: pw.BorderSide(color: borderColor, width: 0.7),
+          bottom: pw.BorderSide(color: borderColor, width: 0.7),
+          horizontalInside: pw.BorderSide(color: borderColor, width: 0.5),
+        ),
+        children: [header, ...rows],
+      ),
+    ];
   }
 
   pw.Widget? _summary(Map<String, dynamic> block) {
@@ -1098,11 +1104,11 @@ class _BlockLayoutRenderer {
 
   pw.Widget? _box(Map<String, dynamic> block) {
     final title = _resolve(block['title']?.toString() ?? '');
-    final content = _resolve(block['content']?.toString() ??
+    final content = _resolveLine(block['content']?.toString() ??
         block['text']?.toString() ??
         block['note']?.toString() ??
         '');
-    if (title.isEmpty && content.isEmpty) return null;
+    if (content.isEmpty) return null;
     return pw.Container(
       width: double.infinity,
       padding: const pw.EdgeInsets.all(10),
@@ -1133,17 +1139,21 @@ class _BlockLayoutRenderer {
   }
 
   pw.Widget? _textBlock(Map<String, dynamic> block) {
-    final text = _resolve(
+    final text = _resolveLine(
         block['content']?.toString() ?? block['text']?.toString() ?? '');
     if (text.isEmpty) return null;
-    return pw.Text(
-      text,
-      textAlign: _textAlign(block['align']),
-      style: pw.TextStyle(
-        fontSize: _double(block['fontSize'], fallback: 9.5),
-        color: textColor,
-        fontWeight:
-            block['bold'] == true ? pw.FontWeight.bold : pw.FontWeight.normal,
+    // Full width so "align": "center" / "right" actually moves the text.
+    return pw.SizedBox(
+      width: double.infinity,
+      child: pw.Text(
+        text,
+        textAlign: _textAlign(block['align']),
+        style: pw.TextStyle(
+          fontSize: _double(block['fontSize'], fallback: 9.5),
+          color: textColor,
+          fontWeight:
+              block['bold'] == true ? pw.FontWeight.bold : pw.FontWeight.normal,
+        ),
       ),
     );
   }
@@ -1213,6 +1223,21 @@ class _BlockLayoutRenderer {
     return input.replaceAllMapped(RegExp(r'\{\{\s*([^}]+?)\s*\}\}'), (match) {
       return _placeholder(match.group(1)!.trim());
     });
+  }
+
+  /// Like [_resolve], but a line whose placeholders are all empty (e.g.
+  /// "IFSC: {{bank.ifsc}}" with no bank account) becomes '' so the label is
+  /// not printed on its own.
+  String _resolveLine(String input) {
+    if (!input.contains('{{')) return input;
+    var hasValue = false;
+    final out =
+        input.replaceAllMapped(RegExp(r'\{\{\s*([^}]+?)\s*\}\}'), (match) {
+      final value = _placeholder(match.group(1)!.trim());
+      if (value.trim().isNotEmpty) hasValue = true;
+      return value;
+    });
+    return hasValue ? out : '';
   }
 
   String _placeholder(String rawKey) {
