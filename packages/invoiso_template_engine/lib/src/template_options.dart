@@ -5,7 +5,13 @@ import 'package:pdf/pdf.dart';
 /// App settings that change how a layout renders (not part of the layout).
 class TemplateOptions {
   final String currencySymbol;
+
+  /// Thousands grouping: 'none' | 'international' | 'indian'.
+  final String amountSeparator;
   final String datePattern;
+
+  /// '12' (2:30 PM) or '24' (14:30) for `{{invoice.datetime}}`.
+  final String timeFormat;
   final bool showGst;
   final bool showAliasName;
   final bool showDescription;
@@ -22,7 +28,9 @@ class TemplateOptions {
 
   const TemplateOptions({
     this.currencySymbol = '',
+    this.amountSeparator = 'none',
     this.datePattern = 'dd/MM/yyyy',
+    this.timeFormat = '24',
     this.showGst = true,
     this.showAliasName = false,
     this.showDescription = false,

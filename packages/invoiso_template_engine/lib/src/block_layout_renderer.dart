@@ -1,7 +1,7 @@
-import 'package:intl/intl.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 
+import 'formatters.dart';
 import 'template_options.dart';
 
 /// Renders a user-imported block layout document.
@@ -104,9 +104,12 @@ class _BlockLayoutRenderer {
       map[key]?.toString() ?? '';
   static double _n(Map<String, dynamic> map, String key) =>
       (map[key] as num?)?.toDouble() ?? 0;
-  String _date(dynamic iso) {
+  String _date(dynamic iso, {bool withTime = false}) {
     final date = iso == null ? null : DateTime.tryParse(iso.toString());
-    return date == null ? '' : DateFormat(options.datePattern, 'en_US').format(date);
+    return date == null
+        ? ''
+        : formatDate(date, options.datePattern,
+            withTime: withTime, timeFormat: options.timeFormat);
   }
 
   late final Map<String, dynamic> _theme =
@@ -1158,6 +1161,8 @@ class _BlockLayoutRenderer {
         return _s(_invoice, 'number');
       case 'invoice.date':
         return _date(_invoice['date']);
+      case 'invoice.datetime':
+        return _date(_invoice['date'], withTime: true);
       case 'invoice.duedate':
       case 'invoice.due_date':
         return _date(_invoice['dueDate']);
@@ -1245,20 +1250,38 @@ class _BlockLayoutRenderer {
       case 'bank.upi':
         return _s(_bank, 'upi');
       default:
-        return '';
+        return _lookup(key);
     }
   }
 
-  String _money(double value) =>
-      '${options.currencySymbol} ${value.toStringAsFixed(2)}';
-
-  String _quantity(double value) {
-    if (value == value.roundToDouble()) return value.toStringAsFixed(0);
-    return value
-        .toStringAsFixed(2)
-        .replaceFirst(RegExp(r'0+$'), '')
-        .replaceFirst(RegExp(r'\.$'), '');
+  /// Any other `{{section.key}}` (or `{{section.key.sub}}`) resolves straight
+  /// from [data], case-insensitive — new data fields need no engine change.
+  /// Numbers under `totals` print as money (except quantities), other
+  /// numbers as quantities.
+  String _lookup(String path) {
+    final parts = path.split('.');
+    dynamic node = data;
+    for (final part in parts) {
+      if (node is! Map) return '';
+      Object? match;
+      for (final k in node.keys) {
+        if (k.toString().toLowerCase() == part) match = k;
+      }
+      if (match == null) return '';
+      node = node[match];
+    }
+    if (node is num) {
+      return parts.first == 'totals' && !parts.last.contains('qty')
+          ? _money(node.toDouble())
+          : _quantity(node.toDouble());
+    }
+    return node is String ? node : '';
   }
+
+  String _money(double value) =>
+      '${options.currencySymbol} ${formatAmount(value, options.amountSeparator)}';
+
+  String _quantity(double value) => formatQuantity(value);
 
   // ---------------------------------------------------------------------------
   // Document-level helpers

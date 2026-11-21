@@ -344,10 +344,13 @@ class PDFService {
             showLeadingZeros: s.showLeadingZeros,
             bankAccount: effectiveBank,
             upiId: effectiveUpiId,
+            previousBalanceDue: effectivePreviousBalance,
           ),
           options: TemplateOptions(
             currencySymbol: currencySymbol,
+            amountSeparator: AmountFormat.style.name,
             datePattern: s.datePattern,
+            timeFormat: s.pdfTimeFormat,
             showGst: s.showGst,
             showAliasName: s.showAliasName,
             showDescription: s.showDescription,
