@@ -12,6 +12,7 @@ import 'package:invoiso/database/database_helper.dart';
 import 'package:invoiso/database/invoice_attachment_service.dart';
 import 'package:invoiso/common/setting_key.dart';
 import 'package:invoiso/models/company_profile.dart';
+import 'package:invoiso/utils/machine_id.dart';
 
 const defaultCompanyId = 'default';
 const _defaultDbFileName = 'invoice_manager.db';
@@ -267,7 +268,11 @@ class CompanyRegistryService {
       return rows.first['value'] as String?;
     });
 
-    final id = (legacy != null && legacy.isNotEmpty) ? legacy : const Uuid().v4();
+    // New installs: derive from the machine (same ID after a reinstall on this
+    // device); random only when no machine ID is available.
+    final id = (legacy != null && legacy.isNotEmpty)
+        ? legacy
+        : (await machineIdHash() ?? const Uuid().v4());
     await prefs.setString(_installationIdPrefsKey, id);
     return id;
   }

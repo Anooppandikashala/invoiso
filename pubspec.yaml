@@ -46,6 +46,9 @@ dependencies:
   thermal_printer: ^1.0.5
   flutter_esc_pos_utils: ^1.0.1
   image_picker: ^1.1.2
+  device_info_plus: ^11.5.0
+  win32_registry: ^2.1.0
+  android_id: ^0.5.2+1
 
 dev_dependencies:
   flutter_test:
