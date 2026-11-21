@@ -15,16 +15,34 @@
 /// Data contract — every key optional, missing = empty:
 /// ```
 /// company:    name, address, phone, email, website, gstin, pan, fssai,
-///             country, stateCode, state
+///             country, stateCode, state, taxLabel, panLabel
 /// customer:   name, businessName, address, phone, email, gstin, stateCode,
-///             state, custom{label: value}
-/// shipTo:     name, phone, address
+///             state, fields[] {label, value} (age / DOB / gender + custom
+///             fields, as cells), extraLines[] (same, as the built-ins'
+///             text lines)
+/// shipTo:     name, phone, address, lines[] (empty unless Ship To prints)
 /// invoice:    number, title, type, status, notes, paymentMethod,
 ///             salesperson, poNumber, date / dueDate (ISO-8601),
 ///             isInterState, placeOfSupplyCode, placeOfSupply,
-///             custom{label: value}
+///             custom{label: value}, customFields[] {label, value},
+///             gstLines[] {label, value}, returnLines[],
+///             numberLabel ("<document type> No."), keyFields[] {label,
+///             value} (number, Dated, Due Date), headerFields[] {label,
+///             value} (number labelled by type, Dated, Due Date, then
+///             filled custom fields — the GST voucher cells)
 /// items[]:    slNo, name, alias, description, typeTag, hsn, qty, unit, rate,
-///             discount, tax, amount, taxRate, taxable, cgst, sgst, igst
+///             discount, tax, amount, taxRate, cgstRate, sgstRate, igstRate,
+///             taxable, cgst, sgst, igst,
+///             meta{key: value} (enabled product-metadata columns)
+/// settings:   showGst, showQuantity, showDiscount, showTypeTag, showSlNo,
+///             showTaxColumn, showCgstSgst, showIgst, showTotalQuantity,
+///             showRoundOff, showDescription, descriptionNewLine,
+///             showBankDetails, showUpiQr, thankYouNote, logoPosition
+///             (left|right), metadataColumns[]
+///             {key, label,
+///             width}
+/// Values hidden by the app's show/hide settings arrive empty, so lines
+/// showing only them disappear; `settings.*` drive column / row `if`s.
 /// taxSummary[] (per HSN + rate): hsn, rate, taxable, cgstRate, cgst,
 ///             sgstRate, sgst, igstRate, igst, totalTax
 /// charges[]:  label, amount
@@ -33,7 +51,8 @@
 ///             igst, totalQty, charges, previousBalanceDue, totalDue,
 ///             roundedTotal, roundOff, totalInWords, taxInWords
 /// bank:       name, account, ifsc, iban, upi
-/// payment:    upiPayload (empty when UPI QR is off), upiAmount, qrLabel
+/// payment:    upiPayload (empty when UPI QR is off), upiAmount, qrLabel,
+///             qrTitle (uploaded QR label or "Pay via UPI"; empty when off)
 /// ```
 /// Amounts are numbers; the engine formats them with [TemplateOptions]
 /// (currency, amount separator, date pattern, time format).
@@ -59,17 +78,22 @@
 /// taxSummary / charges) with columns (`value` template, multi-line `cell`,
 /// `width`, `align`, `if`), `border` grid|horizontal|outer|none, `header`
 /// style, `zebra`, `footerRows` (cells by column `id`, `if`); header row
-/// repeats on every page. `if` block (`when` / `then` / `else`) and an `if`
+/// repeats on every page when the user's setting is on, or per table with
+/// `repeatHeader: true / false`. `if` block (`when` / `then` / `else`) and an `if`
 /// property on any block; `repeat` (one child per list item); `qr` (UPI
-/// link from `payment.upiPayload` or the uploaded payment QR asset).
+/// link from `payment.upiPayload` or the uploaded payment QR asset);
+/// `grid` (a list as bordered cells, `columns` per row, `cell` template,
+/// `spanLast` to let a short last row span the width). Text may contain
+/// `**bold**` parts, e.g. "**{{row.label}}:** {{row.value}}".
 /// Inside tables / repeat, `{{row.*}}` is the current item
 /// (`row.displayName` honours the alias setting). Filters:
 /// `{{path|money|number|qty|percent|upper|lower|capitalize}}`.
 /// Conditions: "path" (set / non-zero / true), "!path",
-/// {"path": .., "equals": ..}.
+/// {"path": .., "equals": ..}, or a list of these (all must hold).
 library;
 
-export 'src/block_layout_renderer.dart' show buildBlockLayoutPage;
+export 'src/block_layout_renderer.dart'
+    show buildBlockLayoutPage, templatePageFormat;
 export 'src/formatters.dart';
 export 'src/template_options.dart';
 

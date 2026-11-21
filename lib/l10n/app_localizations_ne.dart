@@ -6819,4 +6819,12 @@ class AppLocalizationsNe extends AppLocalizations {
 
   @override
   String get pdfLayoutInsertedBadge => 'थपिएको';
+
+  @override
+  String get pdfLayoutPaperSizeLocked =>
+      'कागजको आकार छानिएको अनुकूलित टेम्प्लेटबाट आउँछ।';
+
+  @override
+  String get pdfSettingsRepeatTableHeaderLabel =>
+      'हरेक पृष्ठमा तालिकाको हेडर दोहोर्‍याउनुहोस्';
 }

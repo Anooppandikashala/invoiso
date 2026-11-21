@@ -62,6 +62,8 @@ class _PdfSettingsScreenV2State extends ConsumerState<PdfSettingsScreenV2> {
   bool _previewedShowTotalQuantity = false;
   String _savedAttachmentLayout = 'grid';
   String _previewedAttachmentLayout = 'grid';
+  bool _savedRepeatTableHeader = false;
+  bool _previewedRepeatTableHeader = false;
   final _thermalWidthMarginController = TextEditingController();
   String _savedThermalWidthMargin = '1';
   String _previewedThermalWidthMargin = '1';
@@ -120,6 +122,9 @@ class _PdfSettingsScreenV2State extends ConsumerState<PdfSettingsScreenV2> {
       ref
           .read(settingsRepositoryProvider)
           .getSetting(SettingKey.attachmentLayout),
+      ref
+          .read(settingsRepositoryProvider)
+          .getSetting(SettingKey.pdfRepeatTableHeader),
     ]);
     final saved = results[0] as InvoiceTemplate;
     final savedThemeColor = results[1] as String?;
@@ -136,6 +141,8 @@ class _PdfSettingsScreenV2State extends ConsumerState<PdfSettingsScreenV2> {
     };
     final savedAttachmentLayout =
         results[9 + _pdfSectionSizeKeys.length] == 'list' ? 'list' : 'grid';
+    final savedRepeatTableHeader =
+        results[10 + _pdfSectionSizeKeys.length] == 'true';
     final customLayouts =
         await ref.read(settingsRepositoryProvider).getCustomInvoiceLayouts();
     final activeLayoutRaw =
@@ -169,6 +176,8 @@ class _PdfSettingsScreenV2State extends ConsumerState<PdfSettingsScreenV2> {
       _previewedShowTotalQuantity = savedShowTotalQty;
       _savedAttachmentLayout = savedAttachmentLayout;
       _previewedAttachmentLayout = savedAttachmentLayout;
+      _savedRepeatTableHeader = savedRepeatTableHeader;
+      _previewedRepeatTableHeader = savedRepeatTableHeader;
       _savedThermalWidthMargin = savedThermalWidthMargin ?? '1';
       _previewedThermalWidthMargin = _savedThermalWidthMargin;
       _thermalWidthMarginController.text = _savedThermalWidthMargin;
@@ -258,6 +267,9 @@ class _PdfSettingsScreenV2State extends ConsumerState<PdfSettingsScreenV2> {
               key, _previewedPdfSectionSizes[key] ?? ''),
         ref.read(settingsRepositoryProvider).setSetting(
             SettingKey.attachmentLayout, _previewedAttachmentLayout),
+        ref.read(settingsRepositoryProvider).setSetting(
+            SettingKey.pdfRepeatTableHeader,
+            _previewedRepeatTableHeader.toString()),
         if (activeLayoutJson != null)
           ref
               .read(settingsRepositoryProvider)
@@ -274,6 +286,7 @@ class _PdfSettingsScreenV2State extends ConsumerState<PdfSettingsScreenV2> {
         _savedLandscape = _previewedLandscape;
         _savedShowTotalQuantity = _previewedShowTotalQuantity;
         _savedAttachmentLayout = _previewedAttachmentLayout;
+        _savedRepeatTableHeader = _previewedRepeatTableHeader;
         _savedThermalWidthMargin = _previewedThermalWidthMargin;
         _savedThermalItemLayout = _previewedThermalItemLayout;
         _savedThermalCompanyNameSize = _previewedThermalCompanyNameSize;
@@ -415,6 +428,10 @@ class _PdfSettingsScreenV2State extends ConsumerState<PdfSettingsScreenV2> {
             _previewedPdfSectionSizes[SettingKey.pdfTotalsFontSize],
             fontSizeScale),
         customerFields: base.customerFields,
+        paymentQrFromImage: base.paymentQrFromImage,
+        paymentQrEntries: base.paymentQrEntries,
+        attachmentsAsList: base.attachmentsAsList,
+        repeatTableHeader: _previewedRepeatTableHeader,
         blockLayout: _previewedBlockLayout,
       );
 
@@ -569,6 +586,7 @@ class _PdfSettingsScreenV2State extends ConsumerState<PdfSettingsScreenV2> {
           _previewedLandscape != _savedLandscape ||
           _previewedShowTotalQuantity != _savedShowTotalQuantity ||
           _previewedAttachmentLayout != _savedAttachmentLayout ||
+          _previewedRepeatTableHeader != _savedRepeatTableHeader ||
           _previewedThermalWidthMargin != _savedThermalWidthMargin ||
           _previewedThermalItemLayout != _savedThermalItemLayout ||
           _previewedThermalCompanyNameSize != _savedThermalCompanyNameSize ||
@@ -1132,6 +1150,7 @@ class _PdfSettingsScreenV2State extends ConsumerState<PdfSettingsScreenV2> {
       _themeColorInputValid = true;
       _previewedShowTotalQuantity = false;
       _previewedAttachmentLayout = 'grid';
+      _previewedRepeatTableHeader = false;
       _previewedThermalWidthMargin = '1';
       _thermalWidthMarginController.text = '1';
       _previewedThermalItemLayout = 'table';
@@ -1375,11 +1394,18 @@ class _PdfSettingsScreenV2State extends ConsumerState<PdfSettingsScreenV2> {
   }
 
   Widget _pageSizeDropdownV2() {
+    // A custom template prints on its own paper size, so the setting is
+    // locked while one is selected.
+    final locked = _previewedBlockLayout != null;
     return DropdownButtonFormField<PageSize>(
       value: _previewedPageSize,
       isExpanded: true,
       decoration: InputDecoration(
         isDense: true,
+        helperText: locked
+            ? AppLocalizations.of(context)!.pdfLayoutPaperSizeLocked
+            : null,
+        helperMaxLines: 2,
         contentPadding:
             const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
         border: OutlineInputBorder(
@@ -1397,9 +1423,11 @@ class _PdfSettingsScreenV2State extends ConsumerState<PdfSettingsScreenV2> {
           .map((s) => DropdownMenuItem<PageSize>(
               value: s, child: Text(pageSizeLabel(context, s))))
           .toList(),
-      onChanged: (val) {
-        if (val != null) _setPreviewedPageSize(val);
-      },
+      onChanged: locked
+          ? null
+          : (val) {
+              if (val != null) _setPreviewedPageSize(val);
+            },
     );
   }
 
@@ -1480,6 +1508,12 @@ class _PdfSettingsScreenV2State extends ConsumerState<PdfSettingsScreenV2> {
               if (ref.watch(attachmentsEnabledProvider)) ...[
                 const SizedBox(height: 8),
                 _buildAttachmentLayoutField(),
+              ],
+              // Custom templates only for now (built-in tables can't repeat
+              // their header yet).
+              if (_previewedBlockLayout != null) ...[
+                const SizedBox(height: 8),
+                _buildRepeatTableHeaderToggle(),
               ],
             ],
             const SizedBox(height: 18),
@@ -1706,6 +1740,40 @@ class _PdfSettingsScreenV2State extends ConsumerState<PdfSettingsScreenV2> {
             value: _previewedShowTotalQuantity,
             onChanged: (v) {
               setState(() => _previewedShowTotalQuantity = v);
+              _schedulePdfPreviewUpdate();
+            },
+            materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildRepeatTableHeaderToggle() {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surfaceContainer,
+        borderRadius: BorderRadius.circular(AppBorderRadius.small),
+        border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Expanded(
+            child: Text(
+              AppLocalizations.of(context)!.pdfSettingsRepeatTableHeaderLabel,
+              style: TextStyle(
+                fontSize: AppFontSize.small,
+                fontWeight: FontWeight.w500,
+                color: Theme.of(context).colorScheme.onSurface,
+              ),
+            ),
+          ),
+          Switch(
+            value: _previewedRepeatTableHeader,
+            onChanged: (v) {
+              setState(() => _previewedRepeatTableHeader = v);
               _schedulePdfPreviewUpdate();
             },
             materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,

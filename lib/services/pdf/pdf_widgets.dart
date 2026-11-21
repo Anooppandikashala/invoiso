@@ -129,12 +129,25 @@ double getSlNumberFlex(PdfPageFormat format, InvoiceTemplate template, bool isLa
 
 // ── Product-metadata snapshot columns (A4 templates only) ─────────────────
 
-double _metaColFlex(String key) =>
+/// Product-metadata columns in print order (enabled ones only are shown).
+const pdfMetadataColumnKeys = [
+  'storageLocation',
+  'containerNumber',
+  'batchNumber',
+  'manufactureName',
+  'manufactureDate',
+  'expiryDate',
+  'supplierName',
+  'skuCode',
+  'notes',
+];
+
+double pdfMetaColFlex(String key) =>
     (key == 'expiryDate' || key == 'manufactureDate') ? 1.6
         : (key == 'notes') ? 2.2
         : 1.4;
 
-String _metaHeaderText(String key, {bool short = false}) {
+String pdfMetaHeaderText(String key, {bool short = false}) {
   switch (key) {
     case 'storageLocation':
       return 'Storage';
@@ -159,7 +172,7 @@ String _metaHeaderText(String key, {bool short = false}) {
   }
 }
 
-String _metaCellValue(InvoiceItem item, String key, String datePattern) {
+String pdfMetaCellValue(InvoiceItem item, String key, String datePattern) {
   final m = item.metadata;
   if (m == null) return '';
   String fmtDate(String? raw) {
@@ -837,17 +850,7 @@ pw.Widget buildInvoiceTable(Invoice invoice,
   // Optional product-metadata snapshot columns — any A4 template. Order is
   // fixed; only the keys the user enabled are kept.
   final List<String> metaKeys = (pageFormat == PdfPageFormat.a4)
-      ? const [
-          'storageLocation',
-          'containerNumber',
-          'batchNumber',
-          'manufactureName',
-          'manufactureDate',
-          'expiryDate',
-          'supplierName',
-          'skuCode',
-          'notes',
-        ].where((k) => metadataColumns[k] == true).toList()
+      ? pdfMetadataColumnKeys.where((k) => metadataColumns[k] == true).toList()
       : const <String>[];
   // Metadata columns eat into table width in portrait. Shorten the Discount
   // header to claw back space whenever any are on.
@@ -878,7 +881,7 @@ pw.Widget buildInvoiceTable(Invoice invoice,
   };
   if (showGst) col++;
   for (final k in metaKeys) {
-    colWidths[col++] = pw.FlexColumnWidth(_metaColFlex(k));
+    colWidths[col++] = pw.FlexColumnWidth(pdfMetaColFlex(k));
   }
   if (showQuantity) colWidths[col++] = const pw.FlexColumnWidth(1);
   colWidths[col++] = const pw.FlexColumnWidth(1.5);
@@ -985,7 +988,7 @@ pw.Widget buildInvoiceTable(Invoice invoice,
             cellPaddingH: cellPaddingH,
             cellPaddingV: cellPaddingV),
       for (final k in metaKeys)
-        buildTableCell(_metaHeaderText(k, short: !isLandscape),
+        buildTableCell(pdfMetaHeaderText(k, short: !isLandscape),
             isHeader: true,
             textColor: textColor,
             fontSize: headerFontSize,
@@ -1135,7 +1138,7 @@ pw.Widget buildInvoiceTable(Invoice invoice,
               cellPaddingH: cellPaddingH,
               cellPaddingV: cellPaddingV),
         for (final k in metaKeys)
-          buildTableCell(_metaCellValue(item, k, metadataDatePattern),
+          buildTableCell(pdfMetaCellValue(item, k, metadataDatePattern),
               fontSize: tableFontSize,
               cellPaddingH: cellPaddingH,
               cellPaddingV: cellPaddingV),
@@ -1501,13 +1504,14 @@ List<String> shipToLines(Customer c, {String phonePrefix = ''}) => [
 
 const _pdfGenderLabels = {'male': 'Male', 'female': 'Female', 'other': 'Other'};
 
-/// Extra lines under Bill To: one "Age: 34 · DOB: 15/06/1990 · Gender: Female"
-/// line (switched-off or empty parts skipped), then "Label: value" per filled
-/// customer custom field. Age is at the invoice date (from DOB when set).
-/// Custom field labels come from the invoice snapshot, so renaming a field
-/// later doesn't relabel old invoices.
-List<String> customerExtraLines(Customer c, CustomerFieldSettings s,
-    DateTime invoiceDate, String datePattern, {String separator = ' · '}) {
+/// Customer additional fields for the PDF as (label, value, personal):
+/// Age / DOB / Gender (personal, each when switched on for the PDF), then
+/// each filled customer custom field whose definition prints on PDFs.
+/// Age is at the invoice date (from DOB when set). Custom field labels come
+/// from the invoice snapshot, so renaming a field later doesn't relabel old
+/// invoices.
+List<(String, String, bool)> customerExtraFields(Customer c,
+    CustomerFieldSettings s, DateTime invoiceDate, String datePattern) {
   final age = s.age && s.ageInPdf ? c.ageOn(invoiceDate) : null;
   final dob = s.dob && s.dobInPdf ? DateTime.tryParse(c.dob) : null;
   final gender = s.gender && s.genderInPdf ? _pdfGenderLabels[c.gender] : null;
@@ -1517,16 +1521,30 @@ List<String> customerExtraLines(Customer c, CustomerFieldSettings s,
     for (final d in s.customFieldDefs)
       if (!d.showInPdf) d.id,
   };
-  final personal = [
-    if (age != null) 'Age: $age',
-    if (dob != null) 'DOB: ${formatPdfDate(dob, datePattern)}',
-    if (gender != null) 'Gender: $gender',
-  ].join(separator);
   return [
-    if (personal.isNotEmpty) personal,
+    if (age != null) ('Age', '$age', true),
+    if (dob != null) ('DOB', formatPdfDate(dob, datePattern), true),
+    if (gender != null) ('Gender', gender, true),
     if (s.customFields)
       for (final v in c.customFields)
         if (v.value.trim().isNotEmpty && !hidden.contains(v.defId))
-          '${v.label}: ${v.value.trim()}',
+          (v.label, v.value.trim(), false),
+  ];
+}
+
+/// Extra lines under Bill To: one "Age: 34 · DOB: 15/06/1990 · Gender: Female"
+/// line (switched-off or empty parts skipped), then "Label: value" per filled
+/// customer custom field ([customerExtraFields]).
+List<String> customerExtraLines(Customer c, CustomerFieldSettings s,
+    DateTime invoiceDate, String datePattern, {String separator = ' · '}) {
+  final fields = customerExtraFields(c, s, invoiceDate, datePattern);
+  final personal = [
+    for (final f in fields)
+      if (f.$3) '${f.$1}: ${f.$2}',
+  ].join(separator);
+  return [
+    if (personal.isNotEmpty) personal,
+    for (final f in fields)
+      if (!f.$3) '${f.$1}: ${f.$2}',
   ];
 }

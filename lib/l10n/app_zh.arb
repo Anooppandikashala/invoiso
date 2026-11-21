@@ -1598,5 +1598,7 @@
   "pdfLayoutGeneratingPreview": "正在生成精确的打印预览...",
   "pdfLayoutEditTooltip": "编辑布局 JSON",
   "pdfLayoutRemoveTooltip": "移除添加的布局",
-  "pdfLayoutInsertedBadge": "已添加"
+  "pdfLayoutInsertedBadge": "已添加",
+  "pdfLayoutPaperSizeLocked": "纸张尺寸由所选的自定义模板决定。",
+  "pdfSettingsRepeatTableHeaderLabel": "在每页重复表头"
 }

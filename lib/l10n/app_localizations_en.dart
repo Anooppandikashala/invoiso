@@ -6764,4 +6764,12 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get pdfLayoutInsertedBadge => 'Inserted';
+
+  @override
+  String get pdfLayoutPaperSizeLocked =>
+      'Paper size comes from the selected custom template.';
+
+  @override
+  String get pdfSettingsRepeatTableHeaderLabel =>
+      'Repeat table header on every page';
 }

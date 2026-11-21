@@ -6770,4 +6770,12 @@ class AppLocalizationsBo extends AppLocalizations {
 
   @override
   String get pdfLayoutInsertedBadge => 'བསྣན་ཟིན།';
+
+  @override
+  String get pdfLayoutPaperSizeLocked =>
+      'ཤོག་བུའི་ཆེ་ཆུང་ནི་འདེམས་པའི་རང་སྒྲིག་དཔེ་གཞི་ནས་ཡོང་།';
+
+  @override
+  String get pdfSettingsRepeatTableHeaderLabel =>
+      'ཤོག་ངོས་རེ་རེར་རེའུ་མིག་གི་མགོ་ཡང་བསྐྱར་སྟོན།';
 }

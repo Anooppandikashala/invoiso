@@ -1598,5 +1598,7 @@
   "pdfLayoutGeneratingPreview": "सही प्रिन्ट पूर्वावलोकन बन्दैछ...",
   "pdfLayoutEditTooltip": "लेआउट JSON सम्पादन गर्नुहोस्",
   "pdfLayoutRemoveTooltip": "थपिएको लेआउट हटाउनुहोस्",
-  "pdfLayoutInsertedBadge": "थपिएको"
+  "pdfLayoutInsertedBadge": "थपिएको",
+  "pdfLayoutPaperSizeLocked": "कागजको आकार छानिएको अनुकूलित टेम्प्लेटबाट आउँछ।",
+  "pdfSettingsRepeatTableHeaderLabel": "हरेक पृष्ठमा तालिकाको हेडर दोहोर्‍याउनुहोस्"
 }

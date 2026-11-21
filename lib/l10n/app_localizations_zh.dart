@@ -6535,4 +6535,10 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get pdfLayoutInsertedBadge => '已添加';
+
+  @override
+  String get pdfLayoutPaperSizeLocked => '纸张尺寸由所选的自定义模板决定。';
+
+  @override
+  String get pdfSettingsRepeatTableHeaderLabel => '在每页重复表头';
 }

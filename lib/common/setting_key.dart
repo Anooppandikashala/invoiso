@@ -125,6 +125,7 @@ enum SettingKey {
   customerDetailsBannerDismissed, // '1' once user dismisses the customer-fields discovery banner on Customers
   customInvoiceLayouts, // JSON list of user-inserted CustomInvoiceLayout definitions
   activeCustomLayout, // JSON of the custom layout currently active for PDF rendering (empty = built-in template)
+  pdfRepeatTableHeader, // 'true' = items table header repeats on every PDF page (default false)
 }
 
 extension SettingKeyExtension on SettingKey {
@@ -382,6 +383,8 @@ extension SettingKeyExtension on SettingKey {
         return 'custom_invoice_layouts';
       case SettingKey.activeCustomLayout:
         return 'active_custom_layout';
+      case SettingKey.pdfRepeatTableHeader:
+        return 'pdf_repeat_table_header';
 
     }
   }

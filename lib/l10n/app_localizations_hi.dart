@@ -6787,4 +6787,12 @@ class AppLocalizationsHi extends AppLocalizations {
 
   @override
   String get pdfLayoutInsertedBadge => 'जोड़ा गया';
+
+  @override
+  String get pdfLayoutPaperSizeLocked =>
+      'कागज़ का आकार चुने गए कस्टम टेम्पलेट से आता है।';
+
+  @override
+  String get pdfSettingsRepeatTableHeaderLabel =>
+      'हर पेज पर तालिका का हेडर दोहराएं';
 }

@@ -6883,4 +6883,12 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get pdfLayoutInsertedBadge => 'Añadido';
+
+  @override
+  String get pdfLayoutPaperSizeLocked =>
+      'El tamaño del papel lo define la plantilla personalizada seleccionada.';
+
+  @override
+  String get pdfSettingsRepeatTableHeaderLabel =>
+      'Repetir el encabezado de la tabla en cada página';
 }

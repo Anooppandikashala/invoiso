@@ -26,6 +26,30 @@ class TemplateOptions {
   /// Accent used when the layout document has no `theme.primary`.
   final PdfColor? themeColor;
 
+  /// PDF text-size settings: overall, and per section (each already
+  /// resolved by the app — "same as overall" = the overall value).
+  final double fontScale;
+  final double companyNameScale;
+  final double docTitleScale;
+  final double tableHeaderScale;
+  final double tableItemsScale;
+  final double totalsScale;
+
+  /// "Show time in PDF": off → `{{invoice.datetime}}` prints the date only.
+  final bool showTime;
+
+  /// Logo size setting (points); layouts without their own logo height use it.
+  final double? logoSize;
+
+  final double watermarkOpacity;
+
+  /// Watermark over the whole page, or centred behind the content.
+  final bool watermarkFullPage;
+
+  /// "Repeat table header on every page" setting; a table's own
+  /// `repeatHeader` wins when the template sets it.
+  final bool repeatTableHeader;
+
   const TemplateOptions({
     this.currencySymbol = '',
     this.amountSeparator = 'none',
@@ -40,6 +64,17 @@ class TemplateOptions {
     this.footerFontSize = 8,
     this.thankYouNote = '',
     this.themeColor,
+    this.fontScale = 1,
+    this.companyNameScale = 1,
+    this.docTitleScale = 1,
+    this.tableHeaderScale = 1,
+    this.tableItemsScale = 1,
+    this.totalsScale = 1,
+    this.showTime = true,
+    this.logoSize,
+    this.watermarkOpacity = 0.1,
+    this.watermarkFullPage = false,
+    this.repeatTableHeader = false,
   });
 }
 
@@ -51,5 +86,9 @@ class TemplateAssets {
   /// Uploaded payment QR picked for this invoice (`qr` block, source image).
   final Uint8List? paymentQr;
 
-  const TemplateAssets({this.logo, this.signature, this.paymentQr});
+  /// Watermark image from the PDF settings.
+  final Uint8List? watermark;
+
+  const TemplateAssets(
+      {this.logo, this.signature, this.paymentQr, this.watermark});
 }

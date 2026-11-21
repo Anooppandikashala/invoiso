@@ -6899,4 +6899,12 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get pdfLayoutInsertedBadge => 'Ajouté';
+
+  @override
+  String get pdfLayoutPaperSizeLocked =>
+      'Le format du papier est défini par le modèle personnalisé sélectionné.';
+
+  @override
+  String get pdfSettingsRepeatTableHeaderLabel =>
+      'Répéter l\'en-tête du tableau sur chaque page';
 }

@@ -11539,6 +11539,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Inserted'**
   String get pdfLayoutInsertedBadge;
+
+  /// No description provided for @pdfLayoutPaperSizeLocked.
+  ///
+  /// In en, this message translates to:
+  /// **'Paper size comes from the selected custom template.'**
+  String get pdfLayoutPaperSizeLocked;
+
+  /// No description provided for @pdfSettingsRepeatTableHeaderLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Repeat table header on every page'**
+  String get pdfSettingsRepeatTableHeaderLabel;
 }
 
 class _AppLocalizationsDelegate

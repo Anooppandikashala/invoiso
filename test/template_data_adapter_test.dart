@@ -1,10 +1,60 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:invoiso/common/common.dart';
+import 'package:invoiso/models/custom_field_def.dart';
 import 'package:invoiso/models/custom_field_value.dart';
+import 'package:invoiso/models/customer.dart';
+import 'package:invoiso/models/customer_field_settings.dart';
 import 'package:invoiso/models/invoice.dart';
 import 'package:invoiso/services/gst/gstr1_builder.dart';
 import 'package:invoiso/services/pdf/pdf_preview_sample.dart';
+import 'package:invoiso/services/pdf/pdf_settings.dart';
 import 'package:invoiso/services/pdf/template_data_adapter.dart';
+import 'package:pdf/pdf.dart';
+import 'package:pdf/widgets.dart' as pw;
+
+PdfGenerationSettings _settings({
+  bool showGst = true,
+  bool showPhone = true,
+  bool showCustomerPhone = true,
+  bool showDiscount = true,
+  bool showRoundOff = false,
+  BusinessType businessType = BusinessType.both,
+  LogoPosition logoPosition = LogoPosition.left,
+  Map<String, bool> metadataColumns = const {},
+  CustomerFieldSettings customerFields = const CustomerFieldSettings(),
+}) =>
+    PdfGenerationSettings(
+      company: PdfPreviewSample.fallbackCompany(),
+      template: InvoiceTemplate.classic,
+      invoicePrefix: 'INV-',
+      showGst: showGst,
+      showQuantity: true,
+      showDiscount: showDiscount,
+      showTypeTag: true,
+      businessType: businessType,
+      upiEntries: const [],
+      showQrStr: 'false',
+      showBankDetails: true,
+      bankAccounts: const [],
+      logoPosition: logoPosition,
+      logoSizePx: 80,
+      logoBytes: null,
+      thankYouNote: '',
+      datePattern: 'dd/MM/yyyy',
+      showFooterBranding: true,
+      themeColor: null,
+      showPreviousBalance: true,
+      pageFormat: PdfPageFormat.a4,
+      pageSize: PageSize.a4,
+      showTotalQuantity: true,
+      pdfTheme: pw.ThemeData(),
+      showCgstSgst: true,
+      showPhone: showPhone,
+      showCustomerPhone: showCustomerPhone,
+      showRoundOff: showRoundOff,
+      metadataColumns: metadataColumns,
+      customerFields: customerFields,
+    );
 
 Invoice _invoice({bool interState = false}) {
   final s = PdfPreviewSample.createSampleInvoice();
@@ -27,13 +77,9 @@ Invoice _invoice({bool interState = false}) {
   );
 }
 
-Map<String, dynamic> _data(Invoice inv, {double prev = 0}) => buildTemplateData(
-      inv,
-      PdfPreviewSample.fallbackCompany(),
-      invoicePrefix: 'INV-',
-      showLeadingZeros: true,
-      previousBalanceDue: prev,
-    );
+Map<String, dynamic> _data(Invoice inv,
+        {double prev = 0, PdfGenerationSettings? settings}) =>
+    buildTemplateData(inv, settings ?? _settings(), previousBalanceDue: prev);
 
 void main() {
   test('tax summary matches the GST report lines and the invoice tax', () {
@@ -72,7 +118,7 @@ void main() {
 
   test('totals: quantity, previous balance, rounding and words', () {
     final inv = _invoice();
-    final data = _data(inv, prev: 50);
+    final data = _data(inv, prev: 50, settings: _settings(showRoundOff: true));
     final t = data['totals'] as Map<String, dynamic>;
     expect(t['totalQty'], inv.items.fold<double>(0, (s, i) => s + i.quantity));
     expect(t['totalDue'], closeTo(inv.total + 50, 0.001));
@@ -90,16 +136,13 @@ void main() {
     expect(data['invoice']['placeOfSupply'], contains('32'));
     expect(data['invoice']['custom'], {'Vehicle No': 'KL-10-AB-1234'});
     expect((data['items'] as List).first['slNo'], 1);
-    expect(data['shipTo']['name'], isNotEmpty);
   });
 
   test('UPI payload matches the built-in QR link and follows the setting', () {
     final inv = _invoice();
     Map<String, dynamic> payment(bool show) => buildTemplateData(
           inv,
-          PdfPreviewSample.fallbackCompany(),
-          invoicePrefix: 'INV-',
-          showLeadingZeros: true,
+          _settings(),
           upiId: 'sample@upi',
           showUpiQr: show,
         )['payment'] as Map<String, dynamic>;
@@ -108,5 +151,117 @@ void main() {
     expect(on, contains('&am=${inv.outstandingBalance.toStringAsFixed(2)}'));
     expect(on, contains('&cu=INR'));
     expect(payment(false)['upiPayload'], '');
+  });
+
+  test('show/hide settings come through as empty values, like built-ins', () {
+    final inv = _invoice();
+    final on = _data(inv);
+    final off = _data(inv,
+        settings: _settings(showGst: false, showPhone: false, showCustomerPhone: false));
+    expect(on['company']['phone'], isNotEmpty);
+    expect(off['company']['phone'], '');
+    expect(off['company']['gstin'], '');
+    expect(off['customer']['phone'], '');
+    expect(off['customer']['gstin'], '');
+    expect(off['invoice']['gstLines'], isEmpty);
+    expect(on['invoice']['gstLines'], isNotEmpty);
+    expect(on['company']['taxLabel'], 'GSTIN');
+  });
+
+  test('round off off → no rounding, total stays exact', () {
+    final inv = _invoice();
+    final t = _data(inv)['totals'] as Map<String, dynamic>;
+    expect(t['roundOff'], 0);
+    expect(t['roundedTotal'], inv.total);
+  });
+
+  test('column switches and metadata columns reach the layout', () {
+    final inv = _invoice();
+    final data = _data(inv,
+        settings: _settings(showDiscount: false, metadataColumns: {'batchNumber': true}));
+    final settings = data['settings'] as Map<String, dynamic>;
+    expect(settings['showDiscount'], false);
+    expect(settings['metadataColumns'], [
+      {'key': 'batchNumber', 'label': 'Batch No.', 'width': 1.4},
+    ]);
+    expect((data['items'] as List).first['meta'], contains('batchNumber'));
+  });
+
+  test('invoice custom fields list and ship-to only when the rule passes', () {
+    final inv = _invoice();
+    final data = _data(inv);
+    expect(data['invoice']['customFields'], [
+      {'label': 'Vehicle No', 'value': 'KL-10-AB-1234'},
+    ]);
+    // Ship To feature off by default → nothing to print.
+    expect(data['shipTo']['address'], '');
+    expect(data['shipTo']['lines'], isEmpty);
+  });
+
+  test('header fields: number, date, then filled custom fields (GST cells)', () {
+    final fields = (_data(_invoice())['invoice']['headerFields'] as List)
+        .cast<Map<String, dynamic>>();
+    expect(fields.map((f) => f['label']).toList(),
+        ['Invoice No.', 'Dated', 'Vehicle No']);
+    expect(fields.first['value'], 'INV-0042');
+    expect(fields.last['value'], 'KL-10-AB-1234');
+  });
+
+  test('number label follows the document type', () {
+    for (final type in ['Invoice', 'Quotation', 'Credit Note', 'Receipt']) {
+      final s = PdfPreviewSample.createSampleInvoice();
+      final inv = Invoice(
+          id: 't', invoiceNumber: '7', customer: s.customer, items: s.items,
+          date: DateTime(2026, 11, 21), type: type);
+      final data = _data(inv);
+      expect(data['invoice']['numberLabel'], '$type No.');
+      expect((data['invoice']['headerFields'] as List).first['label'], '$type No.');
+    }
+  });
+
+  test('customer additional fields as label/value cells, per PDF switches', () {
+    final base = _invoice();
+    final inv = Invoice(
+      id: 't', invoiceNumber: '1', items: base.items, date: base.date, type: 'Invoice',
+      customer: Customer(
+        id: 'c', name: 'C', email: '', phone: '', address: '', gstin: '',
+        businessName: '', gender: 'female', age: 34,
+        customFields: const [
+          CustomFieldValue(defId: 'm', label: 'Member ID', value: 'M-001'),
+          CustomFieldValue(defId: 'h', label: 'Hidden', value: 'X'),
+        ],
+      ),
+    );
+    final fields = (_data(inv,
+            settings: _settings(
+                customerFields: const CustomerFieldSettings(
+                    age: true, gender: true, customFields: true, customFieldDefs: [
+              CustomFieldDef(id: 'm', label: 'Member ID', sortOrder: 0),
+              CustomFieldDef(id: 'h', label: 'Hidden', sortOrder: 1, showInPdf: false),
+            ])))['customer']['fields'] as List)
+        .cast<Map<String, dynamic>>();
+    expect(fields, [
+      {'label': 'Age', 'value': '34'},
+      {'label': 'Gender', 'value': 'Female'},
+      {'label': 'Member ID', 'value': 'M-001'},
+    ]);
+    // Feature switches off → nothing.
+    expect(_data(inv)['customer']['fields'], isEmpty);
+  });
+
+  test('key fields: number, date, due date only (no custom fields)', () {
+    final fields = (_data(_invoice())['invoice']['keyFields'] as List)
+        .cast<Map<String, dynamic>>();
+    expect(fields.map((f) => f['label']).toList(), ['Invoice No.', 'Dated']);
+  });
+
+  test('type tag only for product-and-service businesses; logo position', () {
+    final inv = _invoice();
+    expect(_data(inv)['settings']['showTypeTag'], true);
+    expect(_data(inv, settings: _settings(businessType: BusinessType.product))
+        ['settings']['showTypeTag'], false);
+    expect(_data(inv)['settings']['logoPosition'], 'left');
+    expect(_data(inv, settings: _settings(logoPosition: LogoPosition.right))
+        ['settings']['logoPosition'], 'right');
   });
 }

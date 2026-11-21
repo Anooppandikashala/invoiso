@@ -1598,5 +1598,7 @@
   "pdfLayoutGeneratingPreview": "सटीक प्रिंट पूर्वावलोकन बन रहा है...",
   "pdfLayoutEditTooltip": "लेआउट JSON संपादित करें",
   "pdfLayoutRemoveTooltip": "जोड़ा गया लेआउट हटाएं",
-  "pdfLayoutInsertedBadge": "जोड़ा गया"
+  "pdfLayoutInsertedBadge": "जोड़ा गया",
+  "pdfLayoutPaperSizeLocked": "कागज़ का आकार चुने गए कस्टम टेम्पलेट से आता है।",
+  "pdfSettingsRepeatTableHeaderLabel": "हर पेज पर तालिका का हेडर दोहराएं"
 }

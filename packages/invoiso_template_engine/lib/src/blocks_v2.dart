@@ -6,6 +6,7 @@ part of 'block_layout_renderer.dart';
 extension _BlocksV2 on _BlockLayoutRenderer {
   static const types = {
     'box', 'row', 'column', 'text', 'divider', 'pagenumber', 'if', 'repeat', 'qr',
+    'grid',
   };
 
   pw.Widget? buildV2(String type, Map<String, dynamic> block) {
@@ -29,6 +30,8 @@ extension _BlocksV2 on _BlockLayoutRenderer {
         return _repeatV2(block);
       case 'qr':
         return _qrV2(block);
+      case 'grid':
+        return _gridV2(block);
       default: // text, pageNumber
         return _textV2(block);
     }
@@ -45,20 +48,43 @@ extension _BlocksV2 on _BlockLayoutRenderer {
         (s['value'] ?? s['content'] ?? s['text'] ?? '').toString());
     if (text.isEmpty) return null;
     if (s['uppercase'] == true) text = text.toUpperCase();
+    final style = pw.TextStyle(
+      fontSize: _fs(
+          _BlockLayoutRenderer._double(s['size'] ?? s['fontSize'],
+              fallback: 9.5),
+          s['role']?.toString()),
+      color: _BlockLayoutRenderer._color(s['color'], fallback: textColor),
+      fontWeight: s['bold'] == true ? pw.FontWeight.bold : null,
+      fontStyle: s['italic'] == true ? pw.FontStyle.italic : null,
+      letterSpacing: _BlockLayoutRenderer._doubleOrNull(s['letterSpacing']),
+    );
+    // `**bold**` parts, e.g. "**Vehicle No:** KL-10" (label bold, value plain).
+    if (text.contains('**')) {
+      final parts = text.split('**');
+      return pw.SizedBox(
+        width: double.infinity,
+        child: pw.RichText(
+          textAlign: _BlockLayoutRenderer._textAlign(s['align']),
+          maxLines: _BlockLayoutRenderer._doubleOrNull(s['maxLines'])?.toInt(),
+          text: pw.TextSpan(style: style, children: [
+            for (var i = 0; i < parts.length; i++)
+              if (parts[i].isNotEmpty)
+                pw.TextSpan(
+                    text: parts[i],
+                    style: i.isOdd
+                        ? pw.TextStyle(fontWeight: pw.FontWeight.bold)
+                        : null),
+          ]),
+        ),
+      );
+    }
     return pw.SizedBox(
       width: double.infinity,
       child: pw.Text(
         text,
         textAlign: _BlockLayoutRenderer._textAlign(s['align']),
         maxLines: _BlockLayoutRenderer._doubleOrNull(s['maxLines'])?.toInt(),
-        style: pw.TextStyle(
-          fontSize: _BlockLayoutRenderer._double(s['size'] ?? s['fontSize'],
-              fallback: 9.5),
-          color: _BlockLayoutRenderer._color(s['color'], fallback: textColor),
-          fontWeight: s['bold'] == true ? pw.FontWeight.bold : null,
-          fontStyle: s['italic'] == true ? pw.FontStyle.italic : null,
-          letterSpacing: _BlockLayoutRenderer._doubleOrNull(s['letterSpacing']),
-        ),
+        style: style,
       ),
     );
   }
@@ -281,7 +307,7 @@ extension _BlocksV2 on _BlockLayoutRenderer {
     final widgets = <pw.Widget>[];
     try {
       for (final item in list) {
-        _row = _BlockLayoutRenderer._asMap(item);
+        _row = _rowOf(item);
         final widget = buildBlock(child);
         if (widget == null) continue;
         if (widgets.isNotEmpty && gap > 0) widgets.add(pw.SizedBox(height: gap));
@@ -321,7 +347,7 @@ extension _BlocksV2 on _BlockLayoutRenderer {
             padding: const pw.EdgeInsets.only(bottom: 4),
             child: pw.Text(title,
                 style: pw.TextStyle(
-                    fontSize: 10, fontWeight: pw.FontWeight.bold, color: textColor)),
+                    fontSize: _fs(10), fontWeight: pw.FontWeight.bold, color: textColor)),
           ),
         code,
         if (caption.isNotEmpty)
@@ -329,7 +355,7 @@ extension _BlocksV2 on _BlockLayoutRenderer {
             padding: const pw.EdgeInsets.only(top: 3),
             child: pw.Text(caption,
                 textAlign: pw.TextAlign.center,
-                style: pw.TextStyle(fontSize: 7.5, color: mutedColor)),
+                style: pw.TextStyle(fontSize: _fs(7.5), color: mutedColor)),
           ),
       ],
     );
@@ -341,13 +367,36 @@ extension _BlocksV2 on _BlockLayoutRenderer {
   /// `source`, `border` grid|horizontal|outer|none, `borderWidth`,
   /// `borderColor`, `header` {background, color, bold, size} or false,
   /// `size`, `cellPadding`, `zebra` colour, `footerRows` [{cells: {columnId:
-  /// text|{value, bold, italic, align}}, bold, italic, background, if}].
+  /// text|{value, bold, italic, align}}, bold, italic, background, if}],
+  /// `repeatHeader` (true / false; omitted → the user's "repeat table header"
+  /// setting), `detailRow` {value, if, style…}: a full-width line under each
+  /// row (e.g. description on its own line) when its `if` holds.
   /// Returned as separate widgets so a top-level table splits across pages.
   List<pw.Widget> tableV2Parts(Map<String, dynamic> block) {
-    final columns = [
-      for (final c in (block['columns'] is List ? block['columns'] as List : const []))
-        if (_truthy(_BlockLayoutRenderer._asMap(c)['if'])) _BlockLayoutRenderer._asMap(c),
-    ];
+    final columns = <Map<String, dynamic>>[];
+    for (final c in (block['columns'] is List ? block['columns'] as List : const [])) {
+      final column = _BlockLayoutRenderer._asMap(c);
+      if (!_truthy(column['if'])) continue;
+      // `each`: one column per entry of a list (e.g. the enabled product
+      // metadata columns) — label = entry.label, value = row.meta.<key>.
+      final each = column['each'];
+      if (each != null) {
+        final entries = _rawLookup(each.toString().toLowerCase());
+        for (final raw in (entries is List ? entries : const [])) {
+          final entry = _BlockLayoutRenderer._asMap(raw);
+          final key = entry['key']?.toString() ?? '';
+          columns.add({
+            ...column,
+            'label': entry['label'] ?? key,
+            'value': '{{row.meta.$key}}',
+            'width': column['width'] ??
+                '${(_BlockLayoutRenderer._double(entry['width'], fallback: 1.4) * 5).toStringAsFixed(1)}%',
+          }..remove('each'));
+        }
+        continue;
+      }
+      columns.add(column);
+    }
     if (columns.isEmpty) return _tableParts(block); // no columns → v1 default
     final sourcePath = (block['source'] ?? 'items').toString().toLowerCase();
     final list = _rawLookup(sourcePath);
@@ -376,12 +425,12 @@ extension _BlocksV2 on _BlockLayoutRenderer {
         (columns[i]['id'] ?? columns[i]['key'] ?? '$i').toString();
 
     pw.Widget cellText(String text, Map<String, dynamic> style, dynamic align,
-        {bool bold = false, bool italic = false, double? fontSize, PdfColor? color}) {
+        {required String role, bool bold = false, bool italic = false, PdfColor? color}) {
       return pw.Text(
         text,
         textAlign: _BlockLayoutRenderer._textAlign(style['align'] ?? align),
         style: pw.TextStyle(
-          fontSize: _BlockLayoutRenderer._double(style['size'], fallback: fontSize ?? size),
+          fontSize: _fs(_BlockLayoutRenderer._double(style['size'], fallback: size), role),
           color: _BlockLayoutRenderer._color(style['color'], fallback: color ?? textColor),
           fontWeight: (style['bold'] ?? bold) == true ? pw.FontWeight.bold : null,
           fontStyle: (style['italic'] ?? italic) == true ? pw.FontStyle.italic : null,
@@ -394,14 +443,17 @@ extension _BlocksV2 on _BlockLayoutRenderer {
       if (column['cell'] is List) {
         for (final raw in column['cell'] as List) {
           final spec = raw is String ? {'value': raw} : _BlockLayoutRenderer._asMap(raw);
+          if (!_truthy(spec['if'])) continue;
           final text = _resolveLine((spec['value'] ?? '').toString());
-          if (text.isNotEmpty) lines.add(cellText(text, spec, column['align']));
+          if (text.isNotEmpty) {
+            lines.add(cellText(text, spec, column['align'], role: 'tableItems'));
+          }
         }
       } else {
         final text = column['value'] != null
             ? _resolve(column['value'].toString())
             : _itemCell(column['key']?.toString() ?? '', _row ?? const {}, index);
-        lines.add(cellText(text, column, column['align']));
+        lines.add(cellText(text, column, column['align'], role: 'tableItems'));
       }
       return pw.Padding(
         padding: padding,
@@ -416,10 +468,15 @@ extension _BlocksV2 on _BlockLayoutRenderer {
       );
     }
 
-    final tableRows = <pw.TableRow>[];
+    // Header on every page: the template's `repeatHeader` if set, else the
+    // user's setting.
+    final repeatHeader = block['repeatHeader'] is bool
+        ? block['repeatHeader'] as bool
+        : options.repeatTableHeader;
+    pw.TableRow? headerRow;
     if (header != null) {
-      tableRows.add(pw.TableRow(
-        repeat: true,
+      headerRow = pw.TableRow(
+        repeat: repeatHeader,
         decoration: pw.BoxDecoration(
             color: _BlockLayoutRenderer._color(header['background'], fallback: primary)),
         children: [
@@ -428,30 +485,42 @@ extension _BlocksV2 on _BlockLayoutRenderer {
               padding: padding,
               child: cellText(_resolve((column['label'] ?? '').toString()), header,
                   column['align'],
+                  role: 'tableHeader',
                   bold: header['bold'] != false,
                   color: _BlockLayoutRenderer._color(header['color'],
                       fallback: PdfColors.white)),
             ),
         ],
-      ));
+      );
     }
+    // `detailRow`: a full-width line under each item (e.g. the description
+    // when "description on new line" is on), when its `if` holds.
+    final detail = _BlockLayoutRenderer._asMap(block['detailRow']);
+    final detailOn = detail.isNotEmpty && _truthy(detail['if']);
+    final bodyRows = <({pw.TableRow row, String detail, PdfColor? color})>[];
     final saved = _row;
     try {
       for (var i = 0; i < rows.length; i++) {
-        _row = _BlockLayoutRenderer._asMap(rows[i]);
-        tableRows.add(pw.TableRow(
-          decoration: zebra != null && i.isOdd ? pw.BoxDecoration(color: zebra) : null,
-          children: [for (final c in columns) bodyCell(c, i)],
+        _row = _rowOf(rows[i]);
+        final color = zebra != null && i.isOdd ? zebra : null;
+        bodyRows.add((
+          row: pw.TableRow(
+            decoration: color != null ? pw.BoxDecoration(color: color) : null,
+            children: [for (final c in columns) bodyCell(c, i)],
+          ),
+          detail: detailOn ? _resolveLine((detail['value'] ?? '').toString()) : '',
+          color: color,
         ));
       }
     } finally {
       _row = saved;
     }
+    final footerRows = <pw.TableRow>[];
     for (final raw in (block['footerRows'] is List ? block['footerRows'] as List : const [])) {
       final footer = _BlockLayoutRenderer._asMap(raw);
       if (!_truthy(footer['if'])) continue;
       final cells = _BlockLayoutRenderer._asMap(footer['cells']);
-      tableRows.add(pw.TableRow(
+      footerRows.add(pw.TableRow(
         decoration: footer['background'] == null
             ? null
             : pw.BoxDecoration(
@@ -460,13 +529,15 @@ extension _BlocksV2 on _BlockLayoutRenderer {
         children: [
           for (var i = 0; i < columns.length; i++)
             () {
-              final spec = cells[columnId(i)] is Map
+              final cell = cells[columnId(i)] is Map
                   ? _BlockLayoutRenderer._asMap(cells[columnId(i)])
                   : {'value': cells[columnId(i)] ?? ''};
+              final spec = _truthy(cell['if']) ? cell : {'value': ''};
               return pw.Padding(
                 padding: padding,
                 child: cellText(_resolve(spec['value'].toString()), spec,
                     columns[i]['align'],
+                    role: 'totals',
                     bold: footer['bold'] == true, italic: footer['italic'] == true),
               );
             }(),
@@ -474,21 +545,165 @@ extension _BlocksV2 on _BlockLayoutRenderer {
       ));
     }
 
+    final columnWidths = {
+      for (var i = 0; i < columns.length; i++)
+        i: _BlockLayoutRenderer._columnWidth(columns[i]['width']),
+    };
     final title = _resolve((block['title'] ?? '').toString());
-    return [
+    final titleWidgets = [
       if (title.isNotEmpty) ...[
         pw.Text(title,
-            style: pw.TextStyle(fontSize: 11, fontWeight: pw.FontWeight.bold, color: textColor)),
+            style: pw.TextStyle(fontSize: _fs(11), fontWeight: pw.FontWeight.bold, color: textColor)),
         pw.SizedBox(height: 6),
       ],
+    ];
+    if (!bodyRows.any((r) => r.detail.isNotEmpty)) {
+      return [
+        ...titleWidgets,
+        pw.Table(
+          border: tableBorder,
+          columnWidths: columnWidths,
+          children: [
+            if (headerRow != null) headerRow,
+            for (final r in bodyRows) r.row,
+            ...footerRows,
+          ],
+        ),
+      ];
+    }
+
+    // With full-width detail lines a single table can't be used (no
+    // column spanning), so — like the built-in templates — each item is its
+    // own one-row table followed by its detail line. These sit as rows of an
+    // outer one-column table so the header can still repeat on every page.
+    final style = (block['border'] ?? 'horizontal').toString();
+    final grid = style == 'grid' || style == 'outer';
+    final none = style == 'none';
+    pw.Widget segment(List<pw.TableRow> segRows, {bool top = false, bool bottom = true}) =>
+        pw.Table(
+          columnWidths: columnWidths,
+          border: none
+              ? null
+              : pw.TableBorder(
+                  top: top ? side : pw.BorderSide.none,
+                  bottom: bottom ? side : pw.BorderSide.none,
+                  left: grid ? side : pw.BorderSide.none,
+                  right: grid ? side : pw.BorderSide.none,
+                  verticalInside: style == 'grid' ? side : pw.BorderSide.none,
+                  horizontalInside: style == 'outer' ? pw.BorderSide.none : side,
+                ),
+          children: segRows,
+        );
+    return [
+      ...titleWidgets,
       pw.Table(
-        border: tableBorder,
-        columnWidths: {
-          for (var i = 0; i < columns.length; i++)
-            i: _BlockLayoutRenderer._columnWidth(columns[i]['width']),
-        },
-        children: tableRows,
+        columnWidths: const {0: pw.FlexColumnWidth()},
+        children: [
+          if (headerRow != null)
+            pw.TableRow(
+                repeat: repeatHeader,
+                children: [segment([headerRow], top: true)]),
+          for (final r in bodyRows)
+            pw.TableRow(children: [
+              pw.Column(
+                crossAxisAlignment: pw.CrossAxisAlignment.stretch,
+                children: [
+        // Line under the item only when it has no detail line of its own.
+        segment([r.row], top: headerRow == null && r == bodyRows.first,
+            bottom: r.detail.isEmpty),
+        if (r.detail.isNotEmpty)
+          pw.Container(
+            width: double.infinity,
+            padding: padding,
+            decoration: pw.BoxDecoration(
+              color: r.color,
+              border: none
+                  ? null
+                  : pw.Border(
+                      bottom: side,
+                      left: grid ? side : pw.BorderSide.none,
+                      right: grid ? side : pw.BorderSide.none,
+                    ),
+            ),
+            child: cellText(r.detail, detail, 'left', role: 'tableItems'),
+          ),
+                ],
+              ),
+            ]),
+          if (footerRows.isNotEmpty)
+            pw.TableRow(children: [segment(footerRows)]),
+        ],
       ),
     ];
+  }
+
+  /// A list item as a row: maps as-is, plain values as `{{row.value}}`.
+  Map<String, dynamic> _rowOf(dynamic item) =>
+      item is Map ? _BlockLayoutRenderer._asMap(item) : {'value': item};
+
+  /// A list as cells, `columns` per row (default 2), each cell built from
+  /// `cell` with `{{row.*}}` = the item. `border`: inner lines width
+  /// (`outerBorder: true` adds the outside). A short last row is filled
+  /// with blank cells so grid lines stay continuous, or — with
+  /// `spanLast: true` — its cells span the full width.
+  pw.Widget? _gridV2(Map<String, dynamic> block) {
+    final list = _rawLookup((block['source'] ?? '').toString().toLowerCase());
+    if (list is! List || list.isEmpty) return null;
+    final perRow = _BlockLayoutRenderer._double(block['columns'], fallback: 2)
+        .round()
+        .clamp(1, 12);
+    final cellBlock = _BlockLayoutRenderer._asMap(block['cell']);
+    final cells = <pw.Widget>[];
+    final saved = _row;
+    try {
+      for (final item in list) {
+        _row = _rowOf(item);
+        cells.add(buildBlock(cellBlock) ?? pw.SizedBox());
+      }
+    } finally {
+      _row = saved;
+    }
+    final width = _BlockLayoutRenderer._double(block['border'], fallback: 0);
+    final color =
+        _BlockLayoutRenderer._color(block['borderColor'], fallback: borderColor);
+    final side = pw.BorderSide(width: width, color: color);
+    final leftover = cells.length % perRow;
+    final spanned = block['spanLast'] == true && leftover != 0
+        ? cells.sublist(cells.length - leftover)
+        : const <pw.Widget>[];
+    if (spanned.isNotEmpty) cells.removeRange(cells.length - leftover, cells.length);
+    while (cells.length % perRow != 0) {
+      cells.add(pw.SizedBox());
+    }
+    final table = cells.isEmpty
+        ? null
+        : pw.Table(
+      border: width <= 0
+          ? null
+          : block['outerBorder'] == true
+              ? pw.TableBorder.all(width: width, color: color)
+              : pw.TableBorder(verticalInside: side, horizontalInside: side),
+      columnWidths: {
+        for (var i = 0; i < perRow; i++) i: const pw.FlexColumnWidth(1),
+      },
+      children: [
+        for (var r = 0; r < cells.length; r += perRow)
+          pw.TableRow(children: cells.sublist(r, r + perRow)),
+      ],
+    );
+    if (spanned.isEmpty) return table;
+    return pw.Column(
+      crossAxisAlignment: pw.CrossAxisAlignment.stretch,
+      children: [
+        if (table != null) table,
+        for (final cell in spanned)
+          pw.Container(
+            decoration: table == null || width <= 0
+                ? null
+                : pw.BoxDecoration(border: pw.Border(top: side)),
+            child: cell,
+          ),
+      ],
+    );
   }
 }

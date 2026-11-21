@@ -1598,5 +1598,7 @@
   "pdfLayoutGeneratingPreview": "Génération d'un aperçu d'impression fidèle...",
   "pdfLayoutEditTooltip": "Modifier le JSON",
   "pdfLayoutRemoveTooltip": "Supprimer la mise en page ajoutée",
-  "pdfLayoutInsertedBadge": "Ajouté"
+  "pdfLayoutInsertedBadge": "Ajouté",
+  "pdfLayoutPaperSizeLocked": "Le format du papier est défini par le modèle personnalisé sélectionné.",
+  "pdfSettingsRepeatTableHeaderLabel": "Répéter l'en-tête du tableau sur chaque page"
 }

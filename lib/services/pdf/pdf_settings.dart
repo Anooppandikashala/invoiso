@@ -76,6 +76,9 @@ class PdfGenerationSettings {
   final CustomerFieldSettings customerFields;
   // Attachments page(s): one photo per row with its caption, else a grid.
   final bool attachmentsAsList;
+
+  /// Items-table header on every page of a long table (custom templates).
+  final bool repeatTableHeader;
   // Multiplier for every font in non-thermal templates (PdfFontSize.scale).
   final double fontSizeScale;
   // Resolved per-section scales (section preset, else fontSizeScale).
@@ -152,6 +155,7 @@ class PdfGenerationSettings {
     this.metadataColumns = const {},
     this.customerFields = const CustomerFieldSettings(),
     this.attachmentsAsList = false,
+    this.repeatTableHeader = false,
     this.paymentQrFromImage = false,
     this.paymentQrEntries = const [],
     this.fontSizeScale = 1.0,

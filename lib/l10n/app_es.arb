@@ -1598,5 +1598,7 @@
   "pdfLayoutGeneratingPreview": "Generando una vista previa de impresión exacta...",
   "pdfLayoutEditTooltip": "Editar JSON del diseño",
   "pdfLayoutRemoveTooltip": "Quitar diseño añadido",
-  "pdfLayoutInsertedBadge": "Añadido"
+  "pdfLayoutInsertedBadge": "Añadido",
+  "pdfLayoutPaperSizeLocked": "El tamaño del papel lo define la plantilla personalizada seleccionada.",
+  "pdfSettingsRepeatTableHeaderLabel": "Repetir el encabezado de la tabla en cada página"
 }

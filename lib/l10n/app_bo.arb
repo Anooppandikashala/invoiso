@@ -1548,5 +1548,7 @@
   "pdfLayoutGeneratingPreview": "པར་སྐྲུན་སྔོན་ལྟ་ཏག་ཏག་བཟོ་བཞིན་ཡོད།...",
   "pdfLayoutEditTooltip": "བཀོད་པའི་ JSON བཅོས་སྒྲིག",
   "pdfLayoutRemoveTooltip": "བསྣན་པའི་བཀོད་པ་འདོར་བ།",
-  "pdfLayoutInsertedBadge": "བསྣན་ཟིན།"
+  "pdfLayoutInsertedBadge": "བསྣན་ཟིན།",
+  "pdfLayoutPaperSizeLocked": "ཤོག་བུའི་ཆེ་ཆུང་ནི་འདེམས་པའི་རང་སྒྲིག་དཔེ་གཞི་ནས་ཡོང་།",
+  "pdfSettingsRepeatTableHeaderLabel": "ཤོག་ངོས་རེ་རེར་རེའུ་མིག་གི་མགོ་ཡང་བསྐྱར་སྟོན།"
 }

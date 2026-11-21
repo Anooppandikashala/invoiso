@@ -1,25 +1,31 @@
 import 'package:invoiso/common/common.dart';
 import 'package:invoiso/common/gst_utils.dart';
-import 'package:invoiso/models/company_info.dart';
 import 'package:invoiso/models/invoice.dart';
 import 'package:invoiso/services/gst/gstr1_builder.dart';
 import 'package:invoiso/utils/amount_in_words.dart';
-import 'pdf_widgets.dart' show roundNetTotal;
+import 'pdf_settings.dart';
+import 'pdf_widgets.dart';
 
-/// Invoice + company + bank → the template engine's data map. The engine
-/// never sees app classes; see
-/// `packages/invoiso_template_engine/README.md` ("Data contract").
+/// Invoice + PDF settings → the template engine's data map. The engine never
+/// sees app classes (contract: `packages/invoiso_template_engine`).
+///
+/// Settings parity: every show/hide setting is applied here the same way the
+/// built-in templates apply it — a hidden value comes through empty, so any
+/// layout line showing only hidden values disappears. Column / row switches
+/// are exposed as `settings.*` for layout `if` conditions.
 Map<String, dynamic> buildTemplateData(
   Invoice invoice,
-  CompanyInfo? company, {
-  required String invoicePrefix,
-  required bool showLeadingZeros,
+  PdfGenerationSettings s, {
   BankAccount? bankAccount,
   String? upiId,
   bool showUpiQr = false,
   String? qrLabel,
   double previousBalanceDue = 0,
+  bool showCgstSgst = false,
+  bool showIgst = false,
 }) {
+  final company = s.company;
+  String show(bool on, String? value) => on ? (value ?? '') : '';
   String customField(List<String> labels) {
     for (final field in invoice.customFields) {
       final label = field.label.toLowerCase();
@@ -59,48 +65,68 @@ Map<String, dynamic> buildTemplateData(
   final indianWords = invoice.currencyCode == 'INR';
   String stateName(String code) => GstUtils.states[code] ?? '';
   final companyState = GstUtils.stateCodeFromGstin(company?.gstin) ?? '';
-  final shipSame = customer.shippingSameAsBilling;
+  final shipTo = showShipTo(customer, s.customerFields);
   final pos = invoice.placeOfSupply ?? '';
+  final taxColumnOn = s.showTaxColumn && invoice.taxMode != TaxMode.none;
+  final metaKeys = pdfMetadataColumnKeys
+      .where((k) => s.metadataColumns[k] == true)
+      .toList();
   return {
     'company': company == null
         ? <String, dynamic>{}
         : {
-            'name': company.name,
-            'address': company.address,
-            'phone': company.phone,
-            'email': company.email,
-            'website': company.website,
-            'gstin': company.gstin,
-            'pan': company.panNumber,
-            'fssai': company.fssaiCode,
+            'name': show(s.showCompanyName, company.name),
+            'address': show(s.showAddress, company.address),
+            'phone': show(s.showPhone, company.phone),
+            'email': show(s.showEmail, company.email),
+            'website': show(s.showWebsite, company.website),
+            'gstin': show(s.showGst, company.gstin),
+            'pan': show(s.showPan, company.panNumber),
+            'fssai': show(s.showFssai, company.fssaiCode),
             'country': company.country,
             'stateCode': companyState,
             'state': stateName(companyState),
+            'taxLabel': taxLabel(company.country),
+            'panLabel': panLabel(company.country),
           },
     'customer': {
       'name': customer.name,
-      'businessName': customer.businessName,
-      'address': customer.address,
-      'phone': customer.phone,
-      'email': customer.email,
-      'gstin': customer.gstin,
+      'businessName':
+          show(s.showCustomerBusinessName, customer.businessName),
+      'address': show(s.showCustomerAddress, customer.address),
+      'phone': show(s.showCustomerPhone, customer.phone),
+      'email': show(s.showCustomerEmail, customer.email),
+      'gstin': show(s.showGst && s.showCustomerGstin, customer.gstin),
       'stateCode': customer.stateCode,
       'state': stateName(customer.stateCode),
-      'custom': {for (final f in customer.customFields) f.label: f.value},
+      // Additional fields (age / DOB / gender + custom fields, per-field
+      // "show in PDF"): as label/value cells, or as the built-ins' lines.
+      'fields': [
+        for (final f in customerExtraFields(
+            customer, s.customerFields, invoice.date, s.datePattern))
+          {'label': f.$1, 'value': f.$2},
+      ],
+      'extraLines': customerExtraLines(
+          customer, s.customerFields, invoice.date, s.datePattern),
     },
+    // Only when the built-ins would print Ship To (feature on, not same as
+    // billing, has an address).
     'shipTo': {
-      'name': shipSame ? customer.name : customer.shippingName,
-      'phone': shipSame ? customer.phone : customer.shippingPhone,
-      'address': shipSame ? customer.address : customer.shippingAddress,
+      'name': shipTo ? customer.shippingName.trim() : '',
+      'phone': shipTo ? customer.shippingPhone.trim() : '',
+      'address': shipTo ? customer.shippingAddress.trim() : '',
+      'lines': shipTo ? shipToLines(customer) : const <String>[],
     },
     'invoice': {
-      'number': invoice.pdfNumberText(invoicePrefix,
-              showLeadingZeros: showLeadingZeros) ??
+      'number': invoice.pdfNumberText(s.prefixFor(invoice.type),
+              showLeadingZeros: s.showLeadingZeros) ??
           '',
       'title': invoice.invoiceTitle?.isNotEmpty == true
           ? invoice.invoiceTitle!
           : invoice.type,
       'type': invoice.type,
+      // "Invoice No." / "Quotation No." / "Credit Note No." / "Receipt No." …
+      'numberLabel': '${invoice.type} No.',
       'status': invoice.status ?? '',
       'notes': invoice.notes ?? '',
       'paymentMethod': invoice.payments.isEmpty
@@ -114,6 +140,59 @@ Map<String, dynamic> buildTemplateData(
       'placeOfSupplyCode': pos,
       'placeOfSupply': pos.isEmpty ? '' : GstUtils.stateLabel(pos),
       'custom': {for (final f in invoice.customFields) f.label: f.value},
+      'customFields': [
+        for (final f in invoice.customFields)
+          if (f.value.trim().isNotEmpty) {'label': f.label, 'value': f.value},
+      ],
+      // Number, date (+ time per setting) and due date only.
+      'keyFields': [
+        {
+          'label': '${invoice.type} No.',
+          'value': invoice.pdfNumberText(s.prefixFor(invoice.type),
+                  showLeadingZeros: s.showLeadingZeros) ??
+              '-',
+        },
+        {
+          'label': 'Dated',
+          'value': formatPdfDateTime(invoice.date, s.datePattern,
+              showTime: s.showTimeInPdf, timeFormat: s.pdfTimeFormat),
+        },
+        if (invoice.dueDate != null)
+          {
+            'label': 'Due Date',
+            'value': formatPdfDate(invoice.dueDate!, s.datePattern),
+          },
+      ],
+      // Voucher cells as the GST template prints them: number (labelled by
+      // document type), date (+ time
+      // per setting), due date, then the filled custom fields.
+      'headerFields': [
+        {
+          'label': '${invoice.type} No.',
+          'value': invoice.pdfNumberText(s.prefixFor(invoice.type),
+                  showLeadingZeros: s.showLeadingZeros) ??
+              '-',
+        },
+        {
+          'label': 'Dated',
+          'value': formatPdfDateTime(invoice.date, s.datePattern,
+              showTime: s.showTimeInPdf, timeFormat: s.pdfTimeFormat),
+        },
+        if (invoice.dueDate != null)
+          {
+            'label': 'Due Date',
+            'value': formatPdfDate(invoice.dueDate!, s.datePattern),
+          },
+        for (final f in invoice.customFields)
+          if (f.value.trim().isNotEmpty) {'label': f.label, 'value': f.value},
+      ],
+      // Place of supply / reverse charge (GST rule 46), as the built-ins.
+      'gstLines': [
+        for (final l in gstSupplyLines(invoice, showGst: s.showGst))
+          {'label': l.$1, 'value': l.$2},
+      ],
+      // Credit / debit note return + refund lines.
+      'returnLines': returnInfoLines(invoice),
     },
     'items': [
       for (var i = 0; i < invoice.items.length; i++)
@@ -135,10 +214,17 @@ Map<String, dynamic> buildTemplateData(
             'tax': item.taxAmount,
             'amount': item.total,
             'taxRate': line.rate,
+            'cgstRate': interState ? 0.0 : line.rate / 2,
+            'sgstRate': interState ? 0.0 : line.rate / 2,
+            'igstRate': interState ? line.rate : 0.0,
             'taxable': line.taxable,
             'cgst': t.cgst,
             'sgst': t.sgst,
             'igst': t.igst,
+            'meta': {
+              for (final k in metaKeys)
+                k: pdfMetaCellValue(item, k, s.datePattern),
+            },
           };
         }(),
     ],
@@ -165,8 +251,10 @@ Map<String, dynamic> buildTemplateData(
       'charges': invoice.additionalCosts.fold<double>(0, (sum, c) => sum + c.amount),
       'previousBalanceDue': previousBalanceDue,
       'totalDue': totalDue,
-      'roundedTotal': net.rounded,
-      'roundOff': net.roundOff,
+      'roundedTotal': s.showRoundOff
+          ? net.rounded
+          : (previousBalanceDue > 0 ? totalDue : invoice.total),
+      'roundOff': s.showRoundOff ? net.roundOff : 0.0,
       'totalInWords': AmountInWords.amount(net.rounded, indian: indianWords),
       'taxInWords': AmountInWords.amount(invoice.tax, indian: indianWords),
     },
@@ -181,13 +269,42 @@ Map<String, dynamic> buildTemplateData(
           : '',
       'upiAmount': invoice.outstandingBalance,
       'qrLabel': qrLabel ?? '',
+      // QR box title: the uploaded QR's label, else "Pay via UPI"; empty when
+      // no QR prints.
+      'qrTitle': !showUpiQr ? '' : (qrLabel ?? 'Pay via UPI'),
     },
     'bank': {
       'name': bankAccount?.bankName ?? '',
       'account': bankAccount?.accountNumber ?? '',
       'ifsc': bankAccount?.ifscCode ?? '',
       'iban': bankAccount?.iban ?? '',
-      'upi': upiId ?? '',
+      'upi': show(showUpiQr, upiId),
+    },
+    // Column / row switches for layout `if` conditions.
+    'settings': {
+      'showGst': s.showGst,
+      'showQuantity': s.showQuantity,
+      'showDiscount': s.showDiscount,
+      // Like the built-ins: the Product/Service tag only when the business
+      // sells both.
+      'showTypeTag':
+          s.showTypeTag && s.businessType == BusinessType.both,
+      'showSlNo': s.showSlNo,
+      'showTaxColumn': taxColumnOn,
+      'showCgstSgst': taxColumnOn && showCgstSgst,
+      'showIgst': taxColumnOn && showIgst,
+      'showTotalQuantity': s.showTotalQuantity,
+      'showRoundOff': s.showRoundOff,
+      'showDescription': s.showDescription,
+      'descriptionNewLine': s.descriptionNewLine,
+      'showBankDetails': s.showBankDetails,
+      'showUpiQr': showUpiQr,
+      'thankYouNote': s.thankYouNote,
+      'logoPosition': s.logoPosition.name, // 'left' | 'right'
+      'metadataColumns': [
+        for (final k in metaKeys)
+          {'key': k, 'label': pdfMetaHeaderText(k), 'width': pdfMetaColFlex(k)},
+      ],
     },
   };
 }

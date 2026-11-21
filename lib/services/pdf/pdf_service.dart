@@ -31,6 +31,7 @@ import 'pdf_template_thermal.dart';
 import 'pdf_template_gridclassic.dart';
 import 'package:invoiso_template_engine/invoiso_template_engine.dart';
 import 'template_data_adapter.dart';
+import 'pdf_attachments_page.dart';
 import 'package:invoiso/utils/formatters.dart';
 
 class PDFService {
@@ -153,6 +154,7 @@ class PDFService {
       BackendServices.settings.getSetting(SettingKey.paymentQrSource), // 66
       BackendServices.settings.getSetting(SettingKey.paymentQrEntries), // 67
       BackendServices.settings.getSetting(SettingKey.activeCustomLayout), // 68
+      BackendServices.settings.getSetting(SettingKey.pdfRepeatTableHeader), // 69
     ]);
 
     final rawPrefix = (results[2] as String?) ?? 'INV';
@@ -251,6 +253,7 @@ class PDFService {
       paymentQrFromImage: results[66] == 'image',
       paymentQrEntries: PaymentQrEntry.listFromJson(results[67] as String?),
       blockLayout: _activeCustomLayoutFromJson(results[68] as String?)?.blockLayout,
+      repeatTableHeader: results[69] == 'true',
     );
   }
 
@@ -339,20 +342,21 @@ class PDFService {
           document: blockLayout,
           data: buildTemplateData(
             invoice,
-            s.company,
-            invoicePrefix: s.prefixFor(invoice.type),
-            showLeadingZeros: s.showLeadingZeros,
+            s,
             bankAccount: effectiveBank,
             upiId: effectiveUpiId,
             showUpiQr: showUpiQr,
             qrLabel: qrLabel,
             previousBalanceDue: effectivePreviousBalance,
+            showCgstSgst: effectiveShowCgstSgst,
+            showIgst: showIgst,
           ),
           options: TemplateOptions(
             currencySymbol: currencySymbol,
             amountSeparator: AmountFormat.style.name,
             datePattern: s.datePattern,
             timeFormat: s.pdfTimeFormat,
+            showTime: s.showTimeInPdf,
             showGst: s.showGst,
             showAliasName: s.showAliasName,
             showDescription: s.showDescription,
@@ -362,13 +366,41 @@ class PDFService {
             footerFontSize: PdfLayout.footerBrandingFontSize,
             thankYouNote: s.thankYouNote,
             themeColor: s.themeColor,
+            fontScale: s.fontSizeScale,
+            companyNameScale: s.companyNameScale,
+            docTitleScale: s.docTitleScale,
+            tableHeaderScale: s.tableHeaderScale,
+            tableItemsScale: s.tableItemsScale,
+            totalsScale: s.totalsScale,
+            logoSize: s.logoSizePx,
+            watermarkOpacity: s.watermarkOpacity,
+            watermarkFullPage: s.watermarkFullPage,
+            repeatTableHeader: s.repeatTableHeader,
           ),
           assets: TemplateAssets(
-              logo: s.logoBytes,
+              logo: s.showLogo ? s.logoBytes : null,
               signature: s.signatureBytes,
-              paymentQr: qrImageBytes),
+              // Uploaded payment QR only when the built-ins would print it
+              // (setting on, balance due, not declined).
+              paymentQr: showUpiQr ? qrImageBytes : null,
+              watermark: s.watermarkBytes),
           fallbackPageFormat: s.pageFormat,
         ));
+        // Customer photos, as in the built-in templates, on the layout's paper.
+        final layoutFormat = templatePageFormat(blockLayout, s.pageFormat);
+        final photos = buildAttachmentsSection(invoice,
+            pageFormat: layoutFormat,
+            asList: s.attachmentsAsList,
+            fontSizeScale: s.fontSizeScale);
+        if (photos.isNotEmpty) {
+          blockPdf.addPage(pw.MultiPage(
+            pageTheme: pw.PageTheme(
+                pageFormat: layoutFormat,
+                theme: pdfTheme,
+                margin: pw.EdgeInsets.all(PdfLayout.defaultHMargin)),
+            build: (_) => photos,
+          ));
+        }
         return blockPdf;
       } catch (e, st) {
         debugPrint('Custom layout failed, using built-in template: $e\n$st');

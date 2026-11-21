@@ -3750,5 +3750,7 @@
   "pdfLayoutGeneratingPreview": "Generating accurate print preview...",
   "pdfLayoutEditTooltip": "Edit layout JSON",
   "pdfLayoutRemoveTooltip": "Remove inserted layout",
-  "pdfLayoutInsertedBadge": "Inserted"
+  "pdfLayoutInsertedBadge": "Inserted",
+  "pdfLayoutPaperSizeLocked": "Paper size comes from the selected custom template.",
+  "pdfSettingsRepeatTableHeaderLabel": "Repeat table header on every page"
 }

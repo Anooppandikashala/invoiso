@@ -117,4 +117,126 @@ void main() {
     expect(upi.text, contains('Pay via UPI'));
     expect(upi.raw.length, greaterThan(none.raw.length));
   });
+
+  test('grid: one cell per item, bold label parts, odd cell blank or spanning',
+      () async {
+    final data = {
+      'invoice': {
+        'headerFields': [
+          {'label': 'Invoice No.', 'value': 'INV-1'},
+          {'label': 'Dated', 'value': '21/11/2026'},
+          {'label': 'Due Date', 'value': '06/12/2026'},
+        ],
+      },
+    };
+    Map<String, dynamic> grid(bool span) => {
+          'type': 'grid',
+          'source': 'invoice.headerFields',
+          'columns': 2,
+          'border': 0.8,
+          'spanLast': span,
+          'cell': {'type': 'text', 'value': '**{{row.label}}:** {{row.value}}'},
+        };
+    for (final span in [false, true]) {
+      final r = await _render([grid(span)], data);
+      expect(r.text, contains('Invoice No.: INV-1'));
+      expect(r.text, contains('Dated: 21/11/2026'));
+      expect(r.text, contains('Due Date: 06/12/2026'));
+      expect(r.raw, isNot(contains('**')));
+    }
+  });
+
+  test('table header repeat follows the user setting; template can override',
+      () async {
+    final data = {
+      'items': [
+        for (var i = 0; i < 120; i++) {'name': 'Item $i', 'qty': 1},
+      ],
+    };
+    Future<({int headers, int pages})> render(
+        {bool? repeat, bool setting = false, bool v1 = false,
+        bool detail = false}) async {
+      final table = v1
+          ? {
+              'type': 'table',
+              'columns': [
+                {'key': 'item', 'label': 'COLHEAD'},
+              ],
+            }
+          : {
+              'type': 'table',
+              if (repeat != null) 'repeatHeader': repeat,
+              'columns': [
+                {'id': 'n', 'label': 'COLHEAD', 'value': '{{row.name}}'},
+              ],
+              if (detail) 'detailRow': {'value': 'note {{row.name}}'},
+            };
+      final pdf = pw.Document(compress: false)
+        ..addPage(buildBlockLayoutPage(
+            document: {
+              if (!v1) 'engine': 2,
+              'layout': [table],
+            },
+            data: data,
+            options: TemplateOptions(repeatTableHeader: setting)));
+      final raw = latin1.decode(await pdf.save());
+      return (
+        headers: RegExp(r'\(COLHEAD\)').allMatches(raw).length,
+        pages: pdf.document.pdfPageList.pages.length,
+      );
+    }
+
+    final off = await render();
+    expect(off.pages, greaterThan(1));
+    expect(off.headers, 1); // setting off (default) → first page only
+    final on = await render(setting: true);
+    expect(on.headers, on.pages); // setting on → every page
+    expect((await render(setting: true, repeat: false)).headers, 1);
+    final forced = await render(repeat: true);
+    expect(forced.headers, forced.pages);
+    // Description-on-new-line mode (row-by-row) still repeats / doesn't.
+    final detailOn = await render(setting: true, detail: true);
+    expect(detailOn.pages, greaterThan(1));
+    expect(detailOn.headers, detailOn.pages);
+    expect((await render(detail: true)).headers, 1);
+    final v1On = await render(setting: true, v1: true);
+    expect(v1On.headers, v1On.pages); // old-style tables follow it too
+  });
+
+  test('detailRow: full-width line under each row only when its if holds',
+      () async {
+    Map<String, dynamic> table(String border) => {
+          'type': 'table',
+          'border': border,
+          'columns': [
+            {'id': 'd', 'label': 'Item', 'cell': [
+              {'value': '{{row.name}}'},
+              {'value': 'IN {{row.description}}', 'if': '!settings.newLine'},
+            ]},
+            {'id': 'q', 'label': 'Qty', 'value': '{{row.qty|qty}}'},
+          ],
+          'detailRow': {'value': 'DL {{row.description}}', 'if': 'settings.newLine'},
+          'footerRows': [
+            {'cells': {'d': 'Total'}},
+          ],
+        };
+    Map<String, dynamic> data(bool newLine) => {
+          'settings': {'newLine': newLine},
+          'items': [
+            {'name': 'Bolt', 'description': 'zinc', 'qty': 2},
+            {'name': 'Nut', 'description': '', 'qty': 3},
+          ],
+        };
+    for (final border in ['grid', 'horizontal', 'outer', 'none']) {
+      final on = await _render([table(border)], data(true),
+          options: const TemplateOptions(showDescription: true));
+      expect(on.text, contains('DL zinc'));
+      expect(on.text, isNot(contains('IN zinc')));
+      expect(on.text, contains('Total'));
+      final off = await _render([table(border)], data(false),
+          options: const TemplateOptions(showDescription: true));
+      expect(off.text, contains('IN zinc'));
+      expect(off.text, isNot(contains('DL zinc')));
+    }
+  });
 }
