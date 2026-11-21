@@ -29,7 +29,8 @@ import 'pdf_template_executive.dart';
 import 'pdf_template_compact.dart';
 import 'pdf_template_thermal.dart';
 import 'pdf_template_gridclassic.dart';
-import 'pdf_template_block_layout.dart';
+import 'package:invoiso_template_engine/invoiso_template_engine.dart';
+import 'template_data_adapter.dart';
 import 'package:invoiso/utils/formatters.dart';
 
 class PDFService {
@@ -334,35 +335,31 @@ class PDFService {
       // it in its own document and fall back to the built-in template below.
       try {
         final blockPdf = pw.Document(theme: s.pdfTheme);
-        blockPdf.addPage(buildBlockLayoutTemplate(
-          invoice,
-          s.company,
-          currencySymbol,
-          s.prefixFor(invoice.type),
-          blockLayout,
-          upiId: effectiveUpiId,
-          showUpiQr: showUpiQr,
-          showGst: s.showGst,
-          showSlNo: s.showSlNo,
-          showQuantity: s.showQuantity,
-          showDiscount: s.showDiscount,
-          showTypeTag: s.showTypeTag,
-          showAliasName: s.showAliasName,
-          showDescription: s.showDescription,
-          showTaxColumn: s.showTaxColumn,
-          showCgstSgst: effectiveShowCgstSgst,
-          showIgst: showIgst,
-          showLeadingZeros: s.showLeadingZeros,
-          datePattern: s.datePattern,
-          bankAccount: effectiveBank,
-          logoBytes: s.logoBytes,
-          signatureBytes: s.signatureBytes,
-          signaturePosition: s.signaturePosition,
-          signatureSizePx: s.signatureSizePx,
-          showFooterBranding: s.showFooterBranding,
-          thankYouNote: s.thankYouNote,
-          pageFormat: s.pageFormat,
-          themeColor: s.themeColor,
+        blockPdf.addPage(buildBlockLayoutPage(
+          document: blockLayout,
+          data: buildTemplateData(
+            invoice,
+            s.company,
+            invoicePrefix: s.prefixFor(invoice.type),
+            showLeadingZeros: s.showLeadingZeros,
+            bankAccount: effectiveBank,
+            upiId: effectiveUpiId,
+          ),
+          options: TemplateOptions(
+            currencySymbol: currencySymbol,
+            datePattern: s.datePattern,
+            showGst: s.showGst,
+            showAliasName: s.showAliasName,
+            showDescription: s.showDescription,
+            signaturePosition: s.signaturePosition,
+            signatureSizePx: s.signatureSizePx,
+            showFooterBranding: s.showFooterBranding,
+            footerFontSize: PdfLayout.footerBrandingFontSize,
+            thankYouNote: s.thankYouNote,
+            themeColor: s.themeColor,
+          ),
+          assets: TemplateAssets(logo: s.logoBytes, signature: s.signatureBytes),
+          fallbackPageFormat: s.pageFormat,
         ));
         return blockPdf;
       } catch (e, st) {

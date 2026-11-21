@@ -1,0 +1,14 @@
+name: invoiso_template_engine
+description: Renders Invoiso JSON layout documents and invoice data into PDF pages. Pure Dart, no app dependencies.
+version: 0.1.0
+publish_to: none
+
+environment:
+  sdk: '>=3.3.3 <4.0.0'
+
+dependencies:
+  intl: ^0.20.2
+  pdf: ^3.11.3
+
+dev_dependencies:
+  test: ^1.24.9

@@ -49,6 +49,8 @@ dependencies:
   device_info_plus: ^11.5.0
   win32_registry: ^2.1.0
   android_id: ^0.5.2+1
+  invoiso_template_engine:
+    path: packages/invoiso_template_engine
 
 dev_dependencies:
   flutter_test:
