@@ -1,5 +1,6 @@
 import 'package:invoiso/common/common.dart';
 import 'package:invoiso/models/custom_field_def.dart';
+import 'package:invoiso/models/custom_invoice_layout.dart';
 
 abstract class SettingsRepository {
   Future<void> setSetting(SettingKey key, String value);
@@ -110,4 +111,6 @@ abstract class SettingsRepository {
   Future<void> setAppLocale(String? languageCode);
   Future<bool> getAllowDuplicateInvoiceItems();
   Future<void> setAllowDuplicateInvoiceItems(bool allow);
+  Future<List<CustomInvoiceLayout>> getCustomInvoiceLayouts();
+  Future<void> saveCustomInvoiceLayouts(List<CustomInvoiceLayout> layouts);
 }

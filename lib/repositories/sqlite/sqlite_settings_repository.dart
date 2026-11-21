@@ -1,6 +1,7 @@
 import 'package:invoiso/common/common.dart';
 import 'package:invoiso/database/settings_service.dart';
 import 'package:invoiso/models/custom_field_def.dart';
+import 'package:invoiso/models/custom_invoice_layout.dart';
 import 'package:invoiso/repositories/settings_repository.dart';
 
 class SqliteSettingsRepository implements SettingsRepository {
@@ -237,4 +238,8 @@ class SqliteSettingsRepository implements SettingsRepository {
   Future<bool> getAllowDuplicateInvoiceItems() => SettingsService.getAllowDuplicateInvoiceItems();
   @override
   Future<void> setAllowDuplicateInvoiceItems(bool allow) => SettingsService.setAllowDuplicateInvoiceItems(allow);
+  @override
+  Future<List<CustomInvoiceLayout>> getCustomInvoiceLayouts() => SettingsService.getCustomInvoiceLayouts();
+  @override
+  Future<void> saveCustomInvoiceLayouts(List<CustomInvoiceLayout> layouts) => SettingsService.saveCustomInvoiceLayouts(layouts);
 }

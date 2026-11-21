@@ -84,6 +84,9 @@ class PdfGenerationSettings {
   final double tableHeaderScale;
   final double tableItemsScale;
   final double totalsScale;
+  /// Block-based custom layout document (`{ page, theme, layout }`) that
+  /// replaces the built-in template when present.
+  final Map<String, dynamic>? blockLayout;
 
   const PdfGenerationSettings({
     required this.company,
@@ -157,6 +160,7 @@ class PdfGenerationSettings {
     this.tableHeaderScale = 1.0,
     this.tableItemsScale = 1.0,
     this.totalsScale = 1.0,
+    this.blockLayout,
   });
 
   /// Number prefix for a document [type]; quotation/receipt fall back to the

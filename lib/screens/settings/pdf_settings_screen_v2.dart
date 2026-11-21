@@ -10,6 +10,19 @@ import 'package:invoiso/common/common.dart';
 import 'package:invoiso/common/constants.dart';
 import 'package:invoiso/l10n/app_localizations.dart';
 import 'package:invoiso/widgets/template_list_tile.dart';
+import 'package:invoiso/widgets/block_layout_sketch.dart';
+import 'dart:async';
+import 'dart:convert';
+import 'package:pdf/pdf.dart';
+import 'package:syncfusion_flutter_pdfviewer/pdfviewer.dart';
+import 'package:invoiso/services/pdf/pdf_service.dart';
+import 'package:invoiso/services/pdf/pdf_settings.dart';
+import 'package:invoiso/services/pdf/pdf_preview_sample.dart';
+import 'dart:io';
+import 'package:file_picker/file_picker.dart';
+import 'package:printing/printing.dart';
+import 'package:invoiso/services/thermal_printer_service_v1.dart';
+import 'package:invoiso/models/custom_invoice_layout.dart';
 
 class PdfSettingsScreenV2 extends ConsumerStatefulWidget {
   final VoidCallback? onNavigateToCustomization;
@@ -22,8 +35,19 @@ class PdfSettingsScreenV2 extends ConsumerStatefulWidget {
 }
 
 class _PdfSettingsScreenV2State extends ConsumerState<PdfSettingsScreenV2> {
+  Uint8List? _previewPdfBytes;
+  bool _previewIsLoading = true;
+  bool _useLivePdfPreview = true;
+  Timer? _previewDebounceTimer;
+  PdfGenerationSettings? _basePdfSettings;
+  int _previewVersion = 0;
+
   InvoiceTemplate _savedTemplate = InvoiceTemplate.classic;
   InvoiceTemplate _previewedTemplate = InvoiceTemplate.classic;
+  List<CustomInvoiceLayout> _customLayouts = [];
+  String? _selectedCustomLayoutId;
+  Map<String, dynamic>? _savedBlockLayout;
+  Map<String, dynamic>? _previewedBlockLayout;
   String? _savedThemeColorHex;
   String? _previewedThemeColorHex;
   final _themeColorController = TextEditingController();
@@ -111,14 +135,31 @@ class _PdfSettingsScreenV2State extends ConsumerState<PdfSettingsScreenV2> {
     };
     final savedAttachmentLayout =
         results[9 + _pdfSectionSizeKeys.length] == 'list' ? 'list' : 'grid';
+    final customLayouts =
+        await ref.read(settingsRepositoryProvider).getCustomInvoiceLayouts();
+    final activeLayoutRaw =
+        await ref.read(settingsRepositoryProvider).getSetting(
+              SettingKey.activeCustomLayout,
+            );
+    final activeLayout = _parseStoredLayout(activeLayoutRaw);
+    final activeStoredLayout = activeLayout != null &&
+            customLayouts.any((layout) => layout.id == activeLayout.id)
+        ? activeLayout
+        : null;
     final previewedTemplate =
         effectiveInvoiceTemplateForPageSize(saved, savedPageSize);
+    final activeThemeColor =
+        activeStoredLayout?.effectiveThemeColorHex ?? savedThemeColor;
     setState(() {
+      _customLayouts = customLayouts;
+      _selectedCustomLayoutId = activeStoredLayout?.id;
+      _savedBlockLayout = activeStoredLayout?.blockLayout;
+      _previewedBlockLayout = activeStoredLayout?.blockLayout;
       _savedTemplate = saved;
       _previewedTemplate = previewedTemplate;
-      _savedThemeColorHex = savedThemeColor;
-      _previewedThemeColorHex = savedThemeColor;
-      _themeColorController.text = savedThemeColor ?? '';
+      _savedThemeColorHex = activeThemeColor;
+      _previewedThemeColorHex = activeThemeColor;
+      _themeColorController.text = activeThemeColor ?? '';
       _savedPageSize = savedPageSize;
       _previewedPageSize = savedPageSize;
       _savedLandscape = savedLandscape;
@@ -139,11 +180,47 @@ class _PdfSettingsScreenV2State extends ConsumerState<PdfSettingsScreenV2> {
       _savedPdfSectionSizes = savedPdfSectionSizes;
       _previewedPdfSectionSizes = Map.of(savedPdfSectionSizes);
     });
+    try {
+      _basePdfSettings = await PDFService.fetchPdfSettings();
+    } catch (_) {}
+    _schedulePdfPreviewUpdate(immediate: true);
   }
 
-  Future<void> _saveTemplate() async {
+  CustomInvoiceLayout? get _activeCustomLayout {
+    final id = _selectedCustomLayoutId;
+    if (id == null) return null;
+    for (final layout in _customLayouts) {
+      if (layout.id == id) return layout;
+    }
+    return null;
+  }
+
+  CustomInvoiceLayout? _parseStoredLayout(String? raw) {
+    if (raw == null || raw.trim().isEmpty) return null;
+    try {
+      final decoded = jsonDecode(raw);
+      if (decoded is! Map) return null;
+      return CustomInvoiceLayout.fromMap(
+        decoded.map((key, value) => MapEntry(key.toString(), value)),
+      );
+    } catch (_) {
+      return null;
+    }
+  }
+
+  Future<void> _saveTemplate({bool showSavedSnackBar = true}) async {
     if (_isSaving) return;
     setState(() => _isSaving = true);
+    final activeLayout = _activeCustomLayout;
+    final activeLayoutJson = activeLayout == null
+        ? null
+        : _layoutFromCurrentSettings(
+            id: activeLayout.id,
+            name: activeLayout.name,
+            description: activeLayout.description,
+            createdAt: activeLayout.createdAt,
+            blockLayout: _previewedBlockLayout,
+          ).toJson();
     try {
       await Future.wait([
         ref
@@ -156,7 +233,9 @@ class _PdfSettingsScreenV2State extends ConsumerState<PdfSettingsScreenV2> {
               .read(settingsRepositoryProvider)
               .setPdfThemeColor(_previewedThemeColorHex!),
         ref.read(settingsRepositoryProvider).setPageSize(_previewedPageSize),
-        ref.read(settingsRepositoryProvider).setPdfLandscape(_previewedLandscape),
+        ref
+            .read(settingsRepositoryProvider)
+            .setPdfLandscape(_previewedLandscape),
         ref
             .read(settingsRepositoryProvider)
             .setShowTotalQuantity(_previewedShowTotalQuantity),
@@ -170,13 +249,22 @@ class _PdfSettingsScreenV2State extends ConsumerState<PdfSettingsScreenV2> {
         ref.read(settingsRepositoryProvider).setSetting(
             SettingKey.thermalCompanyNameSize,
             _previewedThermalCompanyNameSize),
-        ref.read(settingsRepositoryProvider).setSetting(
-            SettingKey.pdfFontSize, _previewedPdfFontSize),
+        ref
+            .read(settingsRepositoryProvider)
+            .setSetting(SettingKey.pdfFontSize, _previewedPdfFontSize),
         for (final key in _pdfSectionSizeKeys)
           ref.read(settingsRepositoryProvider).setSetting(
               key, _previewedPdfSectionSizes[key] ?? ''),
         ref.read(settingsRepositoryProvider).setSetting(
             SettingKey.attachmentLayout, _previewedAttachmentLayout),
+        if (activeLayoutJson != null)
+          ref
+              .read(settingsRepositoryProvider)
+              .setSetting(SettingKey.activeCustomLayout, activeLayoutJson)
+        else
+          ref
+              .read(settingsRepositoryProvider)
+              .deleteSetting(SettingKey.activeCustomLayout),
       ]);
       setState(() {
         _savedTemplate = _previewedTemplate;
@@ -190,14 +278,19 @@ class _PdfSettingsScreenV2State extends ConsumerState<PdfSettingsScreenV2> {
         _savedThermalCompanyNameSize = _previewedThermalCompanyNameSize;
         _savedPdfFontSize = _previewedPdfFontSize;
         _savedPdfSectionSizes = Map.of(_previewedPdfSectionSizes);
+
+        _savedBlockLayout = _previewedBlockLayout;
       });
       if (!mounted) return;
+      if (showSavedSnackBar) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(AppLocalizations.of(context)!.pdfSettingsSavedSnackbar),
+            content:
+                Text(AppLocalizations.of(context)!.pdfSettingsSavedSnackbar),
           behavior: SnackBarBehavior.floating,
         ),
       );
+      }
     } finally {
       if (mounted) setState(() => _isSaving = false);
     }
@@ -205,9 +298,144 @@ class _PdfSettingsScreenV2State extends ConsumerState<PdfSettingsScreenV2> {
 
   @override
   void dispose() {
+    _previewDebounceTimer?.cancel();
     _themeColorController.dispose();
     _thermalWidthMarginController.dispose();
     super.dispose();
+  }
+
+  void _schedulePdfPreviewUpdate({bool immediate = false}) {
+    _previewDebounceTimer?.cancel();
+    if (immediate) {
+      _generatePdfPreview();
+    } else {
+      _previewDebounceTimer = Timer(const Duration(milliseconds: 150), () {
+        _generatePdfPreview();
+      });
+    }
+  }
+
+  Future<void> _generatePdfPreview() async {
+    if (!mounted) return;
+    setState(() => _previewIsLoading = true);
+    try {
+      _basePdfSettings ??= await PDFService.fetchPdfSettings();
+      final base = _basePdfSettings!;
+
+      final pageSize = _previewedPageSize;
+      final pageFmt = PDFService.pageSizeToFormat(pageSize);
+      final isLandscape = _previewedLandscape &&
+          (_previewedTemplate == InvoiceTemplate.gridClassic ||
+              _previewedBlockLayout != null);
+      final effectiveFormat = isLandscape ? pageFmt.landscape : pageFmt;
+
+      final fontSizeScale = pdfFontSizeFromKey(_previewedPdfFontSize).scale;
+
+      final previewSettings = PdfGenerationSettings(
+        company: base.company,
+        template: _previewedTemplate,
+        invoicePrefix: base.invoicePrefix,
+        creditNotePrefix: base.creditNotePrefix,
+        debitNotePrefix: base.debitNotePrefix,
+        quotationPrefix: base.quotationPrefix,
+        receiptPrefix: base.receiptPrefix,
+        showGst: base.showGst,
+        showQuantity: base.showQuantity,
+        showDiscount: base.showDiscount,
+        showTypeTag: base.showTypeTag,
+        businessType: base.businessType,
+        upiEntries: base.upiEntries,
+        showQrStr: base.showQrStr,
+        showBankDetails: base.showBankDetails,
+        bankAccounts: base.bankAccounts,
+        logoPosition: base.logoPosition,
+        logoSizePx: base.logoSizePx,
+        logoBytes: base.logoBytes,
+        thankYouNote: base.thankYouNote,
+        datePattern: base.datePattern,
+        showFooterBranding: base.showFooterBranding,
+        themeColor: _previewedThemeColorHex != null
+            ? PdfColor.fromHex(_previewedThemeColorHex!)
+            : null,
+        signatureBytes: base.signatureBytes,
+        signaturePosition: base.signaturePosition,
+        signatureSizePx: base.signatureSizePx,
+        showPreviousBalance: base.showPreviousBalance,
+        pageFormat: effectiveFormat,
+        pageSize: pageSize,
+        showTotalQuantity: _previewedShowTotalQuantity,
+        pdfTheme: base.pdfTheme,
+        thermalItemLayout: _previewedThermalItemLayout,
+        showAliasName: base.showAliasName,
+        watermarkBytes: base.watermarkBytes,
+        watermarkOpacity: base.watermarkOpacity,
+        showCgstSgst: base.showCgstSgst,
+        showTaxColumn: base.showTaxColumn,
+        showRoundOff: base.showRoundOff,
+        showPhone: base.showPhone,
+        showEmail: base.showEmail,
+        showCompanyName: base.showCompanyName,
+        showPan: base.showPan,
+        showFssai: base.showFssai,
+        showWebsite: base.showWebsite,
+        showAddress: base.showAddress,
+        showLogo: base.showLogo,
+        thermalCompanyNameSize: _previewedThermalCompanyNameSize,
+        showLeadingZeros: base.showLeadingZeros,
+        showDescription: base.showDescription,
+        descriptionNewLine: base.descriptionNewLine,
+        showCustomerBusinessName: base.showCustomerBusinessName,
+        showCustomerAddress: base.showCustomerAddress,
+        showCustomerPhone: base.showCustomerPhone,
+        showCustomerEmail: base.showCustomerEmail,
+        showCustomerGstin: base.showCustomerGstin,
+        showTimeInPdf: base.showTimeInPdf,
+        pdfTimeFormat: base.pdfTimeFormat,
+        showSlNo: base.showSlNo,
+        landscape: isLandscape,
+        watermarkFullPage: base.watermarkFullPage,
+        metadataColumns: base.metadataColumns,
+        fontSizeScale: fontSizeScale,
+        companyNameScale: pdfSectionScale(
+            _previewedPdfSectionSizes[SettingKey.pdfCompanyNameFontSize],
+            fontSizeScale),
+        docTitleScale: pdfSectionScale(
+            _previewedPdfSectionSizes[SettingKey.pdfDocTitleFontSize],
+            fontSizeScale),
+        tableHeaderScale: pdfSectionScale(
+            _previewedPdfSectionSizes[SettingKey.pdfTableHeaderFontSize],
+            fontSizeScale),
+        tableItemsScale: pdfSectionScale(
+            _previewedPdfSectionSizes[SettingKey.pdfTableItemsFontSize],
+            fontSizeScale),
+        totalsScale: pdfSectionScale(
+            _previewedPdfSectionSizes[SettingKey.pdfTotalsFontSize],
+            fontSizeScale),
+        customerFields: base.customerFields,
+        blockLayout: _previewedBlockLayout,
+      );
+
+      final sampleInvoice = PdfPreviewSample.createSampleInvoice(
+        company: base.company,
+      );
+      final doc = PDFService.generateInvoicePDFWithSettings(
+        sampleInvoice,
+        previewSettings,
+      );
+      final bytes = await doc.save();
+      if (mounted) {
+        setState(() {
+          _previewPdfBytes = bytes;
+          _previewIsLoading = false;
+          _previewVersion++;
+        });
+      }
+    } catch (e, st) {
+      debugPrint('Error generating PDF preview: $e\n$st');
+      if (mounted) {
+        setState(() => _previewIsLoading = false);
+      }
+    }
   }
 
   void _setPreviewedThemeColor(String? hexColor) {
@@ -216,11 +444,18 @@ class _PdfSettingsScreenV2State extends ConsumerState<PdfSettingsScreenV2> {
       _themeColorController.text = hexColor ?? '';
       _themeColorInputValid = true;
     });
+    _schedulePdfPreviewUpdate();
   }
 
   void _setPreviewedTemplate(InvoiceTemplate template) {
     if (!template.supportsPageSize(_previewedPageSize)) return;
-    setState(() => _previewedTemplate = template);
+    setState(() {
+      _previewedTemplate = template;
+      // Choosing a built-in template must stop an imported block layout from
+      // overriding the preview/rendered output.
+      _previewedBlockLayout = null;
+    });
+    _schedulePdfPreviewUpdate(immediate: true);
   }
 
   void _setPreviewedPageSize(PageSize pageSize) {
@@ -231,6 +466,7 @@ class _PdfSettingsScreenV2State extends ConsumerState<PdfSettingsScreenV2> {
         pageSize,
       );
     });
+    _schedulePdfPreviewUpdate(immediate: true);
   }
 
   void _handleCustomThemeColor(String value) {
@@ -239,6 +475,7 @@ class _PdfSettingsScreenV2State extends ConsumerState<PdfSettingsScreenV2> {
         _previewedThemeColorHex = null;
         _themeColorInputValid = true;
       });
+      _schedulePdfPreviewUpdate();
       return;
     }
     try {
@@ -247,6 +484,7 @@ class _PdfSettingsScreenV2State extends ConsumerState<PdfSettingsScreenV2> {
         _previewedThemeColorHex = normalized;
         _themeColorInputValid = true;
       });
+      _schedulePdfPreviewUpdate();
     } catch (_) {
       setState(() => _themeColorInputValid = false);
     }
@@ -333,10 +571,536 @@ class _PdfSettingsScreenV2State extends ConsumerState<PdfSettingsScreenV2> {
           _previewedThermalCompanyNameSize != _savedThermalCompanyNameSize ||
           _previewedPdfFontSize != _savedPdfFontSize ||
           _pdfSectionSizeKeys.any((k) =>
-              _previewedPdfSectionSizes[k] != _savedPdfSectionSizes[k]));
+              _previewedPdfSectionSizes[k] != _savedPdfSectionSizes[k]) ||
+          jsonEncode(_previewedBlockLayout) != jsonEncode(_savedBlockLayout));
+
+  Future<void> _handlePrintPreview() async {
+    if (_previewPdfBytes == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+            content: Text('Preview is still generating, please wait...')),
+      );
+      return;
+    }
+    try {
+      if (_previewedTemplate == InvoiceTemplate.thermal) {
+        final sampleInvoice = PdfPreviewSample.createSampleInvoice(
+          company: _basePdfSettings?.company,
+        );
+        await ThermalPrinterService.printInvoice(context, sampleInvoice);
+      } else {
+        final pageFmt = PDFService.pageSizeToFormat(_previewedPageSize);
+        final isLandscape = _previewedLandscape &&
+            (_previewedTemplate == InvoiceTemplate.gridClassic ||
+                _previewedBlockLayout != null);
+        final effectiveFormat = isLandscape ? pageFmt.landscape : pageFmt;
+
+        await Printing.layoutPdf(
+          format: effectiveFormat,
+          name: 'Invoiso_${_previewedTemplate.name}_preview',
+          onLayout: (format) async => _previewPdfBytes!,
+        );
+      }
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Print error: $e'), backgroundColor: Colors.red),
+      );
+    }
+  }
+
+  void _applyCustomLayout(CustomInvoiceLayout layout) {
+    final effectiveTemplate = layout.effectiveBaseTemplate;
+    final effectiveThemeColor = layout.effectiveThemeColorHex;
+    setState(() {
+      _selectedCustomLayoutId = layout.id;
+      _previewedTemplate = effectiveTemplate;
+      _previewedPageSize = layout.pageSize;
+      _previewedLandscape = layout.landscape;
+      _previewedThemeColorHex = effectiveThemeColor;
+      _themeColorController.text = effectiveThemeColor ?? '';
+      _themeColorInputValid = true;
+      _previewedPdfFontSize = pdfFontSizeFromKey(layout.fontSize).key;
+      _previewedPdfSectionSizes = {
+        for (final entry in layout.sectionSizes.entries)
+          if (SettingKey.values.asNameMap().containsKey(entry.key))
+            SettingKey.values.asNameMap()[entry.key]!: entry.value,
+      };
+      _previewedShowTotalQuantity = layout.showTotalQuantity;
+      _previewedThermalWidthMargin = layout.thermalWidthMargin;
+      _thermalWidthMarginController.text = layout.thermalWidthMargin;
+      _previewedThermalItemLayout = layout.thermalItemLayout;
+      _previewedThermalCompanyNameSize = layout.thermalCompanyNameSize;
+      _previewedBlockLayout = layout.blockLayout;
+    });
+    _schedulePdfPreviewUpdate(immediate: true);
+  }
+
+  /// Snapshot of the current preview state as a reusable layout. This is the
+  /// same shape used by the JSON editor and by "Save Current Settings as
+  /// Layout", so a JSON generated here can always be applied again.
+  CustomInvoiceLayout _layoutFromCurrentSettings({
+    String? id,
+    required String name,
+    required String description,
+    DateTime? createdAt,
+    Map<String, dynamic>? blockLayout,
+  }) {
+    return CustomInvoiceLayout(
+      id: id ?? 'custom_layout_${DateTime.now().millisecondsSinceEpoch}',
+      name: name,
+      description: description,
+      baseTemplate: _previewedTemplate,
+      pageSize: _previewedPageSize,
+      landscape: _previewedLandscape,
+      themeColorHex: _previewedThemeColorHex,
+      fontSize: pdfFontSizeFromKey(_previewedPdfFontSize).key,
+      sectionSizes: {
+        for (final entry in _previewedPdfSectionSizes.entries)
+          if (entry.value.isEmpty ||
+              PdfFontSize.values.any((size) => size.key == entry.value))
+            entry.key.name: entry.value,
+      },
+      showTotalQuantity: _previewedShowTotalQuantity,
+      thermalWidthMargin: (int.tryParse(_previewedThermalWidthMargin) ?? 1)
+          .clamp(-10, 10)
+          .toString(),
+      thermalItemLayout:
+          _previewedThermalItemLayout == 'detailed' ? 'detailed' : 'table',
+      thermalCompanyNameSize: ThermalCompanyNameSize.values
+              .any((size) => size.key == _previewedThermalCompanyNameSize)
+          ? _previewedThermalCompanyNameSize
+          : 'medium',
+      blockLayout: blockLayout,
+      createdAt: createdAt ?? DateTime.now(),
+    );
+  }
+
+  /// Persist an added/edited layout without touching any other saved layout.
+  Future<void> _upsertCustomLayout(CustomInvoiceLayout layout) async {
+    final next = List<CustomInvoiceLayout>.of(_customLayouts);
+    final index = next.indexWhere((l) => l.id == layout.id);
+    if (index >= 0) {
+      next[index] = layout;
+    } else {
+      next.add(layout);
+    }
+    await ref.read(settingsRepositoryProvider).saveCustomInvoiceLayouts(next);
+    if (!mounted) return;
+    setState(() {
+      _customLayouts = next;
+      _selectedCustomLayoutId = layout.id;
+    });
+  }
+
+  Future<void> _removeCustomLayout(CustomInvoiceLayout layout) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Remove Custom Layout'),
+        content: Text(
+            'Are you sure you want to remove \'${layout.name}\'? Default templates cannot be removed.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            style: FilledButton.styleFrom(backgroundColor: Colors.red),
+            child: const Text('Remove'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+
+    final wasSelected = _selectedCustomLayoutId == layout.id;
+    setState(() {
+      _customLayouts.removeWhere((l) => l.id == layout.id);
+      if (wasSelected) {
+        _selectedCustomLayoutId = null;
+        _savedBlockLayout = null;
+        _previewedBlockLayout = null;
+        _previewedTemplate = InvoiceTemplate.classic;
+      }
+    });
+    await ref
+        .read(settingsRepositoryProvider)
+        .saveCustomInvoiceLayouts(_customLayouts);
+    if (wasSelected) {
+      await ref
+          .read(settingsRepositoryProvider)
+          .deleteSetting(SettingKey.activeCustomLayout);
+    }
+    _schedulePdfPreviewUpdate(immediate: true);
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Removed layout \'${layout.name}\'')),
+      );
+    }
+  }
+
+  Future<void> _showAddLayoutDialog() async {
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (ctx) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'Add Custom Layout',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 6),
+              Text(
+                'Import a custom .json layout file or save current customizations as a new layout.',
+                style: TextStyle(
+                    fontSize: 12.5,
+                    color: Theme.of(context).colorScheme.onSurfaceVariant),
+              ),
+              const SizedBox(height: 16),
+              ListTile(
+                leading: const CircleAvatar(
+                  backgroundColor: Color(0xFFF3E8FF),
+                  child: Icon(Icons.code_rounded, color: Color(0xFF7E22CE)),
+                ),
+                title: const Text('Create / Edit JSON',
+                    style: TextStyle(fontWeight: FontWeight.w600)),
+                subtitle: const Text(
+                    'Paste or edit the layout configuration with a live validation check'),
+                onTap: () {
+                  Navigator.pop(ctx);
+                  _showJsonLayoutDialog();
+                },
+              ),
+              const Divider(),
+              ListTile(
+                leading: const CircleAvatar(
+                  backgroundColor: Color(0xFFE0E7FF),
+                  child: Icon(Icons.file_upload_outlined,
+                      color: Color(0xFF3730A3)),
+                ),
+                title: const Text('Import from JSON File',
+                    style: TextStyle(fontWeight: FontWeight.w600)),
+                subtitle: const Text(
+                    'Select a .json or .invoiso-layout file from your device'),
+                onTap: () {
+                  Navigator.pop(ctx);
+                  _importCustomLayoutFile();
+                },
+              ),
+              const Divider(),
+              ListTile(
+                leading: const CircleAvatar(
+                  backgroundColor: Color(0xFFDCFCE7),
+                  child: Icon(Icons.bookmark_add_outlined,
+                      color: Color(0xFF166534)),
+                ),
+                title: const Text('Save Current Settings as Layout',
+                    style: TextStyle(fontWeight: FontWeight.w600)),
+                subtitle: const Text(
+                    'Create a reusable template from currently configured options'),
+                onTap: () {
+                  Navigator.pop(ctx);
+                  _saveCurrentAsCustomLayout();
+                },
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _showJsonLayoutDialog({CustomInvoiceLayout? existing}) async {
+    final seed = existing ??
+        _layoutFromCurrentSettings(
+          name: 'My Custom Layout',
+          description: 'Custom template with personal styling',
+          blockLayout: _previewedBlockLayout,
+        );
+    final controller = TextEditingController(text: seed.toPrettyJson());
+    String? error;
+    CustomInvoiceLayout? parsed = seed;
+
+    final result = await showDialog<_JsonLayoutResult>(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setDialogState) {
+          void parseNow() {
+            try {
+              final layout = CustomInvoiceLayout.fromJson(
+                controller.text,
+                fallbackId: existing?.id,
+                fallbackCreatedAt: existing?.createdAt,
+              );
+              setDialogState(() {
+                parsed = layout;
+                error = null;
+              });
+            } catch (e) {
+              setDialogState(() {
+                parsed = null;
+                error = _friendlyLayoutError(e);
+              });
+            }
+          }
+
+          return AlertDialog(
+            title: Text(existing == null
+                ? 'Create Layout from JSON'
+                : 'Edit Layout JSON'),
+            content: SizedBox(
+              width: 680,
+              height: 540,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Edit the JSON configuration. Invalid JSON is rejected and '
+                    'never replaces the saved layout.',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: Theme.of(ctx).colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Expanded(
+                    child: TextField(
+                      controller: controller,
+                      maxLines: null,
+                      expands: true,
+                      textAlignVertical: TextAlignVertical.top,
+                      style: const TextStyle(
+                        fontFamily: 'monospace',
+                        fontSize: 12.5,
+                        height: 1.35,
+                      ),
+                      decoration: InputDecoration(
+                        border: const OutlineInputBorder(),
+                        contentPadding: const EdgeInsets.all(12),
+                        hintText: '{\n  "name": "My Layout",\n  ...\n}',
+                      ),
+                      onChanged: (_) => parseNow(),
+                    ),
+                  ),
+                  if (error != null) ...[
+                    const SizedBox(height: 8),
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: Colors.red.withValues(alpha: 0.08),
+                        borderRadius: BorderRadius.circular(6),
+                        border: Border.all(
+                          color: Colors.red.withValues(alpha: 0.4),
+                        ),
+                      ),
+                      child: Text(
+                        error!,
+                        style: const TextStyle(
+                          fontSize: 11.5,
+                          color: Colors.red,
+                        ),
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(ctx),
+                child: const Text('Cancel'),
+              ),
+              OutlinedButton.icon(
+                onPressed: parsed == null
+                    ? null
+                    : () => Navigator.pop(
+                          ctx,
+                          _JsonLayoutResult(layout: parsed!, save: false),
+                        ),
+                icon: const Icon(Icons.visibility_outlined, size: 16),
+                label: const Text('Preview'),
+              ),
+              FilledButton.icon(
+                onPressed: parsed == null
+                    ? null
+                    : () => Navigator.pop(
+                          ctx,
+                          _JsonLayoutResult(layout: parsed!, save: true),
+                        ),
+                icon: const Icon(Icons.save_rounded, size: 16),
+                label: const Text('Save & Apply'),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+    controller.dispose();
+    if (result == null || !mounted) return;
+
+    var layout = result.layout;
+    if (existing != null) {
+      // Editing keeps the existing identity so it updates in place instead of
+      // creating a duplicate layout or overwriting an unrelated one.
+      layout = layout.copyWith(
+        id: existing.id,
+        createdAt: existing.createdAt,
+        clearThemeColor: layout.themeColorHex == null,
+      );
+    }
+    _applyCustomLayout(layout);
+
+    if (!result.save) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Layout applied to preview. Use Save Settings to activate it.',
+          ),
+        ),
+      );
+      return;
+    }
+
+    try {
+      await _upsertCustomLayout(layout);
+      await _saveTemplate();
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Could not save layout: ${_friendlyLayoutError(e)}'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
+  String _friendlyLayoutError(Object error) {
+    if (error is FormatException) {
+      return 'Error on JSON file';
+    }
+    return error.toString();
+  }
+
+  Future<void> _importCustomLayoutFile() async {
+    try {
+      final result = await FilePicker.platform.pickFiles(
+        type: FileType.custom,
+        allowedExtensions: ['json', 'invoiso-layout'],
+      );
+      if (result == null || result.files.isEmpty) return;
+      final picked = result.files.single;
+      // Prefer in-memory bytes (always available on web); fall back to the
+      // path for desktop/mobile pickers that only provide a file path.
+      String content;
+      if (picked.bytes != null) {
+        content = utf8.decode(picked.bytes!);
+      } else if (picked.path != null) {
+        content = await File(picked.path!).readAsString();
+      } else {
+        throw const FormatException('The selected layout file is empty.');
+      }
+      final layout = CustomInvoiceLayout.fromJson(content);
+
+      // Apply the imported payload to the live layout state first. The
+      // renderer reads the persisted settings (not this screen's fields), so
+      // the layout must also be saved as the active settings below; otherwise
+      // imported layouts silently fall back to the previously saved/default
+      // theme when an invoice is previewed or generated.
+      _applyCustomLayout(layout);
+
+      // Validate first, persist second: an invalid file never mutates the
+      // in-memory or stored layout list.
+      await _upsertCustomLayout(layout);
+      await _saveTemplate(showSavedSnackBar: false);
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'Imported custom layout \'${layout.name}\' successfully!',
+            ),
+          ),
+        );
+      }
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(_friendlyLayoutError(e)),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
+  Future<void> _saveCurrentAsCustomLayout() async {
+    final nameCtrl = TextEditingController(text: 'My Custom Layout');
+    final descCtrl =
+        TextEditingController(text: 'Custom template with personal styling');
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Save as Custom Layout'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+              controller: nameCtrl,
+              decoration: const InputDecoration(
+                  labelText: 'Layout Name', border: OutlineInputBorder()),
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: descCtrl,
+              decoration: const InputDecoration(
+                  labelText: 'Description', border: OutlineInputBorder()),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: const Text('Cancel')),
+          FilledButton(
+              onPressed: () => Navigator.pop(ctx, true),
+              child: const Text('Save Layout')),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+
+    final newLayout = _layoutFromCurrentSettings(
+      name:
+          nameCtrl.text.trim().isEmpty ? 'Custom Layout' : nameCtrl.text.trim(),
+      description: descCtrl.text.trim(),
+      blockLayout: _previewedBlockLayout,
+    );
+
+    await _upsertCustomLayout(newLayout);
+
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Saved custom layout \'${newLayout.name}\'!')),
+      );
+    }
+  }
 
   void _resetToDefaultV2() {
     setState(() {
+      _selectedCustomLayoutId = null;
+      _previewedBlockLayout = null;
       _previewedTemplate = InvoiceTemplate.classic;
       _previewedPageSize = PageSize.a4;
       _previewedLandscape = false;
@@ -351,7 +1115,9 @@ class _PdfSettingsScreenV2State extends ConsumerState<PdfSettingsScreenV2> {
       _previewedThermalCompanyNameSize = 'medium';
       _previewedPdfFontSize = 'medium';
       _previewedPdfSectionSizes = {for (final k in _pdfSectionSizeKeys) k: ''};
+
     });
+    _schedulePdfPreviewUpdate(immediate: true);
   }
 
   BoxDecoration _flatCardDecorationV2(BuildContext context) => BoxDecoration(
@@ -447,7 +1213,24 @@ class _PdfSettingsScreenV2State extends ConsumerState<PdfSettingsScreenV2> {
           const SizedBox(height: 8),
           _pageSizeDropdownV2(),
           const SizedBox(height: 16),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
           _sectionLabel(l10n.pdfSettingsTemplatesLabel),
+              TextButton.icon(
+                onPressed: _showAddLayoutDialog,
+                icon: const Icon(Icons.add_rounded, size: 15),
+                label: const Text('Add Layout',
+                    style:
+                        TextStyle(fontSize: 11.5, fontWeight: FontWeight.w600)),
+                style: TextButton.styleFrom(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                  visualDensity: VisualDensity.compact,
+                ),
+              ),
+            ],
+          ),
           const SizedBox(height: 10),
           Expanded(
             child: Builder(builder: (context) {
@@ -457,7 +1240,11 @@ class _PdfSettingsScreenV2State extends ConsumerState<PdfSettingsScreenV2> {
                   .where((e) => (e["template"] as InvoiceTemplate)
                       .supportsPageSize(_previewedPageSize))
                   .toList();
-              if (visibleTemplates.isEmpty) {
+              final matchingCustomLayouts = _customLayouts
+                  .where((l) => l.pageSize == _previewedPageSize)
+                  .toList();
+
+              if (visibleTemplates.isEmpty && matchingCustomLayouts.isEmpty) {
                 return Center(
                   child: Text(
                       l10n.pdfSettingsNoTemplatesForPageSizeMessage(
@@ -471,30 +1258,90 @@ class _PdfSettingsScreenV2State extends ConsumerState<PdfSettingsScreenV2> {
               return SingleChildScrollView(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
-                  children: visibleTemplates.asMap().entries.map((e) {
-                    final index = e.key;
-                    final entry = e.value;
+                  children: [
+                    if (matchingCustomLayouts.isNotEmpty) ...[
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 6),
+                        child: Text(
+                          'YOUR INSERTED LAYOUTS',
+                          style: TextStyle(
+                            fontSize: 10,
+                            fontWeight: FontWeight.w700,
+                            letterSpacing: 0.5,
+                            color: Theme.of(context).primaryColor,
+                          ),
+                        ),
+                      ),
+                      for (final customLayout in matchingCustomLayouts)
+                        Padding(
+                          padding: const EdgeInsets.only(bottom: 8),
+                          child: TemplateListTile(
+                            template: customLayout.baseTemplate,
+                            name: customLayout.name,
+                            description: customLayout.description,
+                            themeColor: customLayout.effectiveThemeColorHex !=
+                                    null
+                                ? (_colorFromHex(
+                                        customLayout.effectiveThemeColorHex!) ??
+                                    _activePreviewColor)
+                                : _activePreviewColor,
+                            isPreviewed:
+                                _selectedCustomLayoutId == customLayout.id,
+                            isSaved: false,
+                            isDefault: false,
+                            isInserted: true,
+                            blockLayout: customLayout.blockLayout,
+                            thermalDetailedTemplate:
+                                customLayout.thermalItemLayout != "table",
+                            onTap: () => _applyCustomLayout(customLayout),
+                            onEdit: () =>
+                                _showJsonLayoutDialog(existing: customLayout),
+                            onDelete: () => _removeCustomLayout(customLayout),
+                          ),
+                        ),
+                      const SizedBox(height: 6),
+                      Text(
+                        'DEFAULT TEMPLATES',
+                        style: TextStyle(
+                          fontSize: 10,
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: 0.5,
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                      const SizedBox(height: 6),
+                    ],
+                    for (final entry in visibleTemplates)
+                      Builder(builder: (context) {
                     final template = entry["template"] as InvoiceTemplate;
                     final name = templateName(context, template);
-                    final description = templateDescription(context, template);
+                        final description =
+                            templateDescription(context, template);
                     return Padding(
-                      padding: EdgeInsets.only(
-                          bottom: index < visibleTemplates.length - 1 ? 8 : 0),
+                          padding: const EdgeInsets.only(bottom: 8),
                       child: TemplateListTile(
                           template: template,
                           name: name,
                           description: description,
                           themeColor: _activePreviewColor,
-                          isPreviewed: _previewedTemplate == template,
+                            isPreviewed: _selectedCustomLayoutId == null &&
+                                _previewedTemplate == template,
                           isSaved: _savedTemplate == template,
                           thermalDetailedTemplate:
                               _previewedThermalItemLayout != "table",
                           isDefault: template == InvoiceTemplate.classic,
-                          onTap: () => _setPreviewedTemplate(template),
+                            isInserted: false,
+                            onDelete: null,
+                            onTap: () {
+                              setState(() => _selectedCustomLayoutId = null);
+                              _setPreviewedTemplate(template);
+                            },
                           isDisabled: false,
-                          disabledLabel: null),
+                            disabledLabel: null,
+                          ),
                     );
-                  }).toList(),
+                      }),
+                  ],
                 ),
               );
             }),
@@ -639,10 +1486,17 @@ class _PdfSettingsScreenV2State extends ConsumerState<PdfSettingsScreenV2> {
     final previewPanel = _PreviewPanel(
       previewedTemplate: _previewedTemplate,
       savedTemplate: _savedTemplate,
+      customLayout: _activeCustomLayout,
       themeColor: _activePreviewColor,
       thermalDetailedTemplate: _previewedThermalItemLayout != "table",
-      landscape: _previewedLandscape &&
-          _previewedTemplate == InvoiceTemplate.gridClassic,
+      landscape: _previewedLandscape,
+      pdfBytes: _previewPdfBytes,
+      isLoading: _previewIsLoading,
+      useLivePdf: _useLivePdfPreview,
+      onToggleLivePdf: () =>
+          setState(() => _useLivePdfPreview = !_useLivePdfPreview),
+      previewVersion: _previewVersion,
+      onPrint: _handlePrintPreview,
     );
 
     return Container(
@@ -796,8 +1650,10 @@ class _PdfSettingsScreenV2State extends ConsumerState<PdfSettingsScreenV2> {
                   label: Text(l10n.pdfSettingsOrientationLandscape)),
             ],
             selected: {_previewedLandscape},
-            onSelectionChanged: (s) =>
-                setState(() => _previewedLandscape = s.first),
+            onSelectionChanged: (s) {
+              setState(() => _previewedLandscape = s.first);
+              _schedulePdfPreviewUpdate(immediate: true);
+            },
           ),
         ],
       ),
@@ -825,7 +1681,10 @@ class _PdfSettingsScreenV2State extends ConsumerState<PdfSettingsScreenV2> {
           ),
           Switch(
             value: _previewedShowTotalQuantity,
-            onChanged: (v) => setState(() => _previewedShowTotalQuantity = v),
+            onChanged: (v) {
+              setState(() => _previewedShowTotalQuantity = v);
+              _schedulePdfPreviewUpdate();
+            },
             materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
           ),
         ],
@@ -919,8 +1778,10 @@ class _PdfSettingsScreenV2State extends ConsumerState<PdfSettingsScreenV2> {
               ),
             ],
             selected: {_previewedThermalItemLayout},
-            onSelectionChanged: (selection) =>
-                setState(() => _previewedThermalItemLayout = selection.first),
+            onSelectionChanged: (selection) {
+              setState(() => _previewedThermalItemLayout = selection.first);
+              _schedulePdfPreviewUpdate();
+            },
           ),
           const SizedBox(height: 4),
           Text(
@@ -971,8 +1832,10 @@ class _PdfSettingsScreenV2State extends ConsumerState<PdfSettingsScreenV2> {
                     value: size.key,
                     child: Text(thermalCompanyNameSizeLabel(context, size))),
             ],
-            onChanged: (value) =>
-                setState(() => _previewedThermalCompanyNameSize = value!),
+            onChanged: (value) {
+              setState(() => _previewedThermalCompanyNameSize = value!);
+              _schedulePdfPreviewUpdate();
+            },
           ),
         ],
       ),
@@ -1021,22 +1884,28 @@ class _PdfSettingsScreenV2State extends ConsumerState<PdfSettingsScreenV2> {
                           value: size.key,
                           child: Text(pdfFontSizeLabel(context, size))),
                   ],
-                  onChanged: (value) =>
-                      setState(() => _previewedPdfFontSize = value!),
+                  onChanged: (value) {
+                    setState(() => _previewedPdfFontSize = value!);
+                    _schedulePdfPreviewUpdate();
+                  },
                 ),
               ),
               // Back to the default sizes (overall + sections) without
               // resetting the other options.
               if (_previewedPdfFontSize != PdfFontSize.medium.key ||
-                  _previewedPdfSectionSizes.values.any((v) => v.isNotEmpty)) ...[
+                  _previewedPdfSectionSizes.values
+                      .any((v) => v.isNotEmpty)) ...[
                 const SizedBox(width: 8),
                 TextButton(
-                  onPressed: () => setState(() {
+                  onPressed: () {
+                    setState(() {
                     _previewedPdfFontSize = PdfFontSize.medium.key;
                     _previewedPdfSectionSizes = {
                       for (final k in _pdfSectionSizeKeys) k: ''
                     };
-                  }),
+                    });
+                    _schedulePdfPreviewUpdate();
+                  },
                   child: Text(l10n.actionReset),
                 ),
               ],
@@ -1117,8 +1986,10 @@ class _PdfSettingsScreenV2State extends ConsumerState<PdfSettingsScreenV2> {
                     value: size.key,
                     child: Text(pdfFontSizeLabel(context, size))),
             ],
-            onChanged: (value) =>
-                setState(() => _previewedPdfSectionSizes[key] = value!),
+            onChanged: (value) {
+              setState(() => _previewedPdfSectionSizes[key] = value!);
+              _schedulePdfPreviewUpdate();
+            },
           ),
         ),
       ],
@@ -1165,8 +2036,34 @@ class _PdfSettingsScreenV2State extends ConsumerState<PdfSettingsScreenV2> {
             ),
           ),
           const SizedBox(height: 8),
-          SizedBox(
-            width: double.infinity,
+          Row(
+            children: [
+              Expanded(
+                child: OutlinedButton.icon(
+                  onPressed: _showAddLayoutDialog,
+                  icon: const Icon(Icons.bookmark_add_outlined, size: 14),
+                  label: const Text(
+                    'Insert Layout',
+                    style: TextStyle(
+                      fontSize: AppFontSize.xsmall,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: primaryColor,
+                    side:
+                        BorderSide(color: primaryColor.withValues(alpha: 0.5)),
+                    padding: const EdgeInsets.symmetric(vertical: 8),
+                    shape: RoundedRectangleBorder(
+                      borderRadius:
+                          BorderRadius.circular(AppBorderRadius.small),
+                    ),
+                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
             child: OutlinedButton.icon(
               onPressed: widget.onNavigateToCustomization,
               icon: const Icon(Icons.arrow_forward_rounded, size: 14),
@@ -1179,15 +2076,19 @@ class _PdfSettingsScreenV2State extends ConsumerState<PdfSettingsScreenV2> {
               ),
               style: OutlinedButton.styleFrom(
                 foregroundColor: primaryColor,
-                side: BorderSide(color: primaryColor.withValues(alpha: 0.5)),
+                    side:
+                        BorderSide(color: primaryColor.withValues(alpha: 0.5)),
                 padding: const EdgeInsets.symmetric(vertical: 8),
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(AppBorderRadius.small),
+                      borderRadius:
+                          BorderRadius.circular(AppBorderRadius.small),
                 ),
                 tapTargetSize: MaterialTapTargetSize.shrinkWrap,
               ),
             ),
           ),
+        ],
+      ),
         ],
       ),
     );
@@ -1226,87 +2127,243 @@ Color _defaultThemeColor(InvoiceTemplate template) {
 class _PreviewPanel extends StatelessWidget {
   final InvoiceTemplate previewedTemplate;
   final InvoiceTemplate savedTemplate;
+  final CustomInvoiceLayout? customLayout;
   final Color themeColor;
   final bool thermalDetailedTemplate;
   final bool landscape;
+  final Uint8List? pdfBytes;
+  final bool isLoading;
+  final bool useLivePdf;
+  final VoidCallback onToggleLivePdf;
+  final int previewVersion;
+  final VoidCallback? onPrint;
 
-  const _PreviewPanel(
-      {required this.previewedTemplate,
+  const _PreviewPanel({
+    required this.previewedTemplate,
       required this.savedTemplate,
+    this.customLayout,
       required this.themeColor,
       required this.thermalDetailedTemplate,
-      this.landscape = false});
+    this.landscape = false,
+    this.pdfBytes,
+    this.isLoading = false,
+    this.useLivePdf = true,
+    required this.onToggleLivePdf,
+    this.previewVersion = 0,
+    this.onPrint,
+  });
 
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    final name = templateName(context, previewedTemplate);
-    final description = templateDescription(context, previewedTemplate);
+    final name = customLayout?.name ?? templateName(context, previewedTemplate);
+    final description = customLayout?.description ??
+        templateDescription(context, previewedTemplate);
     final isSaved = savedTemplate == previewedTemplate;
+    final hasBlockLayout = customLayout?.blockLayout?['layout'] is List;
 
     return Column(
       children: [
         // Header strip
         Container(
           width: double.infinity,
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
           color: Theme.of(context).colorScheme.surfaceContainer,
-          child: Wrap(
-            spacing: 12,
-            runSpacing: 8,
-            crossAxisAlignment: WrapCrossAlignment.center,
-            children: [
-              ConstrainedBox(
-                constraints: const BoxConstraints(minWidth: 160, maxWidth: 520),
-                child: Column(
+          child: LayoutBuilder(
+            builder: (context, headerConstraints) {
+              final isNarrow = headerConstraints.maxWidth < 420;
+              final infoBlock = Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Wrap(
+                    spacing: 6,
+                    runSpacing: 4,
+                    crossAxisAlignment: WrapCrossAlignment.center,
                   children: [
                     Text(
                       name,
                       style: const TextStyle(
-                        fontSize: AppFontSize.xxlarge,
+                          fontSize: AppFontSize.medium,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
-                    const SizedBox(height: 4),
+                      if (isSaved)
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 6, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: Theme.of(context)
+                                .primaryColor
+                                .withValues(alpha: 0.12),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(Icons.check_circle_rounded,
+                                  color: Theme.of(context).primaryColor,
+                                  size: 12),
+                              const SizedBox(width: 3),
+                              Text(
+                                l10n.commonActiveLabel,
+                                style: TextStyle(
+                                  color: Theme.of(context).primaryColor,
+                                  fontWeight: FontWeight.w700,
+                                  fontSize: 10.5,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                    ],
+                  ),
+                  const SizedBox(height: 2),
                     Text(
                       description,
                       style: TextStyle(
-                        fontSize: AppFontSize.medium,
+                      fontSize: 11.5,
                         color: Theme.of(context).colorScheme.onSurfaceVariant,
                       ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                     ),
                   ],
+              );
+
+              final actionButtons = Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  if (pdfBytes != null && onPrint != null) ...[
+                    FilledButton.tonalIcon(
+                      onPressed: onPrint,
+                      icon: const Icon(Icons.print_outlined, size: 15),
+                      label: const Text('Print',
+                          style: TextStyle(
+                              fontSize: 11.5, fontWeight: FontWeight.w600)),
+                      style: FilledButton.styleFrom(
+                        visualDensity: VisualDensity.compact,
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 8, vertical: 4),
                 ),
               ),
-              if (isSaved)
-                Chip(
-                  avatar: Icon(Icons.check_circle_rounded,
-                      color: Theme.of(context).primaryColor, size: 16),
-                  label: Text(
-                    l10n.commonActiveLabel,
-                    style: TextStyle(
-                      color: Theme.of(context).primaryColor,
-                      fontWeight: FontWeight.w600,
-                      fontSize: AppFontSize.small,
+                    const SizedBox(width: 6),
+                  ],
+                  SegmentedButton<bool>(
+                    segments: const [
+                      ButtonSegment(
+                        value: true,
+                        icon: Icon(Icons.picture_as_pdf_outlined, size: 13),
+                        label: Text('PDF', style: TextStyle(fontSize: 11)),
                     ),
+                      ButtonSegment(
+                        value: false,
+                        icon: Icon(Icons.brush_outlined, size: 13),
+                        label: Text('Mock', style: TextStyle(fontSize: 11)),
+                      ),
+                    ],
+                    selected: {useLivePdf},
+                    onSelectionChanged: (_) => onToggleLivePdf(),
+                    style: const ButtonStyle(
+                      visualDensity: VisualDensity.compact,
+                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                   ),
-                  backgroundColor:
-                      Theme.of(context).primaryColor.withValues(alpha: 0.1),
-                  side: BorderSide.none,
-                  padding: const EdgeInsets.symmetric(horizontal: 4),
                 ),
             ],
+              );
+
+              if (isNarrow) {
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    infoBlock,
+                    const SizedBox(height: 8),
+                    actionButtons,
+                  ],
+                );
+              }
+
+              return Row(
+                children: [
+                  Expanded(child: infoBlock),
+                  const SizedBox(width: 8),
+                  actionButtons,
+                ],
+              );
+            },
           ),
         ),
         Divider(height: 1, color: Theme.of(context).colorScheme.outlineVariant),
-        // Large preview
+        // Preview content
         Expanded(
-          child: LayoutBuilder(
+          child: useLivePdf
+              ? Stack(
+                  children: [
+                    if (pdfBytes != null)
+                      Padding(
+                        padding: const EdgeInsets.all(12),
+                        child: Container(
+                          decoration: BoxDecoration(
+                            color: Theme.of(context).colorScheme.surface,
+                            borderRadius:
+                                BorderRadius.circular(AppBorderRadius.small),
+                            border: Border.all(
+                              color:
+                                  Theme.of(context).colorScheme.outlineVariant,
+                            ),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withValues(alpha: 0.10),
+                                blurRadius: 16,
+                                offset: const Offset(0, 4),
+                              ),
+                            ],
+                          ),
+                          clipBehavior: Clip.antiAlias,
+                          child: SfPdfViewer.memory(
+                            pdfBytes!,
+                            key: ValueKey(previewVersion),
+                            pageLayoutMode: PdfPageLayoutMode.continuous,
+                            canShowPageLoadingIndicator: false,
+                            canShowScrollStatus: false,
+                          ),
+                        ),
+                      )
+                    else
+                      Center(
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const CircularProgressIndicator(),
+                            const SizedBox(height: 12),
+                            Text(
+                              'Generating accurate print preview...',
+                              style: TextStyle(
+                                fontSize: AppFontSize.small,
+                                color: Theme.of(context)
+                                    .colorScheme
+                                    .onSurfaceVariant,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    if (isLoading && pdfBytes != null)
+                      const Positioned(
+                        top: 0,
+                        left: 0,
+                        right: 0,
+                        child: LinearProgressIndicator(minHeight: 2),
+                      ),
+                  ],
+                )
+              : LayoutBuilder(
             builder: (context, constraints) {
               final horizontalPadding =
                   constraints.maxWidth < 520 ? 16.0 : 32.0;
-              final verticalPadding = constraints.maxHeight < 620 ? 16.0 : 32.0;
+                    final verticalPadding =
+                        constraints.maxHeight < 620 ? 16.0 : 32.0;
 
               return Padding(
                 padding: EdgeInsets.symmetric(
@@ -1317,7 +2374,7 @@ class _PreviewPanel extends StatelessWidget {
                   duration: const Duration(milliseconds: 250),
                   child: FittedBox(
                     key: ValueKey(
-                        '${previewedTemplate.name}-${_colorToHex(themeColor)}-$landscape'),
+                              '${customLayout?.id ?? previewedTemplate.name}-${_colorToHex(themeColor)}-$landscape'),
                     fit: BoxFit.contain,
                     child: Container(
                       decoration: BoxDecoration(
@@ -1329,13 +2386,27 @@ class _PreviewPanel extends StatelessWidget {
                           ),
                         ],
                       ),
-                      child: TemplatePreviewSketch(
+                            child: Stack(
+                              children: [
+                                if (hasBlockLayout)
+                                  BlockLayoutSketch(
+                                    document: customLayout!.blockLayout,
+                                    themeColor: themeColor,
+                                    width: landscape ? 520 : 390,
+                                    height: landscape ? 390 : 520,
+                                    showDetails: true,
+                                  )
+                                else
+                                  TemplatePreviewSketch(
                         template: previewedTemplate,
                         themeColor: themeColor,
                         width: landscape ? 520 : 390,
                         height: landscape ? 390 : 520,
                         showDetails: true,
-                        thermalDetailedTemplate: thermalDetailedTemplate,
+                                    thermalDetailedTemplate:
+                                        thermalDetailedTemplate,
+                                  ),
+                              ],
                       ),
                     ),
                   ),
@@ -1505,4 +2576,11 @@ class _ThemeColorCard extends StatelessWidget {
       ),
     );
   }
+}
+
+class _JsonLayoutResult {
+  final CustomInvoiceLayout layout;
+  final bool save;
+
+  const _JsonLayoutResult({required this.layout, required this.save});
 }
