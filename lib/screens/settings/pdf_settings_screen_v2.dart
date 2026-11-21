@@ -310,7 +310,8 @@ class _PdfSettingsScreenV2State extends ConsumerState<PdfSettingsScreenV2> {
     if (immediate) {
       _generatePdfPreview();
     } else {
-      _previewDebounceTimer = Timer(const Duration(milliseconds: 150), () {
+      // 300 ms: typing (e.g. a hex colour) rebuilds once, not per keystroke.
+      _previewDebounceTimer = Timer(const Duration(milliseconds: 300), () {
         _generatePdfPreview();
       });
     }
@@ -837,6 +838,14 @@ class _PdfSettingsScreenV2State extends ConsumerState<PdfSettingsScreenV2> {
       builder: (ctx) => StatefulBuilder(
         builder: (ctx, setDialogState) {
           void parseNow() {
+            // Same cap as file import: layouts are stored and re-read per PDF.
+            if (controller.text.length > 512 * 1024) {
+              setDialogState(() {
+                parsed = null;
+                error = 'Layout is too large (max 512 KB).';
+              });
+              return;
+            }
             try {
               final layout = CustomInvoiceLayout.fromJson(
                 controller.text,

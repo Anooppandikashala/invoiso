@@ -432,6 +432,37 @@ void main() {
         reason: 'unrenderable layout should never preview as a blank page');
   });
 
+  test('a layout that cannot render falls back to the built-in template',
+      () async {
+    // A header taller than the page cannot be laid out; invoices must still
+    // print (with the built-in template) instead of failing.
+    final broken = CustomInvoiceLayout(
+      id: 'broken',
+      name: 'Broken',
+      description: 'Unrenderable',
+      baseTemplate: InvoiceTemplate.classic,
+      pageSize: PageSize.a4,
+      blockLayout: {
+        'page': {'size': 'a4'},
+        'layout': [
+          {
+            'type': 'header',
+            'height': 5000,
+            'left': {'companyName': '{{company.name}}'},
+          },
+        ],
+      },
+      createdAt: DateTime(2026, 11, 21),
+    );
+
+    final doc = PDFService.generateInvoicePDFWithSettings(
+      PdfPreviewSample.createSampleInvoice(),
+      settingsFor(broken),
+    );
+    expect(await doc.save(), isNotEmpty);
+    expect(_textOperatorCount(doc), greaterThan(0));
+  });
+
   test('long item lists split the block layout table across pages', () async {
     // The items table must be a direct page child; nested in a Column it
     // cannot split and MultiPage throws TooManyPagesException.

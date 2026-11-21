@@ -3,7 +3,14 @@ import 'package:invoiso/services/pdf/pdf_font_assets.dart';
 import 'package:pdf/widgets.dart' as pw;
 
 class PdfFontService {
-  static Future<pw.ThemeData> loadTheme() async {
+  static pw.ThemeData? _cachedTheme;
+
+  /// Fonts never change at runtime: read + parse the 33 font files once and
+  /// reuse them for every PDF. A failed load is not cached, so it retries.
+  static Future<pw.ThemeData> loadTheme() async =>
+      _cachedTheme ??= await _loadTheme();
+
+  static Future<pw.ThemeData> _loadTheme() async {
     final fonts = await Future.wait([
       // 0-3: Primary fonts
       rootBundle.load(PdfFontAssets.regular),

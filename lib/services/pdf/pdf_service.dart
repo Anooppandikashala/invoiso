@@ -330,37 +330,44 @@ class PDFService {
     final blockLayout = s.blockLayout;
     final blocks = blockLayout?['layout'];
     if (blockLayout != null && blocks is List && blocks.isNotEmpty) {
-      pdf.addPage(buildBlockLayoutTemplate(
-        invoice,
-        s.company,
-        currencySymbol,
-        s.prefixFor(invoice.type),
-        blockLayout,
-        upiId: effectiveUpiId,
-        showUpiQr: showUpiQr,
-        showGst: s.showGst,
-        showSlNo: s.showSlNo,
-        showQuantity: s.showQuantity,
-        showDiscount: s.showDiscount,
-        showTypeTag: s.showTypeTag,
-        showAliasName: s.showAliasName,
-        showDescription: s.showDescription,
-        showTaxColumn: s.showTaxColumn,
-        showCgstSgst: effectiveShowCgstSgst,
-        showIgst: showIgst,
-        showLeadingZeros: s.showLeadingZeros,
-        datePattern: s.datePattern,
-        bankAccount: effectiveBank,
-        logoBytes: s.logoBytes,
-        signatureBytes: s.signatureBytes,
-        signaturePosition: s.signaturePosition,
-        signatureSizePx: s.signatureSizePx,
-        showFooterBranding: s.showFooterBranding,
-        thankYouNote: s.thankYouNote,
-        pageFormat: s.pageFormat,
-        themeColor: s.themeColor,
-      ));
-      return pdf;
+      // A broken imported layout must never stop invoices from printing: build
+      // it in its own document and fall back to the built-in template below.
+      try {
+        final blockPdf = pw.Document(theme: s.pdfTheme);
+        blockPdf.addPage(buildBlockLayoutTemplate(
+          invoice,
+          s.company,
+          currencySymbol,
+          s.prefixFor(invoice.type),
+          blockLayout,
+          upiId: effectiveUpiId,
+          showUpiQr: showUpiQr,
+          showGst: s.showGst,
+          showSlNo: s.showSlNo,
+          showQuantity: s.showQuantity,
+          showDiscount: s.showDiscount,
+          showTypeTag: s.showTypeTag,
+          showAliasName: s.showAliasName,
+          showDescription: s.showDescription,
+          showTaxColumn: s.showTaxColumn,
+          showCgstSgst: effectiveShowCgstSgst,
+          showIgst: showIgst,
+          showLeadingZeros: s.showLeadingZeros,
+          datePattern: s.datePattern,
+          bankAccount: effectiveBank,
+          logoBytes: s.logoBytes,
+          signatureBytes: s.signatureBytes,
+          signaturePosition: s.signaturePosition,
+          signatureSizePx: s.signatureSizePx,
+          showFooterBranding: s.showFooterBranding,
+          thankYouNote: s.thankYouNote,
+          pageFormat: s.pageFormat,
+          themeColor: s.themeColor,
+        ));
+        return blockPdf;
+      } catch (e, st) {
+        debugPrint('Custom layout failed, using built-in template: $e\n$st');
+      }
     }
 
     switch (s.template) {
