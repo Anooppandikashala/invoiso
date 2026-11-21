@@ -6625,4 +6625,149 @@ class AppLocalizationsBo extends AppLocalizations {
 
   @override
   String get gstDocNatureDebitNote => 'Debit Note';
+
+  @override
+  String get pdfLayoutPreviewGenerating =>
+      'སྔོན་ལྟ་བཟོ་བཞིན་ཡོད། ཅུང་ཙམ་སྒུག་རོགས།';
+
+  @override
+  String pdfLayoutPrintError(String error) {
+    return 'པར་སྐྲུན་ནོར་འཁྲུལ། $error';
+  }
+
+  @override
+  String get pdfLayoutRemoveTitle => 'རང་སྒྲིག་བཀོད་པ་འདོར་བ།';
+
+  @override
+  String pdfLayoutRemoveConfirm(String name) {
+    return '\'$name\' འདོར་རྒྱུ་གཏན་འཁེལ་ལམ། སྔར་སྒྲིག་དཔེ་གཞི་འདོར་མི་ཐུབ།';
+  }
+
+  @override
+  String pdfLayoutRemovedSnackbar(String name) {
+    return 'བཀོད་པ་ \'$name\' འདོར་ཟིན།';
+  }
+
+  @override
+  String get pdfLayoutAddTitle => 'རང་སྒྲིག་བཀོད་པ་སྣོན་པ།';
+
+  @override
+  String get pdfLayoutAddSubtitle =>
+      'རང་སྒྲིག་ .json བཀོད་པའི་ཡིག་ཆ་ནང་འདྲེན་བྱེད་པའམ། ད་ལྟའི་སྒྲིག་འགོད་བཀོད་པ་གསར་པ་ལྟར་ཉར་ཚགས་བྱེད།';
+
+  @override
+  String get pdfLayoutCreateEditJsonTitle => 'JSON བཟོ་བ། / བཅོས་སྒྲིག';
+
+  @override
+  String get pdfLayoutCreateEditJsonSubtitle =>
+      'བཀོད་པའི་སྒྲིག་འགོད་སྦྱར་བའམ་བཅོས་སྒྲིག་བྱེད། ཐད་ཀར་ཞིབ་བཤེར་བཅས།';
+
+  @override
+  String get pdfLayoutImportFileTitle => 'JSON ཡིག་ཆ་ནས་ནང་འདྲེན།';
+
+  @override
+  String get pdfLayoutImportFileSubtitle =>
+      'ཁྱེད་ཀྱི་སྒྲིག་ཆས་ནས་ .json ཡིག་ཆ་འདེམས།';
+
+  @override
+  String get pdfLayoutSaveCurrentTitle =>
+      'ད་ལྟའི་སྒྲིག་འགོད་བཀོད་པ་ལྟར་ཉར་ཚགས།';
+
+  @override
+  String get pdfLayoutSaveCurrentSubtitle =>
+      'ད་ལྟའི་གདམ་ག་ནས་ཡང་བསྐྱར་བཀོལ་རུང་བའི་དཔེ་གཞི་བཟོ།';
+
+  @override
+  String get pdfLayoutDefaultName => 'ངའི་རང་སྒྲིག་བཀོད་པ།';
+
+  @override
+  String get pdfLayoutDefaultDescription =>
+      'སྒེར་གྱི་བཟོ་ལྟ་ཅན་གྱི་རང་སྒྲིག་དཔེ་གཞི།';
+
+  @override
+  String get pdfLayoutTooLarge => 'བཀོད་པ་ཆེ་དྲགས་འདུག (མང་ཤོས་ 512 KB)།';
+
+  @override
+  String get pdfLayoutCreateFromJsonTitle => 'JSON ནས་བཀོད་པ་བཟོ་བ།';
+
+  @override
+  String get pdfLayoutEditJsonTitle => 'བཀོད་པའི་ JSON བཅོས་སྒྲིག';
+
+  @override
+  String get pdfLayoutEditJsonHelp =>
+      'JSON སྒྲིག་འགོད་བཅོས་སྒྲིག་བྱེད། ནོར་བའི་ JSON དང་ལེན་མི་བྱེད་ལ། ཉར་ཚགས་བྱས་པའི་བཀོད་པ་ཚབ་མི་བྱེད།';
+
+  @override
+  String get pdfLayoutPreviewButton => 'སྔོན་ལྟ།';
+
+  @override
+  String get pdfLayoutSaveApplyButton => 'ཉར་ཚགས་དང་ལག་བསྟར།';
+
+  @override
+  String get pdfLayoutAppliedToPreview =>
+      'བཀོད་པ་སྔོན་ལྟར་ལག་བསྟར་བྱས་ཟིན། སྤྱོད་པར་སྒྲིག་འགོད་ཉར་ཚགས་བྱེད་རོགས།';
+
+  @override
+  String pdfLayoutCouldNotSave(String error) {
+    return 'བཀོད་པ་ཉར་ཚགས་བྱེད་མ་ཐུབ། $error';
+  }
+
+  @override
+  String get pdfLayoutJsonError => 'JSON ཡིག་ཆར་ནོར་འཁྲུལ་འདུག';
+
+  @override
+  String pdfLayoutImportedSnackbar(String name) {
+    return 'རང་སྒྲིག་བཀོད་པ་ \'$name\' ལེགས་པར་ནང་འདྲེན་བྱས་ཟིན།';
+  }
+
+  @override
+  String get pdfLayoutSaveAsTitle => 'རང་སྒྲིག་བཀོད་པ་ལྟར་ཉར་ཚགས།';
+
+  @override
+  String get pdfLayoutNameLabel => 'བཀོད་པའི་མིང་།';
+
+  @override
+  String get pdfLayoutDescriptionLabel => 'འགྲེལ་བཤད།';
+
+  @override
+  String get pdfLayoutSaveButton => 'བཀོད་པ་ཉར་ཚགས།';
+
+  @override
+  String get pdfLayoutFallbackName => 'རང་སྒྲིག་བཀོད་པ།';
+
+  @override
+  String pdfLayoutSavedSnackbar(String name) {
+    return 'རང་སྒྲིག་བཀོད་པ་ \'$name\' ཉར་ཚགས་བྱས་ཟིན།';
+  }
+
+  @override
+  String get pdfLayoutAddButton => 'བཀོད་པ་སྣོན་པ།';
+
+  @override
+  String get pdfLayoutInsertedSection => 'ཁྱེད་ཀྱིས་བསྣན་པའི་བཀོད་པ།';
+
+  @override
+  String get pdfLayoutDefaultSection => 'སྔར་སྒྲིག་དཔེ་གཞི།';
+
+  @override
+  String get pdfLayoutInsertButton => 'བཀོད་པ་བཙུད་པ།';
+
+  @override
+  String get pdfLayoutPreviewModePdf => 'PDF';
+
+  @override
+  String get pdfLayoutPreviewModeMock => 'དཔེ་རིས།';
+
+  @override
+  String get pdfLayoutGeneratingPreview =>
+      'པར་སྐྲུན་སྔོན་ལྟ་ཏག་ཏག་བཟོ་བཞིན་ཡོད།...';
+
+  @override
+  String get pdfLayoutEditTooltip => 'བཀོད་པའི་ JSON བཅོས་སྒྲིག';
+
+  @override
+  String get pdfLayoutRemoveTooltip => 'བསྣན་པའི་བཀོད་པ་འདོར་བ།';
+
+  @override
+  String get pdfLayoutInsertedBadge => 'བསྣན་ཟིན།';
 }

@@ -6673,4 +6673,150 @@ class AppLocalizationsNe extends AppLocalizations {
 
   @override
   String get gstDocNatureDebitNote => 'Debit Note';
+
+  @override
+  String get pdfLayoutPreviewGenerating =>
+      'पूर्वावलोकन बन्दैछ, कृपया पर्खनुहोस्...';
+
+  @override
+  String pdfLayoutPrintError(String error) {
+    return 'प्रिन्ट त्रुटि: $error';
+  }
+
+  @override
+  String get pdfLayoutRemoveTitle => 'अनुकूलित लेआउट हटाउनुहोस्';
+
+  @override
+  String pdfLayoutRemoveConfirm(String name) {
+    return 'के तपाईं \'$name\' हटाउन निश्चित हुनुहुन्छ? डिफल्ट टेम्प्लेटहरू हटाउन सकिँदैन।';
+  }
+
+  @override
+  String pdfLayoutRemovedSnackbar(String name) {
+    return 'लेआउट \'$name\' हटाइयो';
+  }
+
+  @override
+  String get pdfLayoutAddTitle => 'अनुकूलित लेआउट थप्नुहोस्';
+
+  @override
+  String get pdfLayoutAddSubtitle =>
+      'अनुकूलित .json लेआउट फाइल आयात गर्नुहोस् वा हालका अनुकूलनहरू नयाँ लेआउटको रूपमा सुरक्षित गर्नुहोस्।';
+
+  @override
+  String get pdfLayoutCreateEditJsonTitle =>
+      'JSON बनाउनुहोस् / सम्पादन गर्नुहोस्';
+
+  @override
+  String get pdfLayoutCreateEditJsonSubtitle =>
+      'लेआउट कन्फिगरेसन टाँस्नुहोस् वा सम्पादन गर्नुहोस्, तुरुन्त जाँचसहित';
+
+  @override
+  String get pdfLayoutImportFileTitle => 'JSON फाइलबाट आयात गर्नुहोस्';
+
+  @override
+  String get pdfLayoutImportFileSubtitle =>
+      'आफ्नो उपकरणबाट .json फाइल छान्नुहोस्';
+
+  @override
+  String get pdfLayoutSaveCurrentTitle =>
+      'हालका सेटिङहरू लेआउटको रूपमा सुरक्षित गर्नुहोस्';
+
+  @override
+  String get pdfLayoutSaveCurrentSubtitle =>
+      'हालका विकल्पहरूबाट पुनः प्रयोग गर्न मिल्ने टेम्प्लेट बनाउनुहोस्';
+
+  @override
+  String get pdfLayoutDefaultName => 'मेरो अनुकूलित लेआउट';
+
+  @override
+  String get pdfLayoutDefaultDescription =>
+      'व्यक्तिगत शैलीसहितको अनुकूलित टेम्प्लेट';
+
+  @override
+  String get pdfLayoutTooLarge => 'लेआउट धेरै ठूलो छ (अधिकतम 512 KB)।';
+
+  @override
+  String get pdfLayoutCreateFromJsonTitle => 'JSON बाट लेआउट बनाउनुहोस्';
+
+  @override
+  String get pdfLayoutEditJsonTitle => 'लेआउट JSON सम्पादन गर्नुहोस्';
+
+  @override
+  String get pdfLayoutEditJsonHelp =>
+      'JSON कन्फिगरेसन सम्पादन गर्नुहोस्। अमान्य JSON अस्वीकार हुन्छ र सुरक्षित लेआउटलाई कहिल्यै बदल्दैन।';
+
+  @override
+  String get pdfLayoutPreviewButton => 'पूर्वावलोकन';
+
+  @override
+  String get pdfLayoutSaveApplyButton => 'सुरक्षित गरी लागू गर्नुहोस्';
+
+  @override
+  String get pdfLayoutAppliedToPreview =>
+      'लेआउट पूर्वावलोकनमा लागू भयो। सक्रिय गर्न सेटिङ सुरक्षित गर्नुहोस्।';
+
+  @override
+  String pdfLayoutCouldNotSave(String error) {
+    return 'लेआउट सुरक्षित गर्न सकिएन: $error';
+  }
+
+  @override
+  String get pdfLayoutJsonError => 'JSON फाइलमा त्रुटि';
+
+  @override
+  String pdfLayoutImportedSnackbar(String name) {
+    return 'अनुकूलित लेआउट \'$name\' सफलतापूर्वक आयात भयो!';
+  }
+
+  @override
+  String get pdfLayoutSaveAsTitle =>
+      'अनुकूलित लेआउटको रूपमा सुरक्षित गर्नुहोस्';
+
+  @override
+  String get pdfLayoutNameLabel => 'लेआउटको नाम';
+
+  @override
+  String get pdfLayoutDescriptionLabel => 'विवरण';
+
+  @override
+  String get pdfLayoutSaveButton => 'लेआउट सुरक्षित गर्नुहोस्';
+
+  @override
+  String get pdfLayoutFallbackName => 'अनुकूलित लेआउट';
+
+  @override
+  String pdfLayoutSavedSnackbar(String name) {
+    return 'अनुकूलित लेआउट \'$name\' सुरक्षित गरियो!';
+  }
+
+  @override
+  String get pdfLayoutAddButton => 'लेआउट थप्नुहोस्';
+
+  @override
+  String get pdfLayoutInsertedSection => 'तपाईंले थपेका लेआउटहरू';
+
+  @override
+  String get pdfLayoutDefaultSection => 'डिफल्ट टेम्प्लेटहरू';
+
+  @override
+  String get pdfLayoutInsertButton => 'लेआउट घुसाउनुहोस्';
+
+  @override
+  String get pdfLayoutPreviewModePdf => 'PDF';
+
+  @override
+  String get pdfLayoutPreviewModeMock => 'नमूना';
+
+  @override
+  String get pdfLayoutGeneratingPreview => 'सही प्रिन्ट पूर्वावलोकन बन्दैछ...';
+
+  @override
+  String get pdfLayoutEditTooltip => 'लेआउट JSON सम्पादन गर्नुहोस्';
+
+  @override
+  String get pdfLayoutRemoveTooltip => 'थपिएको लेआउट हटाउनुहोस्';
+
+  @override
+  String get pdfLayoutInsertedBadge => 'थपिएको';
 }

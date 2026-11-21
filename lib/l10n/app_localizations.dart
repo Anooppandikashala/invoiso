@@ -11293,6 +11293,252 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Debit Note'**
   String get gstDocNatureDebitNote;
+
+  /// No description provided for @pdfLayoutPreviewGenerating.
+  ///
+  /// In en, this message translates to:
+  /// **'Preview is still generating, please wait...'**
+  String get pdfLayoutPreviewGenerating;
+
+  /// No description provided for @pdfLayoutPrintError.
+  ///
+  /// In en, this message translates to:
+  /// **'Print error: {error}'**
+  String pdfLayoutPrintError(String error);
+
+  /// No description provided for @pdfLayoutRemoveTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove Custom Layout'**
+  String get pdfLayoutRemoveTitle;
+
+  /// No description provided for @pdfLayoutRemoveConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Are you sure you want to remove \'{name}\'? Default templates cannot be removed.'**
+  String pdfLayoutRemoveConfirm(String name);
+
+  /// No description provided for @pdfLayoutRemovedSnackbar.
+  ///
+  /// In en, this message translates to:
+  /// **'Removed layout \'{name}\''**
+  String pdfLayoutRemovedSnackbar(String name);
+
+  /// No description provided for @pdfLayoutAddTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Add Custom Layout'**
+  String get pdfLayoutAddTitle;
+
+  /// No description provided for @pdfLayoutAddSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Import a custom .json layout file or save current customizations as a new layout.'**
+  String get pdfLayoutAddSubtitle;
+
+  /// No description provided for @pdfLayoutCreateEditJsonTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Create / Edit JSON'**
+  String get pdfLayoutCreateEditJsonTitle;
+
+  /// No description provided for @pdfLayoutCreateEditJsonSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Paste or edit the layout configuration with a live validation check'**
+  String get pdfLayoutCreateEditJsonSubtitle;
+
+  /// No description provided for @pdfLayoutImportFileTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Import from JSON File'**
+  String get pdfLayoutImportFileTitle;
+
+  /// No description provided for @pdfLayoutImportFileSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Select a .json file from your device'**
+  String get pdfLayoutImportFileSubtitle;
+
+  /// No description provided for @pdfLayoutSaveCurrentTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Save Current Settings as Layout'**
+  String get pdfLayoutSaveCurrentTitle;
+
+  /// No description provided for @pdfLayoutSaveCurrentSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Create a reusable template from currently configured options'**
+  String get pdfLayoutSaveCurrentSubtitle;
+
+  /// No description provided for @pdfLayoutDefaultName.
+  ///
+  /// In en, this message translates to:
+  /// **'My Custom Layout'**
+  String get pdfLayoutDefaultName;
+
+  /// No description provided for @pdfLayoutDefaultDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Custom template with personal styling'**
+  String get pdfLayoutDefaultDescription;
+
+  /// No description provided for @pdfLayoutTooLarge.
+  ///
+  /// In en, this message translates to:
+  /// **'Layout is too large (max 512 KB).'**
+  String get pdfLayoutTooLarge;
+
+  /// No description provided for @pdfLayoutCreateFromJsonTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Create Layout from JSON'**
+  String get pdfLayoutCreateFromJsonTitle;
+
+  /// No description provided for @pdfLayoutEditJsonTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit Layout JSON'**
+  String get pdfLayoutEditJsonTitle;
+
+  /// No description provided for @pdfLayoutEditJsonHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit the JSON configuration. Invalid JSON is rejected and never replaces the saved layout.'**
+  String get pdfLayoutEditJsonHelp;
+
+  /// No description provided for @pdfLayoutPreviewButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Preview'**
+  String get pdfLayoutPreviewButton;
+
+  /// No description provided for @pdfLayoutSaveApplyButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Save & Apply'**
+  String get pdfLayoutSaveApplyButton;
+
+  /// No description provided for @pdfLayoutAppliedToPreview.
+  ///
+  /// In en, this message translates to:
+  /// **'Layout applied to preview. Use Save Settings to activate it.'**
+  String get pdfLayoutAppliedToPreview;
+
+  /// No description provided for @pdfLayoutCouldNotSave.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not save layout: {error}'**
+  String pdfLayoutCouldNotSave(String error);
+
+  /// No description provided for @pdfLayoutJsonError.
+  ///
+  /// In en, this message translates to:
+  /// **'Error on JSON file'**
+  String get pdfLayoutJsonError;
+
+  /// No description provided for @pdfLayoutImportedSnackbar.
+  ///
+  /// In en, this message translates to:
+  /// **'Imported custom layout \'{name}\' successfully!'**
+  String pdfLayoutImportedSnackbar(String name);
+
+  /// No description provided for @pdfLayoutSaveAsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Save as Custom Layout'**
+  String get pdfLayoutSaveAsTitle;
+
+  /// No description provided for @pdfLayoutNameLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Layout Name'**
+  String get pdfLayoutNameLabel;
+
+  /// No description provided for @pdfLayoutDescriptionLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Description'**
+  String get pdfLayoutDescriptionLabel;
+
+  /// No description provided for @pdfLayoutSaveButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Save Layout'**
+  String get pdfLayoutSaveButton;
+
+  /// No description provided for @pdfLayoutFallbackName.
+  ///
+  /// In en, this message translates to:
+  /// **'Custom Layout'**
+  String get pdfLayoutFallbackName;
+
+  /// No description provided for @pdfLayoutSavedSnackbar.
+  ///
+  /// In en, this message translates to:
+  /// **'Saved custom layout \'{name}\'!'**
+  String pdfLayoutSavedSnackbar(String name);
+
+  /// No description provided for @pdfLayoutAddButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Add Layout'**
+  String get pdfLayoutAddButton;
+
+  /// No description provided for @pdfLayoutInsertedSection.
+  ///
+  /// In en, this message translates to:
+  /// **'YOUR INSERTED LAYOUTS'**
+  String get pdfLayoutInsertedSection;
+
+  /// No description provided for @pdfLayoutDefaultSection.
+  ///
+  /// In en, this message translates to:
+  /// **'DEFAULT TEMPLATES'**
+  String get pdfLayoutDefaultSection;
+
+  /// No description provided for @pdfLayoutInsertButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Insert Layout'**
+  String get pdfLayoutInsertButton;
+
+  /// No description provided for @pdfLayoutPreviewModePdf.
+  ///
+  /// In en, this message translates to:
+  /// **'PDF'**
+  String get pdfLayoutPreviewModePdf;
+
+  /// No description provided for @pdfLayoutPreviewModeMock.
+  ///
+  /// In en, this message translates to:
+  /// **'Mock'**
+  String get pdfLayoutPreviewModeMock;
+
+  /// No description provided for @pdfLayoutGeneratingPreview.
+  ///
+  /// In en, this message translates to:
+  /// **'Generating accurate print preview...'**
+  String get pdfLayoutGeneratingPreview;
+
+  /// No description provided for @pdfLayoutEditTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit layout JSON'**
+  String get pdfLayoutEditTooltip;
+
+  /// No description provided for @pdfLayoutRemoveTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove inserted layout'**
+  String get pdfLayoutRemoveTooltip;
+
+  /// No description provided for @pdfLayoutInsertedBadge.
+  ///
+  /// In en, this message translates to:
+  /// **'Inserted'**
+  String get pdfLayoutInsertedBadge;
 }
 
 class _AppLocalizationsDelegate

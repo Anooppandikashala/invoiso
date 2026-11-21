@@ -106,6 +106,7 @@ class TemplateListTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final primaryColor = Theme.of(context).primaryColor;
 
     return GestureDetector(
@@ -175,7 +176,7 @@ class TemplateListTile extends StatelessWidget {
                             icon: Icon(Icons.code_rounded,
                                 size: 16, color: primaryColor),
                             onPressed: onEdit,
-                            tooltip: 'Edit layout JSON',
+                            tooltip: l10n.pdfLayoutEditTooltip,
                             padding: EdgeInsets.zero,
                             constraints: const BoxConstraints(
                                 minWidth: 24, minHeight: 24),
@@ -185,7 +186,7 @@ class TemplateListTile extends StatelessWidget {
                             icon: const Icon(Icons.delete_outline,
                                 size: 16, color: Colors.red),
                             onPressed: onDelete,
-                            tooltip: 'Remove inserted layout',
+                            tooltip: l10n.pdfLayoutRemoveTooltip,
                             padding: EdgeInsets.zero,
                             constraints: const BoxConstraints(
                                 minWidth: 24, minHeight: 24),
@@ -231,7 +232,7 @@ class TemplateListTile extends StatelessWidget {
                           borderRadius: BorderRadius.circular(3),
                         ),
                         child: Text(
-                          'Inserted',
+                          l10n.pdfLayoutInsertedBadge,
                           style: TextStyle(
                             fontSize: AppFontSize.xsmall,
                             color: primaryColor,

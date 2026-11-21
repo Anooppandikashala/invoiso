@@ -6620,4 +6620,148 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get gstDocNatureDebitNote => 'Debit Note';
+
+  @override
+  String get pdfLayoutPreviewGenerating =>
+      'Preview is still generating, please wait...';
+
+  @override
+  String pdfLayoutPrintError(String error) {
+    return 'Print error: $error';
+  }
+
+  @override
+  String get pdfLayoutRemoveTitle => 'Remove Custom Layout';
+
+  @override
+  String pdfLayoutRemoveConfirm(String name) {
+    return 'Are you sure you want to remove \'$name\'? Default templates cannot be removed.';
+  }
+
+  @override
+  String pdfLayoutRemovedSnackbar(String name) {
+    return 'Removed layout \'$name\'';
+  }
+
+  @override
+  String get pdfLayoutAddTitle => 'Add Custom Layout';
+
+  @override
+  String get pdfLayoutAddSubtitle =>
+      'Import a custom .json layout file or save current customizations as a new layout.';
+
+  @override
+  String get pdfLayoutCreateEditJsonTitle => 'Create / Edit JSON';
+
+  @override
+  String get pdfLayoutCreateEditJsonSubtitle =>
+      'Paste or edit the layout configuration with a live validation check';
+
+  @override
+  String get pdfLayoutImportFileTitle => 'Import from JSON File';
+
+  @override
+  String get pdfLayoutImportFileSubtitle =>
+      'Select a .json file from your device';
+
+  @override
+  String get pdfLayoutSaveCurrentTitle => 'Save Current Settings as Layout';
+
+  @override
+  String get pdfLayoutSaveCurrentSubtitle =>
+      'Create a reusable template from currently configured options';
+
+  @override
+  String get pdfLayoutDefaultName => 'My Custom Layout';
+
+  @override
+  String get pdfLayoutDefaultDescription =>
+      'Custom template with personal styling';
+
+  @override
+  String get pdfLayoutTooLarge => 'Layout is too large (max 512 KB).';
+
+  @override
+  String get pdfLayoutCreateFromJsonTitle => 'Create Layout from JSON';
+
+  @override
+  String get pdfLayoutEditJsonTitle => 'Edit Layout JSON';
+
+  @override
+  String get pdfLayoutEditJsonHelp =>
+      'Edit the JSON configuration. Invalid JSON is rejected and never replaces the saved layout.';
+
+  @override
+  String get pdfLayoutPreviewButton => 'Preview';
+
+  @override
+  String get pdfLayoutSaveApplyButton => 'Save & Apply';
+
+  @override
+  String get pdfLayoutAppliedToPreview =>
+      'Layout applied to preview. Use Save Settings to activate it.';
+
+  @override
+  String pdfLayoutCouldNotSave(String error) {
+    return 'Could not save layout: $error';
+  }
+
+  @override
+  String get pdfLayoutJsonError => 'Error on JSON file';
+
+  @override
+  String pdfLayoutImportedSnackbar(String name) {
+    return 'Imported custom layout \'$name\' successfully!';
+  }
+
+  @override
+  String get pdfLayoutSaveAsTitle => 'Save as Custom Layout';
+
+  @override
+  String get pdfLayoutNameLabel => 'Layout Name';
+
+  @override
+  String get pdfLayoutDescriptionLabel => 'Description';
+
+  @override
+  String get pdfLayoutSaveButton => 'Save Layout';
+
+  @override
+  String get pdfLayoutFallbackName => 'Custom Layout';
+
+  @override
+  String pdfLayoutSavedSnackbar(String name) {
+    return 'Saved custom layout \'$name\'!';
+  }
+
+  @override
+  String get pdfLayoutAddButton => 'Add Layout';
+
+  @override
+  String get pdfLayoutInsertedSection => 'YOUR INSERTED LAYOUTS';
+
+  @override
+  String get pdfLayoutDefaultSection => 'DEFAULT TEMPLATES';
+
+  @override
+  String get pdfLayoutInsertButton => 'Insert Layout';
+
+  @override
+  String get pdfLayoutPreviewModePdf => 'PDF';
+
+  @override
+  String get pdfLayoutPreviewModeMock => 'Mock';
+
+  @override
+  String get pdfLayoutGeneratingPreview =>
+      'Generating accurate print preview...';
+
+  @override
+  String get pdfLayoutEditTooltip => 'Edit layout JSON';
+
+  @override
+  String get pdfLayoutRemoveTooltip => 'Remove inserted layout';
+
+  @override
+  String get pdfLayoutInsertedBadge => 'Inserted';
 }

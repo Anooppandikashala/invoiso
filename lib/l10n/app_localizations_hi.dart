@@ -6643,4 +6643,148 @@ class AppLocalizationsHi extends AppLocalizations {
 
   @override
   String get gstDocNatureDebitNote => 'Debit Note';
+
+  @override
+  String get pdfLayoutPreviewGenerating =>
+      'पूर्वावलोकन अभी बन रहा है, कृपया प्रतीक्षा करें...';
+
+  @override
+  String pdfLayoutPrintError(String error) {
+    return 'प्रिंट त्रुटि: $error';
+  }
+
+  @override
+  String get pdfLayoutRemoveTitle => 'कस्टम लेआउट हटाएं';
+
+  @override
+  String pdfLayoutRemoveConfirm(String name) {
+    return 'क्या आप वाकई \'$name\' हटाना चाहते हैं? डिफ़ॉल्ट टेम्पलेट हटाए नहीं जा सकते।';
+  }
+
+  @override
+  String pdfLayoutRemovedSnackbar(String name) {
+    return 'लेआउट \'$name\' हटाया गया';
+  }
+
+  @override
+  String get pdfLayoutAddTitle => 'कस्टम लेआउट जोड़ें';
+
+  @override
+  String get pdfLayoutAddSubtitle =>
+      'कस्टम .json लेआउट फ़ाइल आयात करें या मौजूदा कस्टमाइज़ेशन को नए लेआउट के रूप में सहेजें।';
+
+  @override
+  String get pdfLayoutCreateEditJsonTitle => 'JSON बनाएं / संपादित करें';
+
+  @override
+  String get pdfLayoutCreateEditJsonSubtitle =>
+      'लेआउट कॉन्फ़िगरेशन पेस्ट या संपादित करें, साथ में तुरंत जाँच';
+
+  @override
+  String get pdfLayoutImportFileTitle => 'JSON फ़ाइल से आयात करें';
+
+  @override
+  String get pdfLayoutImportFileSubtitle => 'अपने डिवाइस से .json फ़ाइल चुनें';
+
+  @override
+  String get pdfLayoutSaveCurrentTitle =>
+      'मौजूदा सेटिंग्स को लेआउट के रूप में सहेजें';
+
+  @override
+  String get pdfLayoutSaveCurrentSubtitle =>
+      'मौजूदा विकल्पों से दोबारा उपयोग होने वाला टेम्पलेट बनाएं';
+
+  @override
+  String get pdfLayoutDefaultName => 'मेरा कस्टम लेआउट';
+
+  @override
+  String get pdfLayoutDefaultDescription =>
+      'व्यक्तिगत स्टाइल वाला कस्टम टेम्पलेट';
+
+  @override
+  String get pdfLayoutTooLarge => 'लेआउट बहुत बड़ा है (अधिकतम 512 KB)।';
+
+  @override
+  String get pdfLayoutCreateFromJsonTitle => 'JSON से लेआउट बनाएं';
+
+  @override
+  String get pdfLayoutEditJsonTitle => 'लेआउट JSON संपादित करें';
+
+  @override
+  String get pdfLayoutEditJsonHelp =>
+      'JSON कॉन्फ़िगरेशन संपादित करें। अमान्य JSON अस्वीकार होता है और सहेजे गए लेआउट को कभी नहीं बदलता।';
+
+  @override
+  String get pdfLayoutPreviewButton => 'पूर्वावलोकन';
+
+  @override
+  String get pdfLayoutSaveApplyButton => 'सहेजें और लागू करें';
+
+  @override
+  String get pdfLayoutAppliedToPreview =>
+      'लेआउट पूर्वावलोकन पर लागू हुआ। सक्रिय करने के लिए सेटिंग्स सहेजें।';
+
+  @override
+  String pdfLayoutCouldNotSave(String error) {
+    return 'लेआउट सहेजा नहीं जा सका: $error';
+  }
+
+  @override
+  String get pdfLayoutJsonError => 'JSON फ़ाइल में त्रुटि';
+
+  @override
+  String pdfLayoutImportedSnackbar(String name) {
+    return 'कस्टम लेआउट \'$name\' सफलतापूर्वक आयात हुआ!';
+  }
+
+  @override
+  String get pdfLayoutSaveAsTitle => 'कस्टम लेआउट के रूप में सहेजें';
+
+  @override
+  String get pdfLayoutNameLabel => 'लेआउट का नाम';
+
+  @override
+  String get pdfLayoutDescriptionLabel => 'विवरण';
+
+  @override
+  String get pdfLayoutSaveButton => 'लेआउट सहेजें';
+
+  @override
+  String get pdfLayoutFallbackName => 'कस्टम लेआउट';
+
+  @override
+  String pdfLayoutSavedSnackbar(String name) {
+    return 'कस्टम लेआउट \'$name\' सहेजा गया!';
+  }
+
+  @override
+  String get pdfLayoutAddButton => 'लेआउट जोड़ें';
+
+  @override
+  String get pdfLayoutInsertedSection => 'आपके जोड़े गए लेआउट';
+
+  @override
+  String get pdfLayoutDefaultSection => 'डिफ़ॉल्ट टेम्पलेट';
+
+  @override
+  String get pdfLayoutInsertButton => 'लेआउट डालें';
+
+  @override
+  String get pdfLayoutPreviewModePdf => 'PDF';
+
+  @override
+  String get pdfLayoutPreviewModeMock => 'नमूना';
+
+  @override
+  String get pdfLayoutGeneratingPreview =>
+      'सटीक प्रिंट पूर्वावलोकन बन रहा है...';
+
+  @override
+  String get pdfLayoutEditTooltip => 'लेआउट JSON संपादित करें';
+
+  @override
+  String get pdfLayoutRemoveTooltip => 'जोड़ा गया लेआउट हटाएं';
+
+  @override
+  String get pdfLayoutInsertedBadge => 'जोड़ा गया';
 }

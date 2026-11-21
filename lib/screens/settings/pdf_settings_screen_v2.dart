@@ -578,10 +578,10 @@ class _PdfSettingsScreenV2State extends ConsumerState<PdfSettingsScreenV2> {
           jsonEncode(_previewedBlockLayout) != jsonEncode(_savedBlockLayout));
 
   Future<void> _handlePrintPreview() async {
+    final l10n = AppLocalizations.of(context)!;
     if (_previewPdfBytes == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-            content: Text('Preview is still generating, please wait...')),
+        SnackBar(content: Text(l10n.pdfLayoutPreviewGenerating)),
       );
       return;
     }
@@ -607,7 +607,9 @@ class _PdfSettingsScreenV2State extends ConsumerState<PdfSettingsScreenV2> {
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Print error: $e'), backgroundColor: Colors.red),
+        SnackBar(
+            content: Text(l10n.pdfLayoutPrintError(e.toString())),
+            backgroundColor: Colors.red),
       );
     }
   }
@@ -697,21 +699,21 @@ class _PdfSettingsScreenV2State extends ConsumerState<PdfSettingsScreenV2> {
   }
 
   Future<void> _removeCustomLayout(CustomInvoiceLayout layout) async {
+    final l10n = AppLocalizations.of(context)!;
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Remove Custom Layout'),
-        content: Text(
-            'Are you sure you want to remove \'${layout.name}\'? Default templates cannot be removed.'),
+        title: Text(l10n.pdfLayoutRemoveTitle),
+        content: Text(l10n.pdfLayoutRemoveConfirm(layout.name)),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Cancel'),
+            child: Text(l10n.actionCancel),
           ),
           FilledButton(
             onPressed: () => Navigator.pop(ctx, true),
             style: FilledButton.styleFrom(backgroundColor: Colors.red),
-            child: const Text('Remove'),
+            child: Text(l10n.tooltipRemove),
           ),
         ],
       ),
@@ -739,12 +741,13 @@ class _PdfSettingsScreenV2State extends ConsumerState<PdfSettingsScreenV2> {
     _schedulePdfPreviewUpdate(immediate: true);
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Removed layout \'${layout.name}\'')),
+        SnackBar(content: Text(l10n.pdfLayoutRemovedSnackbar(layout.name))),
       );
     }
   }
 
   Future<void> _showAddLayoutDialog() async {
+    final l10n = AppLocalizations.of(context)!;
     showModalBottomSheet(
       context: context,
       shape: const RoundedRectangleBorder(
@@ -757,13 +760,13 @@ class _PdfSettingsScreenV2State extends ConsumerState<PdfSettingsScreenV2> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text(
-                'Add Custom Layout',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              Text(
+                l10n.pdfLayoutAddTitle,
+                style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 6),
               Text(
-                'Import a custom .json layout file or save current customizations as a new layout.',
+                l10n.pdfLayoutAddSubtitle,
                 style: TextStyle(
                     fontSize: 12.5,
                     color: Theme.of(context).colorScheme.onSurfaceVariant),
@@ -774,10 +777,9 @@ class _PdfSettingsScreenV2State extends ConsumerState<PdfSettingsScreenV2> {
                   backgroundColor: Color(0xFFF3E8FF),
                   child: Icon(Icons.code_rounded, color: Color(0xFF7E22CE)),
                 ),
-                title: const Text('Create / Edit JSON',
-                    style: TextStyle(fontWeight: FontWeight.w600)),
-                subtitle: const Text(
-                    'Paste or edit the layout configuration with a live validation check'),
+                title: Text(l10n.pdfLayoutCreateEditJsonTitle,
+                    style: const TextStyle(fontWeight: FontWeight.w600)),
+                subtitle: Text(l10n.pdfLayoutCreateEditJsonSubtitle),
                 onTap: () {
                   Navigator.pop(ctx);
                   _showJsonLayoutDialog();
@@ -790,10 +792,9 @@ class _PdfSettingsScreenV2State extends ConsumerState<PdfSettingsScreenV2> {
                   child: Icon(Icons.file_upload_outlined,
                       color: Color(0xFF3730A3)),
                 ),
-                title: const Text('Import from JSON File',
-                    style: TextStyle(fontWeight: FontWeight.w600)),
-                subtitle: const Text(
-                    'Select a .json or .invoiso-layout file from your device'),
+                title: Text(l10n.pdfLayoutImportFileTitle,
+                    style: const TextStyle(fontWeight: FontWeight.w600)),
+                subtitle: Text(l10n.pdfLayoutImportFileSubtitle),
                 onTap: () {
                   Navigator.pop(ctx);
                   _importCustomLayoutFile();
@@ -806,10 +807,9 @@ class _PdfSettingsScreenV2State extends ConsumerState<PdfSettingsScreenV2> {
                   child: Icon(Icons.bookmark_add_outlined,
                       color: Color(0xFF166534)),
                 ),
-                title: const Text('Save Current Settings as Layout',
-                    style: TextStyle(fontWeight: FontWeight.w600)),
-                subtitle: const Text(
-                    'Create a reusable template from currently configured options'),
+                title: Text(l10n.pdfLayoutSaveCurrentTitle,
+                    style: const TextStyle(fontWeight: FontWeight.w600)),
+                subtitle: Text(l10n.pdfLayoutSaveCurrentSubtitle),
                 onTap: () {
                   Navigator.pop(ctx);
                   _saveCurrentAsCustomLayout();
@@ -823,10 +823,11 @@ class _PdfSettingsScreenV2State extends ConsumerState<PdfSettingsScreenV2> {
   }
 
   Future<void> _showJsonLayoutDialog({CustomInvoiceLayout? existing}) async {
+    final l10n = AppLocalizations.of(context)!;
     final seed = existing ??
         _layoutFromCurrentSettings(
-          name: 'My Custom Layout',
-          description: 'Custom template with personal styling',
+          name: l10n.pdfLayoutDefaultName,
+          description: l10n.pdfLayoutDefaultDescription,
           blockLayout: _previewedBlockLayout,
         );
     final controller = TextEditingController(text: seed.toPrettyJson());
@@ -842,7 +843,7 @@ class _PdfSettingsScreenV2State extends ConsumerState<PdfSettingsScreenV2> {
             if (controller.text.length > 512 * 1024) {
               setDialogState(() {
                 parsed = null;
-                error = 'Layout is too large (max 512 KB).';
+                error = l10n.pdfLayoutTooLarge;
               });
               return;
             }
@@ -866,8 +867,8 @@ class _PdfSettingsScreenV2State extends ConsumerState<PdfSettingsScreenV2> {
 
           return AlertDialog(
             title: Text(existing == null
-                ? 'Create Layout from JSON'
-                : 'Edit Layout JSON'),
+                ? l10n.pdfLayoutCreateFromJsonTitle
+                : l10n.pdfLayoutEditJsonTitle),
             content: SizedBox(
               width: 680,
               height: 540,
@@ -875,8 +876,7 @@ class _PdfSettingsScreenV2State extends ConsumerState<PdfSettingsScreenV2> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Edit the JSON configuration. Invalid JSON is rejected and '
-                    'never replaces the saved layout.',
+                    l10n.pdfLayoutEditJsonHelp,
                     style: TextStyle(
                       fontSize: 12,
                       color: Theme.of(ctx).colorScheme.onSurfaceVariant,
@@ -929,7 +929,7 @@ class _PdfSettingsScreenV2State extends ConsumerState<PdfSettingsScreenV2> {
             actions: [
               TextButton(
                 onPressed: () => Navigator.pop(ctx),
-                child: const Text('Cancel'),
+                child: Text(l10n.actionCancel),
               ),
               OutlinedButton.icon(
                 onPressed: parsed == null
@@ -939,7 +939,7 @@ class _PdfSettingsScreenV2State extends ConsumerState<PdfSettingsScreenV2> {
                           _JsonLayoutResult(layout: parsed!, save: false),
                         ),
                 icon: const Icon(Icons.visibility_outlined, size: 16),
-                label: const Text('Preview'),
+                label: Text(l10n.pdfLayoutPreviewButton),
               ),
               FilledButton.icon(
                 onPressed: parsed == null
@@ -949,7 +949,7 @@ class _PdfSettingsScreenV2State extends ConsumerState<PdfSettingsScreenV2> {
                           _JsonLayoutResult(layout: parsed!, save: true),
                         ),
                 icon: const Icon(Icons.save_rounded, size: 16),
-                label: const Text('Save & Apply'),
+                label: Text(l10n.pdfLayoutSaveApplyButton),
               ),
             ],
           );
@@ -973,11 +973,7 @@ class _PdfSettingsScreenV2State extends ConsumerState<PdfSettingsScreenV2> {
 
     if (!result.save) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text(
-            'Layout applied to preview. Use Save Settings to activate it.',
-          ),
-        ),
+        SnackBar(content: Text(l10n.pdfLayoutAppliedToPreview)),
       );
       return;
     }
@@ -989,7 +985,7 @@ class _PdfSettingsScreenV2State extends ConsumerState<PdfSettingsScreenV2> {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Could not save layout: ${_friendlyLayoutError(e)}'),
+          content: Text(l10n.pdfLayoutCouldNotSave(_friendlyLayoutError(e))),
           backgroundColor: Colors.red,
         ),
       );
@@ -998,16 +994,17 @@ class _PdfSettingsScreenV2State extends ConsumerState<PdfSettingsScreenV2> {
 
   String _friendlyLayoutError(Object error) {
     if (error is FormatException) {
-      return 'Error on JSON file';
+      return AppLocalizations.of(context)!.pdfLayoutJsonError;
     }
     return error.toString();
   }
 
   Future<void> _importCustomLayoutFile() async {
+    final l10n = AppLocalizations.of(context)!;
     try {
       final result = await FilePicker.platform.pickFiles(
         type: FileType.custom,
-        allowedExtensions: ['json', 'invoiso-layout'],
+        allowedExtensions: ['json'],
       );
       if (result == null || result.files.isEmpty) return;
       final picked = result.files.single;
@@ -1016,8 +1013,8 @@ class _PdfSettingsScreenV2State extends ConsumerState<PdfSettingsScreenV2> {
       if (picked.size > 512 * 1024) {
         if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Layout file is too large (max 512 KB).'),
+          SnackBar(
+            content: Text(l10n.pdfLayoutTooLarge),
             backgroundColor: Colors.red,
           ),
         );
@@ -1050,9 +1047,7 @@ class _PdfSettingsScreenV2State extends ConsumerState<PdfSettingsScreenV2> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(
-              'Imported custom layout \'${layout.name}\' successfully!',
-            ),
+            content: Text(l10n.pdfLayoutImportedSnackbar(layout.name)),
           ),
         );
       }
@@ -1068,37 +1063,40 @@ class _PdfSettingsScreenV2State extends ConsumerState<PdfSettingsScreenV2> {
   }
 
   Future<void> _saveCurrentAsCustomLayout() async {
-    final nameCtrl = TextEditingController(text: 'My Custom Layout');
+    final l10n = AppLocalizations.of(context)!;
+    final nameCtrl = TextEditingController(text: l10n.pdfLayoutDefaultName);
     final descCtrl =
-        TextEditingController(text: 'Custom template with personal styling');
+        TextEditingController(text: l10n.pdfLayoutDefaultDescription);
 
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Save as Custom Layout'),
+        title: Text(l10n.pdfLayoutSaveAsTitle),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             TextField(
               controller: nameCtrl,
-              decoration: const InputDecoration(
-                  labelText: 'Layout Name', border: OutlineInputBorder()),
+              decoration: InputDecoration(
+                  labelText: l10n.pdfLayoutNameLabel,
+                  border: const OutlineInputBorder()),
             ),
             const SizedBox(height: 12),
             TextField(
               controller: descCtrl,
-              decoration: const InputDecoration(
-                  labelText: 'Description', border: OutlineInputBorder()),
+              decoration: InputDecoration(
+                  labelText: l10n.pdfLayoutDescriptionLabel,
+                  border: const OutlineInputBorder()),
             ),
           ],
         ),
         actions: [
           TextButton(
               onPressed: () => Navigator.pop(ctx, false),
-              child: const Text('Cancel')),
+              child: Text(l10n.actionCancel)),
           FilledButton(
               onPressed: () => Navigator.pop(ctx, true),
-              child: const Text('Save Layout')),
+              child: Text(l10n.pdfLayoutSaveButton)),
         ],
       ),
     );
@@ -1106,7 +1104,9 @@ class _PdfSettingsScreenV2State extends ConsumerState<PdfSettingsScreenV2> {
 
     final newLayout = _layoutFromCurrentSettings(
       name:
-          nameCtrl.text.trim().isEmpty ? 'Custom Layout' : nameCtrl.text.trim(),
+          nameCtrl.text.trim().isEmpty
+              ? l10n.pdfLayoutFallbackName
+              : nameCtrl.text.trim(),
       description: descCtrl.text.trim(),
       blockLayout: _previewedBlockLayout,
     );
@@ -1115,7 +1115,7 @@ class _PdfSettingsScreenV2State extends ConsumerState<PdfSettingsScreenV2> {
 
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Saved custom layout \'${newLayout.name}\'!')),
+        SnackBar(content: Text(l10n.pdfLayoutSavedSnackbar(newLayout.name))),
       );
     }
   }
@@ -1243,9 +1243,9 @@ class _PdfSettingsScreenV2State extends ConsumerState<PdfSettingsScreenV2> {
               TextButton.icon(
                 onPressed: _showAddLayoutDialog,
                 icon: const Icon(Icons.add_rounded, size: 15),
-                label: const Text('Add Layout',
-                    style:
-                        TextStyle(fontSize: 11.5, fontWeight: FontWeight.w600)),
+                label: Text(l10n.pdfLayoutAddButton,
+                    style: const TextStyle(
+                        fontSize: 11.5, fontWeight: FontWeight.w600)),
                 style: TextButton.styleFrom(
                   padding:
                       const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
@@ -1286,7 +1286,7 @@ class _PdfSettingsScreenV2State extends ConsumerState<PdfSettingsScreenV2> {
                       Padding(
                         padding: const EdgeInsets.only(bottom: 6),
                         child: Text(
-                          'YOUR INSERTED LAYOUTS',
+                          l10n.pdfLayoutInsertedSection,
                           style: TextStyle(
                             fontSize: 10,
                             fontWeight: FontWeight.w700,
@@ -1324,7 +1324,7 @@ class _PdfSettingsScreenV2State extends ConsumerState<PdfSettingsScreenV2> {
                         ),
                       const SizedBox(height: 6),
                       Text(
-                        'DEFAULT TEMPLATES',
+                        l10n.pdfLayoutDefaultSection,
                         style: TextStyle(
                           fontSize: 10,
                           fontWeight: FontWeight.w700,
@@ -2065,9 +2065,9 @@ class _PdfSettingsScreenV2State extends ConsumerState<PdfSettingsScreenV2> {
                 child: OutlinedButton.icon(
                   onPressed: _showAddLayoutDialog,
                   icon: const Icon(Icons.bookmark_add_outlined, size: 14),
-                  label: const Text(
-                    'Insert Layout',
-                    style: TextStyle(
+                  label: Text(
+                    l10n.pdfLayoutInsertButton,
+                    style: const TextStyle(
                       fontSize: AppFontSize.xsmall,
                       fontWeight: FontWeight.w600,
                     ),
@@ -2261,8 +2261,8 @@ class _PreviewPanel extends StatelessWidget {
                     FilledButton.tonalIcon(
                       onPressed: onPrint,
                       icon: const Icon(Icons.print_outlined, size: 15),
-                      label: const Text('Print',
-                          style: TextStyle(
+                      label: Text(l10n.actionPrint,
+                          style: const TextStyle(
                               fontSize: 11.5, fontWeight: FontWeight.w600)),
                       style: FilledButton.styleFrom(
                         visualDensity: VisualDensity.compact,
@@ -2273,16 +2273,18 @@ class _PreviewPanel extends StatelessWidget {
                     const SizedBox(width: 6),
                   ],
                   SegmentedButton<bool>(
-                    segments: const [
+                    segments: [
                       ButtonSegment(
                         value: true,
-                        icon: Icon(Icons.picture_as_pdf_outlined, size: 13),
-                        label: Text('PDF', style: TextStyle(fontSize: 11)),
+                        icon: const Icon(Icons.picture_as_pdf_outlined, size: 13),
+                        label: Text(l10n.pdfLayoutPreviewModePdf,
+                            style: const TextStyle(fontSize: 11)),
                     ),
                       ButtonSegment(
                         value: false,
-                        icon: Icon(Icons.brush_outlined, size: 13),
-                        label: Text('Mock', style: TextStyle(fontSize: 11)),
+                        icon: const Icon(Icons.brush_outlined, size: 13),
+                        label: Text(l10n.pdfLayoutPreviewModeMock,
+                            style: const TextStyle(fontSize: 11)),
                       ),
                     ],
                     selected: {useLivePdf},
@@ -2361,7 +2363,7 @@ class _PreviewPanel extends StatelessWidget {
                             const CircularProgressIndicator(),
                             const SizedBox(height: 12),
                             Text(
-                              'Generating accurate print preview...',
+                              l10n.pdfLayoutGeneratingPreview,
                               style: TextStyle(
                                 fontSize: AppFontSize.small,
                                 color: Theme.of(context)

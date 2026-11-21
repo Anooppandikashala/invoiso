@@ -6751,4 +6751,152 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get gstDocNatureDebitNote => 'Debit Note';
+
+  @override
+  String get pdfLayoutPreviewGenerating =>
+      'L\'aperçu est en cours de génération, veuillez patienter...';
+
+  @override
+  String pdfLayoutPrintError(String error) {
+    return 'Erreur d\'impression : $error';
+  }
+
+  @override
+  String get pdfLayoutRemoveTitle => 'Supprimer la mise en page personnalisée';
+
+  @override
+  String pdfLayoutRemoveConfirm(String name) {
+    return 'Voulez-vous vraiment supprimer « $name » ? Les modèles par défaut ne peuvent pas être supprimés.';
+  }
+
+  @override
+  String pdfLayoutRemovedSnackbar(String name) {
+    return 'Mise en page « $name » supprimée';
+  }
+
+  @override
+  String get pdfLayoutAddTitle => 'Ajouter une mise en page personnalisée';
+
+  @override
+  String get pdfLayoutAddSubtitle =>
+      'Importez un fichier de mise en page .json ou enregistrez les réglages actuels comme nouvelle mise en page.';
+
+  @override
+  String get pdfLayoutCreateEditJsonTitle => 'Créer / modifier le JSON';
+
+  @override
+  String get pdfLayoutCreateEditJsonSubtitle =>
+      'Collez ou modifiez la configuration avec une vérification en direct';
+
+  @override
+  String get pdfLayoutImportFileTitle => 'Importer depuis un fichier JSON';
+
+  @override
+  String get pdfLayoutImportFileSubtitle =>
+      'Sélectionnez un fichier .json sur votre appareil';
+
+  @override
+  String get pdfLayoutSaveCurrentTitle =>
+      'Enregistrer les réglages actuels comme mise en page';
+
+  @override
+  String get pdfLayoutSaveCurrentSubtitle =>
+      'Créez un modèle réutilisable à partir des options actuelles';
+
+  @override
+  String get pdfLayoutDefaultName => 'Ma mise en page personnalisée';
+
+  @override
+  String get pdfLayoutDefaultDescription =>
+      'Modèle personnalisé avec votre style';
+
+  @override
+  String get pdfLayoutTooLarge =>
+      'La mise en page est trop volumineuse (512 Ko max).';
+
+  @override
+  String get pdfLayoutCreateFromJsonTitle =>
+      'Créer une mise en page depuis un JSON';
+
+  @override
+  String get pdfLayoutEditJsonTitle => 'Modifier le JSON de la mise en page';
+
+  @override
+  String get pdfLayoutEditJsonHelp =>
+      'Modifiez la configuration JSON. Un JSON invalide est refusé et ne remplace jamais la mise en page enregistrée.';
+
+  @override
+  String get pdfLayoutPreviewButton => 'Aperçu';
+
+  @override
+  String get pdfLayoutSaveApplyButton => 'Enregistrer et appliquer';
+
+  @override
+  String get pdfLayoutAppliedToPreview =>
+      'Mise en page appliquée à l\'aperçu. Enregistrez les paramètres pour l\'activer.';
+
+  @override
+  String pdfLayoutCouldNotSave(String error) {
+    return 'Impossible d\'enregistrer la mise en page : $error';
+  }
+
+  @override
+  String get pdfLayoutJsonError => 'Erreur dans le fichier JSON';
+
+  @override
+  String pdfLayoutImportedSnackbar(String name) {
+    return 'Mise en page « $name » importée avec succès !';
+  }
+
+  @override
+  String get pdfLayoutSaveAsTitle =>
+      'Enregistrer comme mise en page personnalisée';
+
+  @override
+  String get pdfLayoutNameLabel => 'Nom de la mise en page';
+
+  @override
+  String get pdfLayoutDescriptionLabel => 'Description';
+
+  @override
+  String get pdfLayoutSaveButton => 'Enregistrer la mise en page';
+
+  @override
+  String get pdfLayoutFallbackName => 'Mise en page personnalisée';
+
+  @override
+  String pdfLayoutSavedSnackbar(String name) {
+    return 'Mise en page « $name » enregistrée !';
+  }
+
+  @override
+  String get pdfLayoutAddButton => 'Ajouter une mise en page';
+
+  @override
+  String get pdfLayoutInsertedSection => 'VOS MISES EN PAGE AJOUTÉES';
+
+  @override
+  String get pdfLayoutDefaultSection => 'MODÈLES PAR DÉFAUT';
+
+  @override
+  String get pdfLayoutInsertButton => 'Insérer une mise en page';
+
+  @override
+  String get pdfLayoutPreviewModePdf => 'PDF';
+
+  @override
+  String get pdfLayoutPreviewModeMock => 'Maquette';
+
+  @override
+  String get pdfLayoutGeneratingPreview =>
+      'Génération d\'un aperçu d\'impression fidèle...';
+
+  @override
+  String get pdfLayoutEditTooltip => 'Modifier le JSON';
+
+  @override
+  String get pdfLayoutRemoveTooltip => 'Supprimer la mise en page ajoutée';
+
+  @override
+  String get pdfLayoutInsertedBadge => 'Ajouté';
 }
