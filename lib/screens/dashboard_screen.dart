@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
@@ -10,6 +11,7 @@ import 'package:intl/intl.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:invoiso/common/constants.dart';
 import 'package:invoiso/common/app_config.dart';
+import 'package:invoiso/services/licensing/licence_service.dart';
 import 'package:invoiso/providers/app_config_provider.dart';
 import 'package:invoiso/providers/attachments_settings_provider.dart';
 import 'package:invoiso/providers/cash_exchange_settings_provider.dart';
@@ -110,6 +112,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   int? _accessibilityJumpToken;
   final InvoiceFormGuard _invoiceFormGuard = InvoiceFormGuard();
   final FocusNode _shortcutsFocusNode = FocusNode();
+  Timer? _licenceCheckTimer;
 
   @override
   void initState() {
@@ -129,6 +132,10 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     if (ref.read(appEditionConfigProvider).enableUpdateCheck) {
       WidgetsBinding.instance.addPostFrameCallback((_) => _checkForUpdates());
     }
+    // Template licences: check with the marketplace once a day while the app
+    // runs (no network call when no licence is held; offline = no change).
+    _checkLicences();
+    _licenceCheckTimer = Timer.periodic(const Duration(hours: 1), (_) => _checkLicences());
     // Tab 1 (Create Invoice) owns its own autofocus/shortcuts — only claim
     // focus here for the other tabs, so it doesn't get stolen away and
     // block the Create Invoice screen's own Ctrl shortcuts from working.
@@ -233,6 +240,8 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     setState(() => _purchaseBillsAdminOnly = v == 'true');
   }
 
+  void _checkLicences() => unawaited(LicenceService().dailyCheck().catchError((_) {}));
+
   Future<void> _checkForUpdates() async {
     final info = await UpdateService.checkForUpdate();
     if (info == null) return;
@@ -244,6 +253,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
 
   @override
   void dispose() {
+    _licenceCheckTimer?.cancel();
     SessionManager.dispose();
     _shortcutsFocusNode.dispose();
     super.dispose();
