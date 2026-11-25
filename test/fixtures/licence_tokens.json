@@ -1,0 +1,7 @@
+{
+  "note": "Test-only Ed25519 key pair; generated with the server signToken (supabase/functions/_shared/licence.ts).",
+  "publicKey": "rBhiL8ZIPUygRmd+NfYiQLGp/Mpit43hdrdlxQCcFy8=",
+  "licence": "INVS1.eyJ2IjoxLCJsaWQiOiJMMDAxMjM0IiwidGlkcyI6WyJnc3QtdGF4LWludm9pY2UiXSwiY29kZSI6IkFCQ0QtRUZHSC1KS01OLVBRUlMiLCJuYW1lIjoiVGVzdCBUcmFkZXJzIiwiZ3N0aW4iOiIzMkFCQ0RFMTIzNEYxWjUiLCJ2dSI6bnVsbCwiaWF0IjoxNzk1NTY0ODAwfQ.DkRBvwGR-0M2x3EuDXsO-S_t1WBVkPNmy8bcqxeE8tmJkdOvwZUdgwf7pPmZYJKIe3B-7GoE8vemGY1OfzPcDw",
+  "lease": "INVL1.eyJ2IjoxLCJsaWQiOiJMMDAxMjM0IiwiY29kZSI6IkFCQ0QtRUZHSC1KS01OLVBRUlMiLCJjaGsiOjE3OTU1NjQ4MDB9.kCGSQOrOvtNBoebBui-0biftiI-vJG8vDLKmWsPB571zRoZeeQxs0XDT10G-0_m2LdDC9ocXnjQgjwiOP_OaAA",
+  "licenceOtherKey": "INVS1.eyJ2IjoxLCJsaWQiOiJMMDAxMjM0IiwidGlkcyI6WyJnc3QtdGF4LWludm9pY2UiXSwiY29kZSI6IkFCQ0QtRUZHSC1KS01OLVBRUlMiLCJuYW1lIjoiVGVzdCBUcmFkZXJzIiwiZ3N0aW4iOiIzMkFCQ0RFMTIzNEYxWjUiLCJ2dSI6bnVsbCwiaWF0IjoxNzk1NTY0ODAwfQ.YABYkUBawH7DVmpi7Ma8LwrdTxkfaixjAcDxld7IkD5Fc41Qd5S1JMUQJ3Opcle6QQ5fcqQjLzkDUNanYW9uDg"
+}
