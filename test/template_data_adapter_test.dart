@@ -173,6 +173,7 @@ void main() {
     final t = _data(inv)['totals'] as Map<String, dynamic>;
     expect(t['roundOff'], 0);
     expect(t['roundedTotal'], inv.total);
+    expect(t['totalInWords'], '', reason: 'built-ins show words only with round-off on');
   });
 
   test('column switches and metadata columns reach the layout', () {

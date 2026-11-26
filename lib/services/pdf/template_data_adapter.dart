@@ -255,7 +255,9 @@ Map<String, dynamic> buildTemplateData(
           ? net.rounded
           : (previousBalanceDue > 0 ? totalDue : invoice.total),
       'roundOff': s.showRoundOff ? net.roundOff : 0.0,
-      'totalInWords': AmountInWords.amount(net.rounded, indian: indianWords),
+      // Like the built-in templates: words only with round-off on, for the
+      // rounded total (#116).
+      'totalInWords': s.showRoundOff ? AmountInWords.amount(net.rounded, indian: indianWords) : '',
       'taxInWords': AmountInWords.amount(invoice.tax, indian: indianWords),
     },
     'payment': {
