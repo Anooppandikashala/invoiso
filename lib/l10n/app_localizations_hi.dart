@@ -6988,7 +6988,7 @@ class AppLocalizationsHi extends AppLocalizations {
 
   @override
   String get storeSubtitle =>
-      'तैयार इनवॉइस डिज़ाइन। ईमेल से खरीदें: हम भुगतान विवरण और आपकी लाइसेंस कुंजी के साथ जवाब देंगे।';
+      'तैयार इनवॉइस डिज़ाइन। खरीदें: टेम्पलेट के पेज पर अनुरोध भेजें, हम भुगतान विवरण के साथ जवाब देंगे; फिर आपकी लाइसेंस कुंजी भेजी जाएगी।';
 
   @override
   String get storeOffline =>

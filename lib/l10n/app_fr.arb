@@ -1657,7 +1657,7 @@
   "licenceErrWrongLicence": "Ce code de renouvellement concerne une autre licence ou un autre ordinateur.",
   "licenceErrUnknown": "Une erreur s'est produite ({code}).",
   "storeTitle": "Invoiso Templates",
-  "storeSubtitle": "Des modèles de facture prêts à l'emploi. Achat par e-mail : nous répondons avec les infos de paiement et votre clé de licence.",
+  "storeSubtitle": "Des modèles de facture prêts à l'emploi. Acheter : envoyez une demande sur la page du modèle, nous répondons avec les infos de paiement ; votre clé de licence suit.",
   "storeOffline": "Impossible de charger la liste des modèles. Vérifiez la connexion internet.",
   "storeOpenWebsite": "Ouvrir le site",
   "storeFree": "Gratuit",

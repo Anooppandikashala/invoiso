@@ -6965,7 +6965,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get storeSubtitle =>
-      'Ready-made invoice designs. Buy by email: we reply with payment details and your licence key.';
+      'Ready-made invoice designs. Buy: send a request on the template\'s page and we reply with payment details; your licence key follows.';
 
   @override
   String get storeOffline =>

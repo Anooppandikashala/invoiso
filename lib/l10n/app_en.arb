@@ -3812,7 +3812,7 @@
   "licenceErrUnknown": "Something went wrong ({code}).",
   "@licenceErrUnknown": {"placeholders": {"code": {"type": "String"}}},
   "storeTitle": "Invoiso Templates",
-  "storeSubtitle": "Ready-made invoice designs. Buy by email: we reply with payment details and your licence key.",
+  "storeSubtitle": "Ready-made invoice designs. Buy: send a request on the template's page and we reply with payment details; your licence key follows.",
   "storeOffline": "Couldn't load the template list. Check the internet connection.",
   "storeOpenWebsite": "Open website",
   "storeFree": "Free",

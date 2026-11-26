@@ -60,7 +60,20 @@ class _TemplateStoreDialogState extends ConsumerState<_TemplateStoreDialog> {
     final email = _catalog?.contactEmail ?? '';
     final company = await ref.read(companyInfoRepositoryProvider).getCompanyInfo();
     final code = await _licenceService.activationCode();
-    // Request goes to us (the seller), so it is written in English.
+    // Preferred: the template's page with its "Request to buy" dialog open and
+    // pre-filled. Details go after '#', so they never reach any server.
+    if (t.page != null) {
+      final details = Uri(queryParameters: {
+        'code': code,
+        if ((company?.name ?? '').isNotEmpty) 'business': company!.name,
+        // Tax ID of any country (GSTIN, VAT, TRN…) and the country.
+        if ((company?.gstin ?? '').isNotEmpty) 'taxid': company!.gstin,
+        if ((company?.country ?? '').isNotEmpty) 'country': company!.country,
+      }).query;
+      _open('${t.page!.split('#').first}#buy?$details');
+      return;
+    }
+    // No page: email us. Request goes to us (the seller), so it is in English.
     final body = [
       'Hello, I would like to buy this Invoiso template.',
       '',

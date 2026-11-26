@@ -6718,7 +6718,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get storeTitle => 'Invoiso Templates';
 
   @override
-  String get storeSubtitle => '现成的发票设计。通过电子邮件购买：我们会回复付款信息和您的许可证密钥。';
+  String get storeSubtitle => '现成的发票设计。购买：在模板页面提交申请，我们会回复付款信息，随后发送您的许可证密钥。';
 
   @override
   String get storeOffline => '无法加载模板列表。请检查网络连接。';

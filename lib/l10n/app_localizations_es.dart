@@ -7089,7 +7089,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get storeSubtitle =>
-      'Diseños de factura listos. Compre por correo: le respondemos con los datos de pago y su clave de licencia.';
+      'Diseños de factura listos. Comprar: envíe una solicitud en la página de la plantilla y le respondemos con los datos de pago; después recibe su clave de licencia.';
 
   @override
   String get storeOffline =>

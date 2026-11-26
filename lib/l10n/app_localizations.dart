@@ -11891,7 +11891,7 @@ abstract class AppLocalizations {
   /// No description provided for @storeSubtitle.
   ///
   /// In en, this message translates to:
-  /// **'Ready-made invoice designs. Buy by email: we reply with payment details and your licence key.'**
+  /// **'Ready-made invoice designs. Buy: send a request on the template\'s page and we reply with payment details; your licence key follows.'**
   String get storeSubtitle;
 
   /// No description provided for @storeOffline.

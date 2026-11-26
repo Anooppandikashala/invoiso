@@ -7104,7 +7104,7 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get storeSubtitle =>
-      'Des modèles de facture prêts à l\'emploi. Achat par e-mail : nous répondons avec les infos de paiement et votre clé de licence.';
+      'Des modèles de facture prêts à l\'emploi. Acheter : envoyez une demande sur la page du modèle, nous répondons avec les infos de paiement ; votre clé de licence suit.';
 
   @override
   String get storeOffline =>
