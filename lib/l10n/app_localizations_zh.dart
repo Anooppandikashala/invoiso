@@ -6541,4 +6541,220 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get pdfSettingsRepeatTableHeaderLabel => '在每页重复表头';
+
+  @override
+  String get licencesTitle => '许可证';
+
+  @override
+  String get licencesThisComputer => '本机';
+
+  @override
+  String get licencesActivationCodeLabel => '激活码';
+
+  @override
+  String get licencesActivationCodeHelp => '购买模板时请附上此代码。一个许可证适用于本机上的所有公司。';
+
+  @override
+  String get licencesCopy => '复制';
+
+  @override
+  String get licencesEnterKey => '输入许可证密钥';
+
+  @override
+  String get licencesGetMore => '获取更多模板…';
+
+  @override
+  String get licencesEmpty => '本机还没有模板许可证。';
+
+  @override
+  String get licencesOverdueBanner => '已有 30 天无法验证您的模板许可证。请连接互联网立即检查，或离线续期。';
+
+  @override
+  String get licencesPendingBanner => '许可证待验证：在检查成功之前，付费模板打印时会带有水印。';
+
+  @override
+  String get licencesTemplatesAll => '全部 Invoiso Templates（Template Pass）';
+
+  @override
+  String licencesLastCheck(String date) {
+    return '上次检查：$date';
+  }
+
+  @override
+  String licencesValidUntil(String date) {
+    return '有效期至 $date';
+  }
+
+  @override
+  String get licencesCheckNow => '立即检查';
+
+  @override
+  String get licencesRenewOffline => '离线续期';
+
+  @override
+  String get licencesDeactivate => '停用';
+
+  @override
+  String get licencesRemove => '移除';
+
+  @override
+  String get licencesDeactivateConfirm => '要从本机移除此许可证吗？之后可在另一台电脑上激活该密钥。';
+
+  @override
+  String get licencesDeactivated => '已从本机移除许可证';
+
+  @override
+  String get licencesStatusActive => '有效';
+
+  @override
+  String get licencesStatusOverdue => '检查逾期';
+
+  @override
+  String get licencesStatusPending => '待验证';
+
+  @override
+  String get licencesStatusRevoked => '已撤销';
+
+  @override
+  String get licencesStatusRefunded => '已退款';
+
+  @override
+  String get licencesStatusExpired => '已过期';
+
+  @override
+  String get licencesStatusMoved => '已转移到另一台电脑';
+
+  @override
+  String get licencesKeyDialogTitle => '输入许可证密钥';
+
+  @override
+  String get licencesKeyLabel => '许可证密钥';
+
+  @override
+  String get licencesEmailLabel => '购买时使用的电子邮件';
+
+  @override
+  String get licencesEmailHelp => '许可证发送到的电子邮件';
+
+  @override
+  String get licencesKeyHelp => '粘贴购买后收到的密钥，并输入购买时使用的电子邮件。它将激活本机。';
+
+  @override
+  String get licencesActivate => '激活';
+
+  @override
+  String get licencesActivated => '许可证已激活';
+
+  @override
+  String get licencesChecked => '许可证检查完成';
+
+  @override
+  String get licencesRenewTitle => '离线续期';
+
+  @override
+  String get licencesRenewStep1 => '1. 将此请求码通过电子邮件发送给我们：';
+
+  @override
+  String get licencesRenewStep2 => '2. 粘贴您收到的续期码：';
+
+  @override
+  String get licencesRenewCodeLabel => '续期码';
+
+  @override
+  String get licencesRenewed => '许可证已续期';
+
+  @override
+  String get licencesStartupReminder =>
+      '已有 30 天无法验证您的模板许可证。请打开 设置 → 许可证 立即检查或离线续期。';
+
+  @override
+  String get licenceErrInvalidKey => '许可证密钥或电子邮件不正确。请检查两者后重试。';
+
+  @override
+  String get licenceErrActiveElsewhere => '此密钥正在另一台电脑上使用。请先在那台电脑或您的账户页面上停用它。';
+
+  @override
+  String get licenceErrBadGstin => '公司信息中的 GSTIN 无效。请更正后重试。';
+
+  @override
+  String get licenceErrBadActivationCode => '本机的激活码被拒绝。请联系我们。';
+
+  @override
+  String get licenceErrTooManyMoves => '此密钥在电脑之间转移次数过多。请联系我们。';
+
+  @override
+  String get licenceErrRevoked => '此许可证已被撤销。';
+
+  @override
+  String get licenceErrInvalidLicence => '无法验证此许可证。请联系我们。';
+
+  @override
+  String get licenceErrRefunded => '此许可证已退款。';
+
+  @override
+  String get licenceErrExpired => '此许可证已过期。';
+
+  @override
+  String get licenceErrMoved => '此许可证现已在另一台电脑上激活。';
+
+  @override
+  String get licenceErrRateLimited => '尝试次数过多。请等待几分钟后重试。';
+
+  @override
+  String get licenceErrNetwork => '无法连接许可证服务器。请检查网络连接后重试。';
+
+  @override
+  String get licenceErrInvalidRenewal => '此续期码无效。';
+
+  @override
+  String get licenceErrWrongLicence => '此续期码属于其他许可证或电脑。';
+
+  @override
+  String licenceErrUnknown(String code) {
+    return '出现问题（$code）。';
+  }
+
+  @override
+  String get storeTitle => 'Invoiso Templates';
+
+  @override
+  String get storeSubtitle => '现成的发票设计。通过电子邮件购买：我们会回复付款信息和您的许可证密钥。';
+
+  @override
+  String get storeOffline => '无法加载模板列表。请检查网络连接。';
+
+  @override
+  String get storeOpenWebsite => '打开网站';
+
+  @override
+  String get storeFree => '免费';
+
+  @override
+  String get storeLicensed => '已授权';
+
+  @override
+  String get storeComingSoon => '即将推出';
+
+  @override
+  String get storeBuy => '购买';
+
+  @override
+  String get storeViewOnWebsite => '在网站上查看';
+
+  @override
+  String storeNoEmailApp(String email) {
+    return '未找到电子邮件应用。请写信至 $email。';
+  }
+
+  @override
+  String get pdfLayoutGetMoreTitle => '获取更多模板…';
+
+  @override
+  String get pdfLayoutGetMoreSubtitle => '浏览 Invoiso Templates 并购买设计';
+
+  @override
+  String get pdfLayoutEnterKeyTitle => '输入许可证密钥…';
+
+  @override
+  String get pdfLayoutEnterKeySubtitle => '激活您购买的模板';
 }

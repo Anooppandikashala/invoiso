@@ -6772,4 +6772,238 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get pdfSettingsRepeatTableHeaderLabel =>
       'Repeat table header on every page';
+
+  @override
+  String get licencesTitle => 'Licences';
+
+  @override
+  String get licencesThisComputer => 'This computer';
+
+  @override
+  String get licencesActivationCodeLabel => 'Activation code';
+
+  @override
+  String get licencesActivationCodeHelp =>
+      'Include this code when you buy a template. A licence works for every company on this computer.';
+
+  @override
+  String get licencesCopy => 'Copy';
+
+  @override
+  String get licencesEnterKey => 'Enter licence key';
+
+  @override
+  String get licencesGetMore => 'Get more templates…';
+
+  @override
+  String get licencesEmpty => 'No template licences on this computer yet.';
+
+  @override
+  String get licencesOverdueBanner =>
+      'Couldn\'t verify your template licence for 30 days. Connect to the internet and check now, or renew offline.';
+
+  @override
+  String get licencesPendingBanner =>
+      'Licence verification pending: paid templates print with a watermark until a check succeeds.';
+
+  @override
+  String get licencesTemplatesAll => 'All Invoiso Templates (Template Pass)';
+
+  @override
+  String licencesLastCheck(String date) {
+    return 'Last check: $date';
+  }
+
+  @override
+  String licencesValidUntil(String date) {
+    return 'Valid until $date';
+  }
+
+  @override
+  String get licencesCheckNow => 'Check now';
+
+  @override
+  String get licencesRenewOffline => 'Renew offline';
+
+  @override
+  String get licencesDeactivate => 'Deactivate';
+
+  @override
+  String get licencesRemove => 'Remove';
+
+  @override
+  String get licencesDeactivateConfirm =>
+      'Remove this licence from this computer? The key can then be activated on another computer.';
+
+  @override
+  String get licencesDeactivated => 'Licence removed from this computer';
+
+  @override
+  String get licencesStatusActive => 'Active';
+
+  @override
+  String get licencesStatusOverdue => 'Check overdue';
+
+  @override
+  String get licencesStatusPending => 'Verification pending';
+
+  @override
+  String get licencesStatusRevoked => 'Revoked';
+
+  @override
+  String get licencesStatusRefunded => 'Refunded';
+
+  @override
+  String get licencesStatusExpired => 'Expired';
+
+  @override
+  String get licencesStatusMoved => 'Moved to another computer';
+
+  @override
+  String get licencesKeyDialogTitle => 'Enter licence key';
+
+  @override
+  String get licencesKeyLabel => 'Licence key';
+
+  @override
+  String get licencesEmailLabel => 'Email used to buy';
+
+  @override
+  String get licencesEmailHelp => 'The email the licence was sent to';
+
+  @override
+  String get licencesKeyHelp =>
+      'Paste the key you received after buying and enter the email you bought it with. It activates this computer.';
+
+  @override
+  String get licencesActivate => 'Activate';
+
+  @override
+  String get licencesActivated => 'Licence activated';
+
+  @override
+  String get licencesChecked => 'Licence check finished';
+
+  @override
+  String get licencesRenewTitle => 'Renew offline';
+
+  @override
+  String get licencesRenewStep1 => '1. Email us this request code:';
+
+  @override
+  String get licencesRenewStep2 => '2. Paste the renewal code you receive:';
+
+  @override
+  String get licencesRenewCodeLabel => 'Renewal code';
+
+  @override
+  String get licencesRenewed => 'Licence renewed';
+
+  @override
+  String get licencesStartupReminder =>
+      'Couldn\'t verify your template licence for 30 days. Open Settings → Licences to check now or renew offline.';
+
+  @override
+  String get licenceErrInvalidKey =>
+      'This licence key or email is not correct. Check both and try again.';
+
+  @override
+  String get licenceErrActiveElsewhere =>
+      'This key is in use on another computer. Deactivate it there or on your account page first.';
+
+  @override
+  String get licenceErrBadGstin =>
+      'The GSTIN in Company Info is not valid. Correct it and try again.';
+
+  @override
+  String get licenceErrBadActivationCode =>
+      'This computer\'s activation code was refused. Please contact us.';
+
+  @override
+  String get licenceErrTooManyMoves =>
+      'This key was moved between computers too often. Please contact us.';
+
+  @override
+  String get licenceErrRevoked => 'This licence was revoked.';
+
+  @override
+  String get licenceErrInvalidLicence =>
+      'This licence could not be verified. Please contact us.';
+
+  @override
+  String get licenceErrRefunded => 'This licence was refunded.';
+
+  @override
+  String get licenceErrExpired => 'This licence has expired.';
+
+  @override
+  String get licenceErrMoved =>
+      'This licence is now active on another computer.';
+
+  @override
+  String get licenceErrRateLimited =>
+      'Too many attempts. Wait a few minutes and try again.';
+
+  @override
+  String get licenceErrNetwork =>
+      'Couldn\'t reach the licence server. Check the internet connection and try again.';
+
+  @override
+  String get licenceErrInvalidRenewal => 'This renewal code is not valid.';
+
+  @override
+  String get licenceErrWrongLicence =>
+      'This renewal code is for another licence or computer.';
+
+  @override
+  String licenceErrUnknown(String code) {
+    return 'Something went wrong ($code).';
+  }
+
+  @override
+  String get storeTitle => 'Invoiso Templates';
+
+  @override
+  String get storeSubtitle =>
+      'Ready-made invoice designs. Buy by email: we reply with payment details and your licence key.';
+
+  @override
+  String get storeOffline =>
+      'Couldn\'t load the template list. Check the internet connection.';
+
+  @override
+  String get storeOpenWebsite => 'Open website';
+
+  @override
+  String get storeFree => 'Free';
+
+  @override
+  String get storeLicensed => 'Licensed';
+
+  @override
+  String get storeComingSoon => 'Coming soon';
+
+  @override
+  String get storeBuy => 'Buy';
+
+  @override
+  String get storeViewOnWebsite => 'View on website';
+
+  @override
+  String storeNoEmailApp(String email) {
+    return 'No email app found. Write to $email.';
+  }
+
+  @override
+  String get pdfLayoutGetMoreTitle => 'Get more templates…';
+
+  @override
+  String get pdfLayoutGetMoreSubtitle =>
+      'Browse Invoiso Templates and buy a design';
+
+  @override
+  String get pdfLayoutEnterKeyTitle => 'Enter licence key…';
+
+  @override
+  String get pdfLayoutEnterKeySubtitle => 'Activate a template you bought';
 }

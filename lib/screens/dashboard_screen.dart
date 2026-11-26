@@ -134,7 +134,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     }
     // Template licences: check with the marketplace once a day while the app
     // runs (no network call when no licence is held; offline = no change).
-    _checkLicences();
+    _checkLicences(remind: true);
     _licenceCheckTimer = Timer.periodic(const Duration(hours: 1), (_) => _checkLicences());
     // Tab 1 (Create Invoice) owns its own autofocus/shortcuts — only claim
     // focus here for the other tabs, so it doesn't get stolen away and
@@ -240,7 +240,21 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     setState(() => _purchaseBillsAdminOnly = v == 'true');
   }
 
-  void _checkLicences() => unawaited(LicenceService().dailyCheck().catchError((_) {}));
+  // [remind]: once per start, tell the user when a licence check is 30+ days late.
+  void _checkLicences({bool remind = false}) => unawaited(() async {
+        final service = LicenceService();
+        await service.dailyCheck();
+        if (!remind || !mounted) return;
+        final late = (await service.licences()).any((l) =>
+            l.status == LicenceStatus.checkOverdue ||
+            l.status == LicenceStatus.verificationPending);
+        if (!late || !mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text(AppLocalizations.of(context)!.licencesStartupReminder),
+          duration: const Duration(seconds: 8),
+        ));
+      }()
+          .catchError((_) {}));
 
   Future<void> _checkForUpdates() async {
     final info = await UpdateService.checkForUpdate();

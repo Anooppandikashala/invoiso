@@ -50,6 +50,11 @@ class TemplateOptions {
   /// `repeatHeader` wins when the template sets it.
   final bool repeatTableHeader;
 
+  /// Diagonal text over every page (licence watermark: "PREVIEW" /
+  /// "LICENCE VERIFICATION PENDING"). Drawn in the page foreground, so a
+  /// layout cannot cover or remove it. Null = none.
+  final String? overlayText;
+
   const TemplateOptions({
     this.currencySymbol = '',
     this.amountSeparator = 'none',
@@ -75,6 +80,7 @@ class TemplateOptions {
     this.watermarkOpacity = 0.1,
     this.watermarkFullPage = false,
     this.repeatTableHeader = false,
+    this.overlayText,
   });
 }
 

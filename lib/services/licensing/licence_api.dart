@@ -15,8 +15,10 @@ class LicenceApi {
   LicenceApi({http.Client? client}) : _client = client ?? http.Client();
 
   /// Activate a key on this computer → `{lid, templateIds, licence, lease}`.
+  /// [email] = the buyer's email the licence was granted to.
   Future<LicenceApiResult> activate({
     required String key,
+    required String email,
     required String activationCode,
     String? businessName,
     String? gstin,
@@ -24,6 +26,7 @@ class LicenceApi {
   }) =>
       _post('activate', {
         'key': key,
+        'email': email,
         'code': activationCode,
         if (businessName != null && businessName.isNotEmpty) 'businessName': businessName,
         if (gstin != null && gstin.isNotEmpty) 'gstin': gstin,

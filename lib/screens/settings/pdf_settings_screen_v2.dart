@@ -23,11 +23,14 @@ import 'package:file_picker/file_picker.dart';
 import 'package:printing/printing.dart';
 import 'package:invoiso/services/thermal_printer_service_v1.dart';
 import 'package:invoiso/models/custom_invoice_layout.dart';
+import 'package:invoiso/screens/settings/template_store_dialog.dart';
 
 class PdfSettingsScreenV2 extends ConsumerStatefulWidget {
   final VoidCallback? onNavigateToCustomization;
+  final VoidCallback? onEnterLicenceKey;
 
-  const PdfSettingsScreenV2({super.key, this.onNavigateToCustomization});
+  const PdfSettingsScreenV2(
+      {super.key, this.onNavigateToCustomization, this.onEnterLicenceKey});
 
   @override
   ConsumerState<PdfSettingsScreenV2> createState() =>
@@ -772,7 +775,7 @@ class _PdfSettingsScreenV2State extends ConsumerState<PdfSettingsScreenV2> {
         borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
       ),
       builder: (ctx) => SafeArea(
-        child: Padding(
+        child: SingleChildScrollView(
           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -833,6 +836,37 @@ class _PdfSettingsScreenV2State extends ConsumerState<PdfSettingsScreenV2> {
                   _saveCurrentAsCustomLayout();
                 },
               ),
+              const Divider(),
+              ListTile(
+                leading: const CircleAvatar(
+                  backgroundColor: Color(0xFFFEF3C7),
+                  child: Icon(Icons.storefront_outlined,
+                      color: Color(0xFF92400E)),
+                ),
+                title: Text(l10n.pdfLayoutGetMoreTitle,
+                    style: const TextStyle(fontWeight: FontWeight.w600)),
+                subtitle: Text(l10n.pdfLayoutGetMoreSubtitle),
+                onTap: () {
+                  Navigator.pop(ctx);
+                  showTemplateStoreDialog(context);
+                },
+              ),
+              if (widget.onEnterLicenceKey != null) ...[
+                const Divider(),
+                ListTile(
+                  leading: const CircleAvatar(
+                    backgroundColor: Color(0xFFE0F2FE),
+                    child: Icon(Icons.key_rounded, color: Color(0xFF075985)),
+                  ),
+                  title: Text(l10n.pdfLayoutEnterKeyTitle,
+                      style: const TextStyle(fontWeight: FontWeight.w600)),
+                  subtitle: Text(l10n.pdfLayoutEnterKeySubtitle),
+                  onTap: () {
+                    Navigator.pop(ctx);
+                    widget.onEnterLicenceKey!();
+                  },
+                ),
+              ],
             ],
           ),
         ),

@@ -6907,4 +6907,242 @@ class AppLocalizationsFr extends AppLocalizations {
   @override
   String get pdfSettingsRepeatTableHeaderLabel =>
       'Répéter l\'en-tête du tableau sur chaque page';
+
+  @override
+  String get licencesTitle => 'Licences';
+
+  @override
+  String get licencesThisComputer => 'Cet ordinateur';
+
+  @override
+  String get licencesActivationCodeLabel => 'Code d\'activation';
+
+  @override
+  String get licencesActivationCodeHelp =>
+      'Indiquez ce code lors de l\'achat d\'un modèle. Une licence fonctionne pour toutes les entreprises de cet ordinateur.';
+
+  @override
+  String get licencesCopy => 'Copier';
+
+  @override
+  String get licencesEnterKey => 'Saisir une clé de licence';
+
+  @override
+  String get licencesGetMore => 'Obtenir plus de modèles…';
+
+  @override
+  String get licencesEmpty =>
+      'Aucune licence de modèle sur cet ordinateur pour l\'instant.';
+
+  @override
+  String get licencesOverdueBanner =>
+      'Impossible de vérifier votre licence de modèle depuis 30 jours. Connectez-vous à internet et vérifiez maintenant, ou renouvelez hors ligne.';
+
+  @override
+  String get licencesPendingBanner =>
+      'Vérification de licence en attente : les modèles payants s\'impriment avec un filigrane jusqu\'à une vérification réussie.';
+
+  @override
+  String get licencesTemplatesAll =>
+      'Tous les Invoiso Templates (Template Pass)';
+
+  @override
+  String licencesLastCheck(String date) {
+    return 'Dernière vérification : $date';
+  }
+
+  @override
+  String licencesValidUntil(String date) {
+    return 'Valable jusqu\'au $date';
+  }
+
+  @override
+  String get licencesCheckNow => 'Vérifier maintenant';
+
+  @override
+  String get licencesRenewOffline => 'Renouveler hors ligne';
+
+  @override
+  String get licencesDeactivate => 'Désactiver';
+
+  @override
+  String get licencesRemove => 'Retirer';
+
+  @override
+  String get licencesDeactivateConfirm =>
+      'Retirer cette licence de cet ordinateur ? La clé pourra ensuite être activée sur un autre ordinateur.';
+
+  @override
+  String get licencesDeactivated => 'Licence retirée de cet ordinateur';
+
+  @override
+  String get licencesStatusActive => 'Active';
+
+  @override
+  String get licencesStatusOverdue => 'Vérification en retard';
+
+  @override
+  String get licencesStatusPending => 'Vérification en attente';
+
+  @override
+  String get licencesStatusRevoked => 'Révoquée';
+
+  @override
+  String get licencesStatusRefunded => 'Remboursée';
+
+  @override
+  String get licencesStatusExpired => 'Expirée';
+
+  @override
+  String get licencesStatusMoved => 'Déplacée vers un autre ordinateur';
+
+  @override
+  String get licencesKeyDialogTitle => 'Saisir une clé de licence';
+
+  @override
+  String get licencesKeyLabel => 'Clé de licence';
+
+  @override
+  String get licencesEmailLabel => 'E-mail utilisé pour l\'achat';
+
+  @override
+  String get licencesEmailHelp => 'L\'e-mail auquel la licence a été envoyée';
+
+  @override
+  String get licencesKeyHelp =>
+      'Collez la clé reçue après l\'achat et saisissez l\'e-mail utilisé pour l\'achat. Elle active cet ordinateur.';
+
+  @override
+  String get licencesActivate => 'Activer';
+
+  @override
+  String get licencesActivated => 'Licence activée';
+
+  @override
+  String get licencesChecked => 'Vérification des licences terminée';
+
+  @override
+  String get licencesRenewTitle => 'Renouveler hors ligne';
+
+  @override
+  String get licencesRenewStep1 =>
+      '1. Envoyez-nous ce code de demande par e-mail :';
+
+  @override
+  String get licencesRenewStep2 => '2. Collez le code de renouvellement reçu :';
+
+  @override
+  String get licencesRenewCodeLabel => 'Code de renouvellement';
+
+  @override
+  String get licencesRenewed => 'Licence renouvelée';
+
+  @override
+  String get licencesStartupReminder =>
+      'Impossible de vérifier votre licence de modèle depuis 30 jours. Ouvrez Paramètres → Licences pour vérifier ou renouveler hors ligne.';
+
+  @override
+  String get licenceErrInvalidKey =>
+      'La clé de licence ou l\'e-mail n\'est pas correct. Vérifiez les deux et réessayez.';
+
+  @override
+  String get licenceErrActiveElsewhere =>
+      'Cette clé est utilisée sur un autre ordinateur. Désactivez-la d\'abord là-bas ou sur la page de votre compte.';
+
+  @override
+  String get licenceErrBadGstin =>
+      'Le GSTIN des informations de l\'entreprise n\'est pas valide. Corrigez-le et réessayez.';
+
+  @override
+  String get licenceErrBadActivationCode =>
+      'Le code d\'activation de cet ordinateur a été refusé. Veuillez nous contacter.';
+
+  @override
+  String get licenceErrTooManyMoves =>
+      'Cette clé a été déplacée trop souvent entre ordinateurs. Veuillez nous contacter.';
+
+  @override
+  String get licenceErrRevoked => 'Cette licence a été révoquée.';
+
+  @override
+  String get licenceErrInvalidLicence =>
+      'Cette licence n\'a pas pu être vérifiée. Veuillez nous contacter.';
+
+  @override
+  String get licenceErrRefunded => 'Cette licence a été remboursée.';
+
+  @override
+  String get licenceErrExpired => 'Cette licence a expiré.';
+
+  @override
+  String get licenceErrMoved =>
+      'Cette licence est maintenant active sur un autre ordinateur.';
+
+  @override
+  String get licenceErrRateLimited =>
+      'Trop de tentatives. Patientez quelques minutes et réessayez.';
+
+  @override
+  String get licenceErrNetwork =>
+      'Impossible de joindre le serveur de licences. Vérifiez la connexion internet et réessayez.';
+
+  @override
+  String get licenceErrInvalidRenewal =>
+      'Ce code de renouvellement n\'est pas valide.';
+
+  @override
+  String get licenceErrWrongLicence =>
+      'Ce code de renouvellement concerne une autre licence ou un autre ordinateur.';
+
+  @override
+  String licenceErrUnknown(String code) {
+    return 'Une erreur s\'est produite ($code).';
+  }
+
+  @override
+  String get storeTitle => 'Invoiso Templates';
+
+  @override
+  String get storeSubtitle =>
+      'Des modèles de facture prêts à l\'emploi. Achat par e-mail : nous répondons avec les infos de paiement et votre clé de licence.';
+
+  @override
+  String get storeOffline =>
+      'Impossible de charger la liste des modèles. Vérifiez la connexion internet.';
+
+  @override
+  String get storeOpenWebsite => 'Ouvrir le site';
+
+  @override
+  String get storeFree => 'Gratuit';
+
+  @override
+  String get storeLicensed => 'Sous licence';
+
+  @override
+  String get storeComingSoon => 'Bientôt disponible';
+
+  @override
+  String get storeBuy => 'Acheter';
+
+  @override
+  String get storeViewOnWebsite => 'Voir sur le site';
+
+  @override
+  String storeNoEmailApp(String email) {
+    return 'Aucune application de messagerie trouvée. Écrivez à $email.';
+  }
+
+  @override
+  String get pdfLayoutGetMoreTitle => 'Obtenir plus de modèles…';
+
+  @override
+  String get pdfLayoutGetMoreSubtitle =>
+      'Parcourez Invoiso Templates et achetez un modèle';
+
+  @override
+  String get pdfLayoutEnterKeyTitle => 'Saisir une clé de licence…';
+
+  @override
+  String get pdfLayoutEnterKeySubtitle => 'Activez un modèle acheté';
 }

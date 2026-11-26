@@ -1515,11 +1515,13 @@ class _BlockLayoutRenderer {
                     child: pw.Image(pw.MemoryImage(watermark),
                         fit: pw.BoxFit.contain)),
           );
-    final hasForeground = frameWidth > 0 || declined;
+    final overlay = options.overlayText;
+    final hasForeground = frameWidth > 0 || declined || overlay != null;
     return pw.PageTheme(
       pageFormat: format,
       margin: margin,
-      // Page frame (border around the content area) + declined stamp.
+      // Page frame (border around the content area) + declined stamp +
+      // licence overlay text.
       buildForeground: !hasForeground
           ? null
           : (context) => pw.FullPage(
@@ -1538,6 +1540,7 @@ class _BlockLayoutRenderer {
                         ),
                       ),
                     if (declined) _declinedStamp(),
+                    if (overlay != null) _overlayText(overlay, format),
                   ],
                 ),
               ),
@@ -1845,6 +1848,28 @@ pw.Widget _signatureWidget(
     ),
   );
 }
+
+/// Licence overlay ([TemplateOptions.overlayText]): grey, diagonal, scaled
+/// down to fit the page width.
+pw.Widget _overlayText(String text, PdfPageFormat format) => pw.Center(
+      child: pw.Transform.rotateBox(
+        angle: 0.6,
+        child: pw.Opacity(
+          opacity: 0.18,
+          child: pw.SizedBox(
+            width: format.width,
+            child: pw.FittedBox(
+              fit: pw.BoxFit.scaleDown,
+              child: pw.Text(text,
+                  style: pw.TextStyle(
+                      fontSize: 64,
+                      fontWeight: pw.FontWeight.bold,
+                      color: PdfColors.grey800)),
+            ),
+          ),
+        ),
+      ),
+    );
 
 /// Diagonal "DECLINED" stamp on every page of a declined quotation — same as
 /// the built-in templates.

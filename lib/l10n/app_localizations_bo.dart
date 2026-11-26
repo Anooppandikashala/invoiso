@@ -6778,4 +6778,242 @@ class AppLocalizationsBo extends AppLocalizations {
   @override
   String get pdfSettingsRepeatTableHeaderLabel =>
       'ཤོག་ངོས་རེ་རེར་རེའུ་མིག་གི་མགོ་ཡང་བསྐྱར་སྟོན།';
+
+  @override
+  String get licencesTitle => 'ཆོག་མཆན།';
+
+  @override
+  String get licencesThisComputer => 'གློག་ཀླད་འདི།';
+
+  @override
+  String get licencesActivationCodeLabel => 'སྤྱོད་འགོ་ཚབ་རྟགས།';
+
+  @override
+  String get licencesActivationCodeHelp =>
+      'དཔེ་གཞི་ཉོ་སྐབས་ཚབ་རྟགས་འདི་མཉམ་དུ་གཏོང་རོགས། ཆོག་མཆན་གཅིག་གློག་ཀླད་འདིའི་ཚོང་ཁང་ཡོངས་ལ་སྤྱོད་ཆོག';
+
+  @override
+  String get licencesCopy => 'འདྲ་བཤུས།';
+
+  @override
+  String get licencesEnterKey => 'ཆོག་མཆན་ལྡེ་མིག་འཇུག་པ།';
+
+  @override
+  String get licencesGetMore => 'དཔེ་གཞི་མང་བ་ལེན་པ…';
+
+  @override
+  String get licencesEmpty => 'གློག་ཀླད་འདིར་ད་དུང་དཔེ་གཞིའི་ཆོག་མཆན་མེད།';
+
+  @override
+  String get licencesOverdueBanner =>
+      'ཉིན་ ༣༠ རིང་ཁྱེད་ཀྱི་དཔེ་གཞིའི་ཆོག་མཆན་བདེན་དཔང་བྱེད་ཐུབ་མེད། དྲ་བར་མཐུད་ནས་ད་ལྟ་ཞིབ་བཤེར་བྱོས། ཡང་ན་དྲ་མེད་གསར་བཅོས་བྱོས།';
+
+  @override
+  String get licencesPendingBanner =>
+      'ཆོག་མཆན་བདེན་དཔང་སྒུག་བཞིན་པ། ཞིབ་བཤེར་ལེགས་འགྲུབ་མ་བྱུང་བར་དུ་རིན་ཅན་དཔེ་གཞི་ཆུ་རྟགས་དང་བཅས་པར་སྐྲུན་ངེས།';
+
+  @override
+  String get licencesTemplatesAll =>
+      'Invoiso Templates ཡོངས་རྫོགས། (Template Pass)';
+
+  @override
+  String licencesLastCheck(String date) {
+    return 'ཞིབ་བཤེར་མཐའ་མ། $date';
+  }
+
+  @override
+  String licencesValidUntil(String date) {
+    return '$date བར་ནུས་ལྡན།';
+  }
+
+  @override
+  String get licencesCheckNow => 'ད་ལྟ་ཞིབ་བཤེར།';
+
+  @override
+  String get licencesRenewOffline => 'དྲ་མེད་གསར་བཅོས།';
+
+  @override
+  String get licencesDeactivate => 'ནུས་མེད་གཏོང་བ།';
+
+  @override
+  String get licencesRemove => 'སུབ་པ།';
+
+  @override
+  String get licencesDeactivateConfirm =>
+      'ཆོག་མཆན་འདི་གློག་ཀླད་འདི་ནས་སུབ་བམ། དེ་རྗེས་ལྡེ་མིག་གློག་ཀླད་གཞན་ཞིག་ཏུ་སྤྱོད་འགོ་འཛུགས་ཆོག';
+
+  @override
+  String get licencesDeactivated => 'ཆོག་མཆན་གློག་ཀླད་འདི་ནས་སུབ་ཟིན།';
+
+  @override
+  String get licencesStatusActive => 'ནུས་ལྡན།';
+
+  @override
+  String get licencesStatusOverdue => 'ཞིབ་བཤེར་དུས་ཡོལ།';
+
+  @override
+  String get licencesStatusPending => 'བདེན་དཔང་སྒུག་བཞིན།';
+
+  @override
+  String get licencesStatusRevoked => 'ཕྱིར་བསྡུས།';
+
+  @override
+  String get licencesStatusRefunded => 'དངུལ་ཕྱིར་སློག';
+
+  @override
+  String get licencesStatusExpired => 'དུས་ཚོད་རྫོགས།';
+
+  @override
+  String get licencesStatusMoved => 'གློག་ཀླད་གཞན་དུ་སྤོས།';
+
+  @override
+  String get licencesKeyDialogTitle => 'ཆོག་མཆན་ལྡེ་མིག་འཇུག་པ།';
+
+  @override
+  String get licencesKeyLabel => 'ཆོག་མཆན་ལྡེ་མིག';
+
+  @override
+  String get licencesEmailLabel =>
+      'ཉོ་སྐབས་བེད་སྤྱོད་བྱས་པའི་གློག་འཕྲིན་ཁ་བྱང་།';
+
+  @override
+  String get licencesEmailHelp => 'ཆོག་མཆན་བསྐུར་ས་ཡི་གློག་འཕྲིན་ཁ་བྱང་།';
+
+  @override
+  String get licencesKeyHelp =>
+      'ཉོས་རྗེས་ཐོབ་པའི་ལྡེ་མིག་སྦྱར་ནས་ཉོ་སྐབས་བེད་སྤྱོད་བྱས་པའི་གློག་འཕྲིན་ཁ་བྱང་འཇུག་རོགས། དེས་གློག་ཀླད་འདི་སྤྱོད་འགོ་འཛུགས།';
+
+  @override
+  String get licencesActivate => 'སྤྱོད་འགོ་འཛུགས།';
+
+  @override
+  String get licencesActivated => 'ཆོག་མཆན་སྤྱོད་འགོ་བཙུགས་ཟིན།';
+
+  @override
+  String get licencesChecked => 'ཆོག་མཆན་ཞིབ་བཤེར་ཚར།';
+
+  @override
+  String get licencesRenewTitle => 'དྲ་མེད་གསར་བཅོས།';
+
+  @override
+  String get licencesRenewStep1 =>
+      '༡. རེ་ཞུའི་ཚབ་རྟགས་འདི་ང་ཚོར་གློག་འཕྲིན་ཐོག་གཏོང་རོགས།';
+
+  @override
+  String get licencesRenewStep2 => '༢. ཐོབ་པའི་གསར་བཅོས་ཚབ་རྟགས་སྦྱར་རོགས།';
+
+  @override
+  String get licencesRenewCodeLabel => 'གསར་བཅོས་ཚབ་རྟགས།';
+
+  @override
+  String get licencesRenewed => 'ཆོག་མཆན་གསར་བཅོས་ཟིན།';
+
+  @override
+  String get licencesStartupReminder =>
+      'ཉིན་ ༣༠ རིང་ཁྱེད་ཀྱི་དཔེ་གཞིའི་ཆོག་མཆན་བདེན་དཔང་བྱེད་ཐུབ་མེད། སྒྲིག་འགོད། → ཆོག་མཆན་ཁ་ཕྱེ་ནས་ཞིབ་བཤེར་རམ་དྲ་མེད་གསར་བཅོས་བྱོས།';
+
+  @override
+  String get licenceErrInvalidKey =>
+      'ཆོག་མཆན་ལྡེ་མིག་གམ་གློག་འཕྲིན་ཁ་བྱང་ནོར་འདུག གཉིས་ཀ་ཞིབ་བཤེར་བྱས་ནས་ཡང་བསྐྱར་ཚོད་ལྟ་བྱོས།';
+
+  @override
+  String get licenceErrActiveElsewhere =>
+      'ལྡེ་མིག་འདི་གློག་ཀླད་གཞན་ཞིག་ཏུ་སྤྱོད་བཞིན་འདུག སྔོན་ལ་དེར་རམ་ཁྱེད་ཀྱི་རྩིས་ཐོའི་ཤོག་ངོས་སུ་ནུས་མེད་གཏོང་རོགས།';
+
+  @override
+  String get licenceErrBadGstin =>
+      'ཚོང་ཁང་གི་ཆ་འཕྲིན་ནང་གི་ GSTIN ནུས་མེད་རེད། བཅོས་ནས་ཡང་བསྐྱར་ཚོད་ལྟ་བྱོས།';
+
+  @override
+  String get licenceErrBadActivationCode =>
+      'གློག་ཀླད་འདིའི་སྤྱོད་འགོ་ཚབ་རྟགས་ངོས་ལེན་མ་བྱུང་། ང་ཚོར་འབྲེལ་བ་གནང་རོགས།';
+
+  @override
+  String get licenceErrTooManyMoves =>
+      'ལྡེ་མིག་འདི་གློག་ཀླད་བར་ཐེངས་མང་དྲགས་པར་སྤོས་འདུག ང་ཚོར་འབྲེལ་བ་གནང་རོགས།';
+
+  @override
+  String get licenceErrRevoked => 'ཆོག་མཆན་འདི་ཕྱིར་བསྡུས་ཟིན།';
+
+  @override
+  String get licenceErrInvalidLicence =>
+      'ཆོག་མཆན་འདི་བདེན་དཔང་བྱེད་ཐུབ་མ་སོང་། ང་ཚོར་འབྲེལ་བ་གནང་རོགས།';
+
+  @override
+  String get licenceErrRefunded => 'ཆོག་མཆན་འདིའི་དངུལ་ཕྱིར་སློག་ཟིན།';
+
+  @override
+  String get licenceErrExpired => 'ཆོག་མཆན་འདིའི་དུས་ཚོད་རྫོགས་ཟིན།';
+
+  @override
+  String get licenceErrMoved =>
+      'ཆོག་མཆན་འདི་ད་ལྟ་གློག་ཀླད་གཞན་ཞིག་ཏུ་ནུས་ལྡན་ཡིན།';
+
+  @override
+  String get licenceErrRateLimited =>
+      'ཚོད་ལྟ་མང་དྲགས་སོང་། སྐར་མ་ཁ་ཤས་སྒུག་ནས་ཡང་བསྐྱར་ཚོད་ལྟ་བྱོས།';
+
+  @override
+  String get licenceErrNetwork =>
+      'ཆོག་མཆན་ཞབས་ཞུ་འཕྲུལ་ཆས་ལ་སླེབས་ཐུབ་མ་སོང་། དྲ་བའི་མཐུད་ལམ་ཞིབ་བཤེར་བྱས་ནས་ཡང་བསྐྱར་ཚོད་ལྟ་བྱོས།';
+
+  @override
+  String get licenceErrInvalidRenewal => 'གསར་བཅོས་ཚབ་རྟགས་འདི་ནུས་མེད་རེད།';
+
+  @override
+  String get licenceErrWrongLicence =>
+      'གསར་བཅོས་ཚབ་རྟགས་འདི་ཆོག་མཆན་ནམ་གློག་ཀླད་གཞན་ཞིག་གི་ཡིན།';
+
+  @override
+  String licenceErrUnknown(String code) {
+    return 'ནོར་འཁྲུལ་ཞིག་བྱུང་། ($code)';
+  }
+
+  @override
+  String get storeTitle => 'Invoiso Templates';
+
+  @override
+  String get storeSubtitle =>
+      'གྲ་སྒྲིག་ཟིན་པའི་ཚོང་ཐོ་བཀོད་པ། གློག་འཕྲིན་ཐོག་ཉོ་ཆོག ང་ཚོས་དངུལ་སྤྲོད་ཆ་འཕྲིན་དང་ཆོག་མཆན་ལྡེ་མིག་ལན་དུ་གཏོང་ངོ་།';
+
+  @override
+  String get storeOffline =>
+      'དཔེ་གཞིའི་ཐོ་གཞུང་འཇུག་ཐུབ་མ་སོང་། དྲ་བའི་མཐུད་ལམ་ཞིབ་བཤེར་བྱོས།';
+
+  @override
+  String get storeOpenWebsite => 'དྲ་ཚིགས་ཁ་ཕྱེ།';
+
+  @override
+  String get storeFree => 'རིན་མེད།';
+
+  @override
+  String get storeLicensed => 'ཆོག་མཆན་ཡོད།';
+
+  @override
+  String get storeComingSoon => 'མྱུར་དུ་འབྱོར་ངེས།';
+
+  @override
+  String get storeBuy => 'ཉོ་བ།';
+
+  @override
+  String get storeViewOnWebsite => 'དྲ་ཚིགས་སུ་ལྟ་བ།';
+
+  @override
+  String storeNoEmailApp(String email) {
+    return 'གློག་འཕྲིན་མཉེན་ཆས་མ་རྙེད། $email ལ་འབྲི་རོགས།';
+  }
+
+  @override
+  String get pdfLayoutGetMoreTitle => 'དཔེ་གཞི་མང་བ་ལེན་པ…';
+
+  @override
+  String get pdfLayoutGetMoreSubtitle =>
+      'Invoiso Templates ལ་ལྟ་ཞིང་བཀོད་པ་ཞིག་ཉོ་བ།';
+
+  @override
+  String get pdfLayoutEnterKeyTitle => 'ཆོག་མཆན་ལྡེ་མིག་འཇུག་པ…';
+
+  @override
+  String get pdfLayoutEnterKeySubtitle =>
+      'ཉོས་ཟིན་པའི་དཔེ་གཞི་སྤྱོད་འགོ་འཛུགས།';
 }

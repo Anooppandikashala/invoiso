@@ -26,7 +26,17 @@ enum LicenceStatus {
 }
 
 /// Watermark a paid template must print with.
-enum LicenceWatermark { none, verificationPending, preview }
+enum LicenceWatermark {
+  none(null),
+  verificationPending('LICENCE VERIFICATION PENDING'),
+  preview('PREVIEW');
+
+  const LicenceWatermark(this.overlayText);
+
+  /// Text for the engine's `TemplateOptions.overlayText` (English, like the
+  /// DECLINED stamp, so every PDF font can draw it).
+  final String? overlayText;
+}
 
 class HeldLicence {
   final LicenceToken licence;
@@ -119,12 +129,14 @@ class LicenceService {
     return LicenceWatermark.preview;
   }
 
-  /// Activate [key] on this computer. Returns null on success, else an error
-  /// code from the server (`active_elsewhere`, `invalid_key`, …) or `network`.
-  Future<String?> activate(String key, {String? businessName, String? gstin, String? appVersion}) async {
+  /// Activate [key] on this computer; [email] = the one used to buy it.
+  /// Returns null on success, else an error code from the server
+  /// (`active_elsewhere`, `invalid_key` = wrong key or email, …) or `network`.
+  Future<String?> activate(String key, String email, {String? businessName, String? gstin, String? appVersion}) async {
     final code = await _activationCode();
     final r = await _api.activate(
       key: key.trim(),
+      email: email.trim(),
       activationCode: code,
       businessName: businessName,
       gstin: gstin,
@@ -141,11 +153,12 @@ class LicenceService {
   /// Daily check of every licence. Network trouble changes nothing (the
   /// lease just ages); a server decision is stored and shown.
   Future<void> checkAll() async {
-    await _store.setLastCheckAttempt(_now());
     final stored = await _store.load();
+    var reachedServer = stored.isEmpty;
     for (var i = 0; i < stored.length; i++) {
       final s = stored[i];
       final r = await _api.verify(s.licence);
+      if (r.error != LicenceApiResult.network) reachedServer = true;
       if (r.ok) {
         final lease = await LicenceToken.verify('${r.data['lease']}', LicenceToken.leasePrefix, publicKeyB64: _publicKey);
         if (lease != null) stored[i] = StoredLicence(licence: s.licence, lease: lease.raw);
@@ -154,9 +167,11 @@ class LicenceService {
       }
     }
     await _store.save(stored);
+    // Offline: don't record, so the hourly timer tries again.
+    if (reachedServer) await _store.setLastCheckAttempt(_now());
   }
 
-  /// Run [checkAll] if the last attempt was 24 h+ ago (app start / timer).
+  /// Run [checkAll] if the last check reaching the server was 24 h+ ago (app start / timer).
   Future<void> dailyCheck() async {
     final last = await _store.lastCheckAttempt();
     if (last != null && _now().toUtc().difference(last) < const Duration(hours: 24)) return;
@@ -187,8 +202,8 @@ class LicenceService {
     final s = stored.where((x) => _lidOf(x.licence) == lid).firstOrNull;
     if (s == null) return null;
     final r = await _api.deactivate(s.licence);
-    // not_active / moved: the server no longer ties it to this PC anyway.
-    if (!r.ok && r.error != 'not_active' && r.error != 'moved') return r.error;
+    // not_active / moved / revoked…: the server no longer ties it to this PC anyway.
+    if (!r.ok && r.error != 'not_active' && !_definitive.containsKey(r.error)) return r.error;
     await _store.save(stored.where((x) => _lidOf(x.licence) != lid).toList());
     return null;
   }

@@ -11551,6 +11551,420 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Repeat table header on every page'**
   String get pdfSettingsRepeatTableHeaderLabel;
+
+  /// No description provided for @licencesTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Licences'**
+  String get licencesTitle;
+
+  /// No description provided for @licencesThisComputer.
+  ///
+  /// In en, this message translates to:
+  /// **'This computer'**
+  String get licencesThisComputer;
+
+  /// No description provided for @licencesActivationCodeLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Activation code'**
+  String get licencesActivationCodeLabel;
+
+  /// No description provided for @licencesActivationCodeHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'Include this code when you buy a template. A licence works for every company on this computer.'**
+  String get licencesActivationCodeHelp;
+
+  /// No description provided for @licencesCopy.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy'**
+  String get licencesCopy;
+
+  /// No description provided for @licencesEnterKey.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter licence key'**
+  String get licencesEnterKey;
+
+  /// No description provided for @licencesGetMore.
+  ///
+  /// In en, this message translates to:
+  /// **'Get more templates…'**
+  String get licencesGetMore;
+
+  /// No description provided for @licencesEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No template licences on this computer yet.'**
+  String get licencesEmpty;
+
+  /// No description provided for @licencesOverdueBanner.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t verify your template licence for 30 days. Connect to the internet and check now, or renew offline.'**
+  String get licencesOverdueBanner;
+
+  /// No description provided for @licencesPendingBanner.
+  ///
+  /// In en, this message translates to:
+  /// **'Licence verification pending: paid templates print with a watermark until a check succeeds.'**
+  String get licencesPendingBanner;
+
+  /// No description provided for @licencesTemplatesAll.
+  ///
+  /// In en, this message translates to:
+  /// **'All Invoiso Templates (Template Pass)'**
+  String get licencesTemplatesAll;
+
+  /// No description provided for @licencesLastCheck.
+  ///
+  /// In en, this message translates to:
+  /// **'Last check: {date}'**
+  String licencesLastCheck(String date);
+
+  /// No description provided for @licencesValidUntil.
+  ///
+  /// In en, this message translates to:
+  /// **'Valid until {date}'**
+  String licencesValidUntil(String date);
+
+  /// No description provided for @licencesCheckNow.
+  ///
+  /// In en, this message translates to:
+  /// **'Check now'**
+  String get licencesCheckNow;
+
+  /// No description provided for @licencesRenewOffline.
+  ///
+  /// In en, this message translates to:
+  /// **'Renew offline'**
+  String get licencesRenewOffline;
+
+  /// No description provided for @licencesDeactivate.
+  ///
+  /// In en, this message translates to:
+  /// **'Deactivate'**
+  String get licencesDeactivate;
+
+  /// No description provided for @licencesRemove.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove'**
+  String get licencesRemove;
+
+  /// No description provided for @licencesDeactivateConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove this licence from this computer? The key can then be activated on another computer.'**
+  String get licencesDeactivateConfirm;
+
+  /// No description provided for @licencesDeactivated.
+  ///
+  /// In en, this message translates to:
+  /// **'Licence removed from this computer'**
+  String get licencesDeactivated;
+
+  /// No description provided for @licencesStatusActive.
+  ///
+  /// In en, this message translates to:
+  /// **'Active'**
+  String get licencesStatusActive;
+
+  /// No description provided for @licencesStatusOverdue.
+  ///
+  /// In en, this message translates to:
+  /// **'Check overdue'**
+  String get licencesStatusOverdue;
+
+  /// No description provided for @licencesStatusPending.
+  ///
+  /// In en, this message translates to:
+  /// **'Verification pending'**
+  String get licencesStatusPending;
+
+  /// No description provided for @licencesStatusRevoked.
+  ///
+  /// In en, this message translates to:
+  /// **'Revoked'**
+  String get licencesStatusRevoked;
+
+  /// No description provided for @licencesStatusRefunded.
+  ///
+  /// In en, this message translates to:
+  /// **'Refunded'**
+  String get licencesStatusRefunded;
+
+  /// No description provided for @licencesStatusExpired.
+  ///
+  /// In en, this message translates to:
+  /// **'Expired'**
+  String get licencesStatusExpired;
+
+  /// No description provided for @licencesStatusMoved.
+  ///
+  /// In en, this message translates to:
+  /// **'Moved to another computer'**
+  String get licencesStatusMoved;
+
+  /// No description provided for @licencesKeyDialogTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter licence key'**
+  String get licencesKeyDialogTitle;
+
+  /// No description provided for @licencesKeyLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Licence key'**
+  String get licencesKeyLabel;
+
+  /// No description provided for @licencesEmailLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Email used to buy'**
+  String get licencesEmailLabel;
+
+  /// No description provided for @licencesEmailHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'The email the licence was sent to'**
+  String get licencesEmailHelp;
+
+  /// No description provided for @licencesKeyHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'Paste the key you received after buying and enter the email you bought it with. It activates this computer.'**
+  String get licencesKeyHelp;
+
+  /// No description provided for @licencesActivate.
+  ///
+  /// In en, this message translates to:
+  /// **'Activate'**
+  String get licencesActivate;
+
+  /// No description provided for @licencesActivated.
+  ///
+  /// In en, this message translates to:
+  /// **'Licence activated'**
+  String get licencesActivated;
+
+  /// No description provided for @licencesChecked.
+  ///
+  /// In en, this message translates to:
+  /// **'Licence check finished'**
+  String get licencesChecked;
+
+  /// No description provided for @licencesRenewTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Renew offline'**
+  String get licencesRenewTitle;
+
+  /// No description provided for @licencesRenewStep1.
+  ///
+  /// In en, this message translates to:
+  /// **'1. Email us this request code:'**
+  String get licencesRenewStep1;
+
+  /// No description provided for @licencesRenewStep2.
+  ///
+  /// In en, this message translates to:
+  /// **'2. Paste the renewal code you receive:'**
+  String get licencesRenewStep2;
+
+  /// No description provided for @licencesRenewCodeLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Renewal code'**
+  String get licencesRenewCodeLabel;
+
+  /// No description provided for @licencesRenewed.
+  ///
+  /// In en, this message translates to:
+  /// **'Licence renewed'**
+  String get licencesRenewed;
+
+  /// No description provided for @licencesStartupReminder.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t verify your template licence for 30 days. Open Settings → Licences to check now or renew offline.'**
+  String get licencesStartupReminder;
+
+  /// No description provided for @licenceErrInvalidKey.
+  ///
+  /// In en, this message translates to:
+  /// **'This licence key or email is not correct. Check both and try again.'**
+  String get licenceErrInvalidKey;
+
+  /// No description provided for @licenceErrActiveElsewhere.
+  ///
+  /// In en, this message translates to:
+  /// **'This key is in use on another computer. Deactivate it there or on your account page first.'**
+  String get licenceErrActiveElsewhere;
+
+  /// No description provided for @licenceErrBadGstin.
+  ///
+  /// In en, this message translates to:
+  /// **'The GSTIN in Company Info is not valid. Correct it and try again.'**
+  String get licenceErrBadGstin;
+
+  /// No description provided for @licenceErrBadActivationCode.
+  ///
+  /// In en, this message translates to:
+  /// **'This computer\'s activation code was refused. Please contact us.'**
+  String get licenceErrBadActivationCode;
+
+  /// No description provided for @licenceErrTooManyMoves.
+  ///
+  /// In en, this message translates to:
+  /// **'This key was moved between computers too often. Please contact us.'**
+  String get licenceErrTooManyMoves;
+
+  /// No description provided for @licenceErrRevoked.
+  ///
+  /// In en, this message translates to:
+  /// **'This licence was revoked.'**
+  String get licenceErrRevoked;
+
+  /// No description provided for @licenceErrInvalidLicence.
+  ///
+  /// In en, this message translates to:
+  /// **'This licence could not be verified. Please contact us.'**
+  String get licenceErrInvalidLicence;
+
+  /// No description provided for @licenceErrRefunded.
+  ///
+  /// In en, this message translates to:
+  /// **'This licence was refunded.'**
+  String get licenceErrRefunded;
+
+  /// No description provided for @licenceErrExpired.
+  ///
+  /// In en, this message translates to:
+  /// **'This licence has expired.'**
+  String get licenceErrExpired;
+
+  /// No description provided for @licenceErrMoved.
+  ///
+  /// In en, this message translates to:
+  /// **'This licence is now active on another computer.'**
+  String get licenceErrMoved;
+
+  /// No description provided for @licenceErrRateLimited.
+  ///
+  /// In en, this message translates to:
+  /// **'Too many attempts. Wait a few minutes and try again.'**
+  String get licenceErrRateLimited;
+
+  /// No description provided for @licenceErrNetwork.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t reach the licence server. Check the internet connection and try again.'**
+  String get licenceErrNetwork;
+
+  /// No description provided for @licenceErrInvalidRenewal.
+  ///
+  /// In en, this message translates to:
+  /// **'This renewal code is not valid.'**
+  String get licenceErrInvalidRenewal;
+
+  /// No description provided for @licenceErrWrongLicence.
+  ///
+  /// In en, this message translates to:
+  /// **'This renewal code is for another licence or computer.'**
+  String get licenceErrWrongLicence;
+
+  /// No description provided for @licenceErrUnknown.
+  ///
+  /// In en, this message translates to:
+  /// **'Something went wrong ({code}).'**
+  String licenceErrUnknown(String code);
+
+  /// No description provided for @storeTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Invoiso Templates'**
+  String get storeTitle;
+
+  /// No description provided for @storeSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Ready-made invoice designs. Buy by email: we reply with payment details and your licence key.'**
+  String get storeSubtitle;
+
+  /// No description provided for @storeOffline.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t load the template list. Check the internet connection.'**
+  String get storeOffline;
+
+  /// No description provided for @storeOpenWebsite.
+  ///
+  /// In en, this message translates to:
+  /// **'Open website'**
+  String get storeOpenWebsite;
+
+  /// No description provided for @storeFree.
+  ///
+  /// In en, this message translates to:
+  /// **'Free'**
+  String get storeFree;
+
+  /// No description provided for @storeLicensed.
+  ///
+  /// In en, this message translates to:
+  /// **'Licensed'**
+  String get storeLicensed;
+
+  /// No description provided for @storeComingSoon.
+  ///
+  /// In en, this message translates to:
+  /// **'Coming soon'**
+  String get storeComingSoon;
+
+  /// No description provided for @storeBuy.
+  ///
+  /// In en, this message translates to:
+  /// **'Buy'**
+  String get storeBuy;
+
+  /// No description provided for @storeViewOnWebsite.
+  ///
+  /// In en, this message translates to:
+  /// **'View on website'**
+  String get storeViewOnWebsite;
+
+  /// No description provided for @storeNoEmailApp.
+  ///
+  /// In en, this message translates to:
+  /// **'No email app found. Write to {email}.'**
+  String storeNoEmailApp(String email);
+
+  /// No description provided for @pdfLayoutGetMoreTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Get more templates…'**
+  String get pdfLayoutGetMoreTitle;
+
+  /// No description provided for @pdfLayoutGetMoreSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Browse Invoiso Templates and buy a design'**
+  String get pdfLayoutGetMoreSubtitle;
+
+  /// No description provided for @pdfLayoutEnterKeyTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter licence key…'**
+  String get pdfLayoutEnterKeyTitle;
+
+  /// No description provided for @pdfLayoutEnterKeySubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Activate a template you bought'**
+  String get pdfLayoutEnterKeySubtitle;
 }
 
 class _AppLocalizationsDelegate

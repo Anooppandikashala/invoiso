@@ -96,6 +96,37 @@ void main() {
     expect(raw, matches(RegExp(r'/Subtype\s*/Image')));
   });
 
+  test('overlay text (licence watermark) is drawn on every page', () async {
+    final document = {
+      'engine': 2,
+      'layout': [
+        {
+          'type': 'table',
+          'columns': [
+            {'id': 'n', 'label': 'Item', 'value': '{{row.name}}'},
+          ],
+        },
+      ],
+    };
+    final long = {
+      ...data,
+      'invoice': {'date': '2026-11-21T14:05:00.000'},
+      'items': [for (var i = 0; i < 120; i++) {'name': 'Item $i', 'qty': 1}],
+    };
+    final none = await _raw(document, long, const TemplateOptions());
+    expect(_words(none), isNot(contains('PREVIEW')));
+
+    final pdf = pw.Document(compress: false)
+      ..addPage(buildBlockLayoutPage(
+          document: document,
+          data: long,
+          options: const TemplateOptions(overlayText: 'PREVIEW')));
+    final raw = latin1.decode(await pdf.save());
+    final pages = RegExp(r'/Type\s*/Page\b').allMatches(raw).length;
+    expect(pages, greaterThan(1));
+    expect(RegExp(r'\(PREVIEW\)').allMatches(raw).length, pages);
+  });
+
   test('a logo image block never shows the signature when there is no logo',
       () async {
     final raw = await _raw({

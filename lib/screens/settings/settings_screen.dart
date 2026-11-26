@@ -14,6 +14,7 @@ import 'package:invoiso/screens/settings/pdf_settings_screen_v2.dart';
 import 'package:invoiso/screens/settings/product_columns_settings_screen.dart';
 import 'package:invoiso/screens/settings/customer_details_settings_screen.dart';
 import 'package:invoiso/screens/settings/app_info_screen.dart';
+import 'package:invoiso/screens/settings/licences_screen.dart';
 import 'package:invoiso/screens/settings/company_info_screen.dart';
 import 'package:invoiso/screens/settings/company_management_screen.dart';
 import 'package:invoiso/screens/settings/customization_screen.dart';
@@ -50,10 +51,13 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   static const _idAccessibility = 9;
   static const _idCompanies = 10;
   static const _idCustomerDetails = 11;
+  static const _idLicences = 12;
 
   int _selectedIndex = 0;
   int? _highlightCustomIndex;
   Object? _handledAccessibilityToken;
+  // Set when PDF Settings asks for "Enter licence key…".
+  bool _licencesOpenEnterKey = false;
   // Bumped by the refresh button: re-keys the open tab so it reloads.
   int _refreshGeneration = 0;
 
@@ -102,6 +106,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       _idCustomerDetails,
       _idCustomize,
       _idAccessibility,
+      _idLicences,
       _idSoftwareInfo,
     ];
   }
@@ -214,6 +219,12 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               _highlightCustomIndex = 0;
             });
           },
+          onEnterLicenceKey: () {
+            setState(() {
+              _selectedIndex = railOrder.indexOf(_idLicences);
+              _licencesOpenEnterKey = true;
+            });
+          },
         );
       case _idInvoice:
         return InvoiceSettingsScreenV2(
@@ -226,6 +237,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         );
       case _idSoftwareInfo:
         return _buildAppInfoScreen();
+      case _idLicences:
+        return LicencesScreen(openEnterKey: _licencesOpenEnterKey);
       case _idCustomize:
         return CustomizationScreen(highlightIndex: _highlightCustomIndex);
       case _idProductColumns:
@@ -270,6 +283,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             onDestinationSelected: (int index) {
               setState(() {
                 _selectedIndex = index;
+                _licencesOpenEnterKey = false;
               });
             },
             destinations: [
@@ -320,6 +334,10 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               NavigationRailDestination(
                 icon: const Icon(Icons.accessibility_new_rounded),
                 label: Text(l10n.settingsNavAccessibilityLabel),
+              ),
+              NavigationRailDestination(
+                icon: const Icon(Icons.key_rounded),
+                label: Text(l10n.licencesTitle),
               ),
               NavigationRailDestination(
                 icon: Stack(

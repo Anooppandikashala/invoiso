@@ -1,6 +1,5 @@
 import 'dart:convert';
 
-import 'package:cryptography/cryptography.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -8,54 +7,13 @@ import 'package:invoiso/services/licensing/licence_api.dart';
 import 'package:invoiso/services/licensing/licence_service.dart';
 import 'package:invoiso/services/licensing/licence_store.dart';
 
-const _code = 'ABCD-EFGH-JKMN-PQRS';
+import 'licence_fakes.dart';
 
-/// Signs tokens the way the server does, with a test key pair.
-class _Signer {
-  late SimpleKeyPair _pair;
-  late String publicKey;
-
-  Future<void> init() async {
-    _pair = await Ed25519().newKeyPair();
-    publicKey = base64.encode((await _pair.extractPublicKey()).bytes);
-  }
-
-  Future<String> sign(String prefix, Map<String, dynamic> payload) async {
-    final part = base64Url.encode(utf8.encode(jsonEncode(payload))).replaceAll('=', '');
-    final sig = await Ed25519().sign(utf8.encode('$prefix.$part'), keyPair: _pair);
-    return '$prefix.$part.${base64Url.encode(sig.bytes).replaceAll('=', '')}';
-  }
-
-  Future<String> licence({String lid = 'L001001', List<String> tids = const ['gst-tax-invoice'], String code = _code, String? vu}) =>
-      sign('INVS1', {'v': 1, 'lid': lid, 'tids': tids, 'code': code, 'name': 'Shop', 'gstin': null, 'vu': vu, 'iat': 0});
-
-  Future<String> lease(DateTime checked, {String lid = 'L001001', String code = _code}) =>
-      sign('INVL1', {'v': 1, 'lid': lid, 'code': code, 'chk': checked.millisecondsSinceEpoch ~/ 1000});
-}
-
-class _FakeApi extends LicenceApi {
-  LicenceApiResult activateResult = const LicenceApiResult.error('network');
-  LicenceApiResult verifyResult = const LicenceApiResult.error('network');
-  LicenceApiResult deactivateResult = const LicenceApiResult.ok({'ok': true});
-  int verifyCalls = 0;
-
-  @override
-  Future<LicenceApiResult> activate({required String key, required String activationCode, String? businessName, String? gstin, String? appVersion}) async =>
-      activateResult;
-
-  @override
-  Future<LicenceApiResult> verify(String licence) async {
-    verifyCalls++;
-    return verifyResult;
-  }
-
-  @override
-  Future<LicenceApiResult> deactivate(String licence) async => deactivateResult;
-}
+const _code = testActivationCode;
 
 void main() {
-  late _Signer signer;
-  late _FakeApi api;
+  late TestSigner signer;
+  late FakeLicenceApi api;
   late DateTime now;
   final day0 = DateTime.utc(2026, 11, 25);
 
@@ -79,16 +37,16 @@ void main() {
 
   setUp(() async {
     SharedPreferences.setMockInitialValues({});
-    signer = _Signer();
+    signer = TestSigner();
     await signer.init();
-    api = _FakeApi();
+    api = FakeLicenceApi();
     now = day0;
   });
 
   group('activate', () {
     test('stores the server tokens and the licence is active', () async {
       api.activateResult = LicenceApiResult.ok({'licence': await signer.licence(), 'lease': await signer.lease(day0)});
-      expect(await service().activate('INVS-0000-0000-0000-0000'), isNull);
+      expect(await service().activate('INVS-0000-0000-0000-0000', 'buyer@example.com'), isNull);
       final held = await service().licences();
       expect(held.single.lid, 'L001001');
       expect(held.single.status, LicenceStatus.active);
@@ -97,7 +55,7 @@ void main() {
 
     test('passes the server error through', () async {
       api.activateResult = const LicenceApiResult.error('active_elsewhere');
-      expect(await service().activate('INVS-0000-0000-0000-0000'), 'active_elsewhere');
+      expect(await service().activate('INVS-0000-0000-0000-0000', 'buyer@example.com'), 'active_elsewhere');
       expect(await service().licences(), isEmpty);
     });
 
@@ -106,14 +64,19 @@ void main() {
         'licence': await signer.licence(code: 'ZZZZ-ZZZZ-ZZZZ-ZZZZ'),
         'lease': await signer.lease(day0, code: 'ZZZZ-ZZZZ-ZZZZ-ZZZZ'),
       });
-      expect(await service().activate('INVS-0000-0000-0000-0000'), 'invalid_licence');
+      expect(await service().activate('INVS-0000-0000-0000-0000', 'buyer@example.com'), 'invalid_licence');
     });
 
     test('activating the same licence again replaces it', () async {
       api.activateResult = LicenceApiResult.ok({'licence': await signer.licence(), 'lease': await signer.lease(day0)});
-      await service().activate('k');
-      await service().activate('k');
+      await service().activate('k', 'buyer@example.com');
+      await service().activate('k', 'buyer@example.com');
       expect((await service().licences()).length, 1);
+    });
+
+    test('sends the buyer email with the key', () async {
+      await service().activate(' INVS-0000-0000-0000-0000 ', ' buyer@example.com ');
+      expect(api.lastEmail, 'buyer@example.com');
     });
   });
 
@@ -217,12 +180,25 @@ void main() {
 
     test('runs at most once per 24 hours', () async {
       await holdLicence(checked: day0);
+      api.verifyResult = LicenceApiResult.ok({'lease': await signer.lease(day0)});
       await service().dailyCheck();
       now = day0.add(const Duration(hours: 23));
       await service().dailyCheck();
       expect(api.verifyCalls, 1);
       now = day0.add(const Duration(hours: 25));
       await service().dailyCheck();
+      expect(api.verifyCalls, 2);
+    });
+
+    test('an offline check does not block the next try', () async {
+      await holdLicence(checked: day0);
+      await service().dailyCheck(); // no internet
+      now = day0.add(const Duration(hours: 1));
+      api.verifyResult = LicenceApiResult.ok({'lease': await signer.lease(now)});
+      await service().dailyCheck(); // retried an hour later
+      expect(api.verifyCalls, 2);
+      now = day0.add(const Duration(hours: 2));
+      await service().dailyCheck(); // reached the server: wait 24 h now
       expect(api.verifyCalls, 2);
     });
   });
@@ -249,6 +225,12 @@ void main() {
     });
   });
 
+  test('watermark text for the template engine', () {
+    expect(LicenceWatermark.none.overlayText, isNull);
+    expect(LicenceWatermark.preview.overlayText, 'PREVIEW');
+    expect(LicenceWatermark.verificationPending.overlayText, 'LICENCE VERIFICATION PENDING');
+  });
+
   group('deactivate', () {
     test('frees the slot and forgets the licence', () async {
       await holdLicence(checked: day0);
@@ -261,6 +243,13 @@ void main() {
       api.deactivateResult = const LicenceApiResult.error('network');
       expect(await service().deactivate('L001001'), 'network');
       expect((await service().licences()).length, 1);
+    });
+
+    test('removes a licence the server revoked', () async {
+      await holdLicence(checked: day0);
+      api.deactivateResult = const LicenceApiResult.error('licence_revoked');
+      expect(await service().deactivate('L001001'), isNull);
+      expect(await service().licences(), isEmpty);
     });
   });
 }

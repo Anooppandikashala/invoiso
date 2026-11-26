@@ -49,7 +49,7 @@ class LicenceStore {
   Future<DateTime?> maxSeen() async => _readTime(_maxSeenKey);
   Future<void> setMaxSeen(DateTime t) async => _writeTime(_maxSeenKey, t);
 
-  /// When the daily check last ran (success or not).
+  /// When the daily check last reached the server (any answer).
   Future<DateTime?> lastCheckAttempt() async => _readTime(_lastCheckKey);
   Future<void> setLastCheckAttempt(DateTime t) async => _writeTime(_lastCheckKey, t);
 

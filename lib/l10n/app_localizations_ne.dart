@@ -6827,4 +6827,238 @@ class AppLocalizationsNe extends AppLocalizations {
   @override
   String get pdfSettingsRepeatTableHeaderLabel =>
       'हरेक पृष्ठमा तालिकाको हेडर दोहोर्‍याउनुहोस्';
+
+  @override
+  String get licencesTitle => 'लाइसेन्सहरू';
+
+  @override
+  String get licencesThisComputer => 'यो कम्प्युटर';
+
+  @override
+  String get licencesActivationCodeLabel => 'सक्रियता कोड';
+
+  @override
+  String get licencesActivationCodeHelp =>
+      'टेम्प्लेट किन्दा यो कोड पठाउनुहोस्। एउटा लाइसेन्स यो कम्प्युटरका सबै कम्पनीहरूका लागि चल्छ।';
+
+  @override
+  String get licencesCopy => 'कपी गर्नुहोस्';
+
+  @override
+  String get licencesEnterKey => 'लाइसेन्स कुञ्जी हाल्नुहोस्';
+
+  @override
+  String get licencesGetMore => 'थप टेम्प्लेटहरू पाउनुहोस्…';
+
+  @override
+  String get licencesEmpty =>
+      'यो कम्प्युटरमा अहिलेसम्म कुनै टेम्प्लेट लाइसेन्स छैन।';
+
+  @override
+  String get licencesOverdueBanner =>
+      '३० दिनदेखि तपाईंको टेम्प्लेट लाइसेन्स प्रमाणित हुन सकेन। इन्टरनेट जोडेर अहिले जाँच्नुहोस्, वा अफलाइन नवीकरण गर्नुहोस्।';
+
+  @override
+  String get licencesPendingBanner =>
+      'लाइसेन्स प्रमाणीकरण बाँकी: जाँच सफल नभएसम्म सशुल्क टेम्प्लेटहरू वाटरमार्कसहित प्रिन्ट हुन्छन्।';
+
+  @override
+  String get licencesTemplatesAll => 'सबै Invoiso Templates (Template Pass)';
+
+  @override
+  String licencesLastCheck(String date) {
+    return 'अन्तिम जाँच: $date';
+  }
+
+  @override
+  String licencesValidUntil(String date) {
+    return '$date सम्म मान्य';
+  }
+
+  @override
+  String get licencesCheckNow => 'अहिले जाँच्नुहोस्';
+
+  @override
+  String get licencesRenewOffline => 'अफलाइन नवीकरण';
+
+  @override
+  String get licencesDeactivate => 'निष्क्रिय गर्नुहोस्';
+
+  @override
+  String get licencesRemove => 'हटाउनुहोस्';
+
+  @override
+  String get licencesDeactivateConfirm =>
+      'यो कम्प्युटरबाट यो लाइसेन्स हटाउने? त्यसपछि कुञ्जी अर्को कम्प्युटरमा सक्रिय गर्न सकिन्छ।';
+
+  @override
+  String get licencesDeactivated => 'लाइसेन्स यो कम्प्युटरबाट हटाइयो';
+
+  @override
+  String get licencesStatusActive => 'सक्रिय';
+
+  @override
+  String get licencesStatusOverdue => 'जाँच बाँकी';
+
+  @override
+  String get licencesStatusPending => 'प्रमाणीकरण बाँकी';
+
+  @override
+  String get licencesStatusRevoked => 'रद्द';
+
+  @override
+  String get licencesStatusRefunded => 'रकम फिर्ता';
+
+  @override
+  String get licencesStatusExpired => 'म्याद सकियो';
+
+  @override
+  String get licencesStatusMoved => 'अर्को कम्प्युटरमा सारियो';
+
+  @override
+  String get licencesKeyDialogTitle => 'लाइसेन्स कुञ्जी हाल्नुहोस्';
+
+  @override
+  String get licencesKeyLabel => 'लाइसेन्स कुञ्जी';
+
+  @override
+  String get licencesEmailLabel => 'किन्दा प्रयोग गरेको इमेल';
+
+  @override
+  String get licencesEmailHelp => 'लाइसेन्स पठाइएको इमेल';
+
+  @override
+  String get licencesKeyHelp =>
+      'किनेपछि पाएको कुञ्जी टाँस्नुहोस् र किन्दा प्रयोग गरेको इमेल हाल्नुहोस्। यसले यो कम्प्युटर सक्रिय गर्छ।';
+
+  @override
+  String get licencesActivate => 'सक्रिय गर्नुहोस्';
+
+  @override
+  String get licencesActivated => 'लाइसेन्स सक्रिय भयो';
+
+  @override
+  String get licencesChecked => 'लाइसेन्स जाँच सकियो';
+
+  @override
+  String get licencesRenewTitle => 'अफलाइन नवीकरण';
+
+  @override
+  String get licencesRenewStep1 => '१. यो अनुरोध कोड हामीलाई इमेल गर्नुहोस्:';
+
+  @override
+  String get licencesRenewStep2 => '२. पाएको नवीकरण कोड टाँस्नुहोस्:';
+
+  @override
+  String get licencesRenewCodeLabel => 'नवीकरण कोड';
+
+  @override
+  String get licencesRenewed => 'लाइसेन्स नवीकरण भयो';
+
+  @override
+  String get licencesStartupReminder =>
+      '३० दिनदेखि तपाईंको टेम्प्लेट लाइसेन्स प्रमाणित हुन सकेन। जाँच्न वा अफलाइन नवीकरण गर्न सेटिङ → लाइसेन्सहरू खोल्नुहोस्।';
+
+  @override
+  String get licenceErrInvalidKey =>
+      'लाइसेन्स कुञ्जी वा इमेल सही छैन। दुवै जाँचेर फेरि प्रयास गर्नुहोस्।';
+
+  @override
+  String get licenceErrActiveElsewhere =>
+      'यो कुञ्जी अर्को कम्प्युटरमा प्रयोगमा छ। पहिले त्यहाँ वा आफ्नो खाता पेजमा निष्क्रिय गर्नुहोस्।';
+
+  @override
+  String get licenceErrBadGstin =>
+      'कम्पनी जानकारीमा GSTIN मान्य छैन। सच्याएर फेरि प्रयास गर्नुहोस्।';
+
+  @override
+  String get licenceErrBadActivationCode =>
+      'यो कम्प्युटरको सक्रियता कोड अस्वीकार भयो। कृपया हामीलाई सम्पर्क गर्नुहोस्।';
+
+  @override
+  String get licenceErrTooManyMoves =>
+      'यो कुञ्जी धेरै पटक कम्प्युटर फेरिसकेको छ। कृपया हामीलाई सम्पर्क गर्नुहोस्।';
+
+  @override
+  String get licenceErrRevoked => 'यो लाइसेन्स रद्द गरियो।';
+
+  @override
+  String get licenceErrInvalidLicence =>
+      'यो लाइसेन्स प्रमाणित हुन सकेन। कृपया हामीलाई सम्पर्क गर्नुहोस्।';
+
+  @override
+  String get licenceErrRefunded => 'यो लाइसेन्सको रकम फिर्ता भइसकेको छ।';
+
+  @override
+  String get licenceErrExpired => 'यो लाइसेन्सको म्याद सकिएको छ।';
+
+  @override
+  String get licenceErrMoved => 'यो लाइसेन्स अब अर्को कम्प्युटरमा सक्रिय छ।';
+
+  @override
+  String get licenceErrRateLimited =>
+      'धेरै प्रयासहरू भए। केही मिनेट पर्खेर फेरि प्रयास गर्नुहोस्।';
+
+  @override
+  String get licenceErrNetwork =>
+      'लाइसेन्स सर्भरसम्म पुग्न सकिएन। इन्टरनेट जडान जाँचेर फेरि प्रयास गर्नुहोस्।';
+
+  @override
+  String get licenceErrInvalidRenewal => 'यो नवीकरण कोड मान्य छैन।';
+
+  @override
+  String get licenceErrWrongLicence =>
+      'यो नवीकरण कोड अर्को लाइसेन्स वा कम्प्युटरको हो।';
+
+  @override
+  String licenceErrUnknown(String code) {
+    return 'केही गडबड भयो ($code)।';
+  }
+
+  @override
+  String get storeTitle => 'Invoiso Templates';
+
+  @override
+  String get storeSubtitle =>
+      'तयारी इनभ्वाइस डिजाइनहरू। इमेलबाट किन्नुहोस्: हामी भुक्तानी विवरण र तपाईंको लाइसेन्स कुञ्जीसहित जवाफ दिन्छौं।';
+
+  @override
+  String get storeOffline =>
+      'टेम्प्लेट सूची लोड हुन सकेन। इन्टरनेट जडान जाँच्नुहोस्।';
+
+  @override
+  String get storeOpenWebsite => 'वेबसाइट खोल्नुहोस्';
+
+  @override
+  String get storeFree => 'निःशुल्क';
+
+  @override
+  String get storeLicensed => 'लाइसेन्स प्राप्त';
+
+  @override
+  String get storeComingSoon => 'चाँडै आउँदैछ';
+
+  @override
+  String get storeBuy => 'किन्नुहोस्';
+
+  @override
+  String get storeViewOnWebsite => 'वेबसाइटमा हेर्नुहोस्';
+
+  @override
+  String storeNoEmailApp(String email) {
+    return 'कुनै इमेल एप भेटिएन। $email मा लेख्नुहोस्।';
+  }
+
+  @override
+  String get pdfLayoutGetMoreTitle => 'थप टेम्प्लेटहरू पाउनुहोस्…';
+
+  @override
+  String get pdfLayoutGetMoreSubtitle =>
+      'Invoiso Templates हेर्नुहोस् र डिजाइन किन्नुहोस्';
+
+  @override
+  String get pdfLayoutEnterKeyTitle => 'लाइसेन्स कुञ्जी हाल्नुहोस्…';
+
+  @override
+  String get pdfLayoutEnterKeySubtitle => 'किनेको टेम्प्लेट सक्रिय गर्नुहोस्';
 }
