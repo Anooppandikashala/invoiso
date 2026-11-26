@@ -22,11 +22,12 @@ class TestSigner {
     return '$prefix.$part.${base64Url.encode(sig.bytes).replaceAll('=', '')}';
   }
 
-  Future<String> licence({String lid = 'L001001', List<String> tids = const ['gst-tax-invoice'], String code = testActivationCode, String? vu}) =>
-      sign('INVS1', {'v': 1, 'lid': lid, 'tids': tids, 'code': code, 'name': 'Shop', 'gstin': null, 'vu': vu, 'iat': 0});
+  Future<String> licence({String lid = 'L001001', List<String> tids = const ['gst-tax-invoice'], String code = testActivationCode, String? vu, bool trial = false}) =>
+      sign('INVS1', {'v': 1, 'lid': lid, 'tids': tids, 'code': code, 'name': 'Shop', 'gstin': null, 'vu': vu, 'iat': 0, if (trial) 'trial': true});
 
-  Future<String> lease(DateTime checked, {String lid = 'L001001', String code = testActivationCode}) =>
-      sign('INVL1', {'v': 1, 'lid': lid, 'code': code, 'chk': checked.millisecondsSinceEpoch ~/ 1000});
+  /// Like the server since T1b: end date and trial flag only when set.
+  Future<String> lease(DateTime checked, {String lid = 'L001001', String code = testActivationCode, String? vu, bool trial = false}) =>
+      sign('INVL1', {'v': 1, 'lid': lid, 'code': code, 'chk': checked.millisecondsSinceEpoch ~/ 1000, if (vu != null) 'vu': vu, if (trial) 'trial': true});
 }
 
 class FakeLicenceApi extends LicenceApi {

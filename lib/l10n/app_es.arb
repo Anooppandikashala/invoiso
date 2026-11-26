@@ -1694,5 +1694,7 @@
   "pdfPackRemoved": "{name} quitada",
   "storeInstalled": "Instalada",
   "pdfPackNoJsonCopy": "No disponible mientras haya una Invoiso Template seleccionada",
-  "storeDownloadFromAccount": "Descargar desde la página de cuenta"
+  "storeDownloadFromAccount": "Descargar desde la página de cuenta",
+  "licencesEndedReminder": "Licencia de {names}: {reason}. Ahora se imprime con la marca de agua PREVIEW. Vea Ajustes → Licencias o elija otra plantilla en Ajustes PDF.",
+  "licencesStatusTrialNeedsCheck": "Prueba – necesita internet"
 }

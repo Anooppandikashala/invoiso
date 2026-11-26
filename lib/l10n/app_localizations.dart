@@ -12115,6 +12115,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Download from Account page'**
   String get storeDownloadFromAccount;
+
+  /// No description provided for @licencesEndedReminder.
+  ///
+  /// In en, this message translates to:
+  /// **'Licence for {names}: {reason}. It now prints with a PREVIEW watermark. See Settings → Licences, or pick another template in PDF Settings.'**
+  String licencesEndedReminder(String names, String reason);
+
+  /// No description provided for @licencesStatusTrialNeedsCheck.
+  ///
+  /// In en, this message translates to:
+  /// **'Trial – needs internet'**
+  String get licencesStatusTrialNeedsCheck;
 }
 
 class _AppLocalizationsDelegate

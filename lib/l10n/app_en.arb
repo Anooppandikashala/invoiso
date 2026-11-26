@@ -3858,5 +3858,8 @@
   "@pdfPackRemoved": {"placeholders": {"name": {"type": "String"}}},
   "storeInstalled": "Installed",
   "pdfPackNoJsonCopy": "Not available while an Invoiso Template is selected",
-  "storeDownloadFromAccount": "Download from Account page"
+  "storeDownloadFromAccount": "Download from Account page",
+  "licencesEndedReminder": "Licence for {names}: {reason}. It now prints with a PREVIEW watermark. See Settings → Licences, or pick another template in PDF Settings.",
+  "@licencesEndedReminder": {"placeholders": {"names": {"type": "String"}, "reason": {"type": "String"}}},
+  "licencesStatusTrialNeedsCheck": "Trial – needs internet"
 }

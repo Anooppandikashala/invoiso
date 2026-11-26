@@ -345,7 +345,8 @@ class _LicencesScreenState extends ConsumerState<LicencesScreen> {
     final (statusText, statusColor) = _statusLabel(l.status, l10n);
     final usable = l.status == LicenceStatus.active ||
         l.status == LicenceStatus.checkOverdue ||
-        l.status == LicenceStatus.verificationPending;
+        l.status == LicenceStatus.verificationPending ||
+        l.status == LicenceStatus.trialNeedsCheck; // Check now unlocks it
     final meta = [
       if (l.lastCheck != null) l10n.licencesLastCheck(dateFormat.format(l.lastCheck!.toLocal())),
       if (l.licence.validUntil != null) l10n.licencesValidUntil(dateFormat.format(l.licence.validUntil!.toLocal())),
@@ -406,6 +407,7 @@ class _LicencesScreenState extends ConsumerState<LicencesScreen> {
         LicenceStatus.refunded => (l10n.licencesStatusRefunded, Colors.red),
         LicenceStatus.expired => (l10n.licencesStatusExpired, Colors.blueGrey),
         LicenceStatus.moved => (l10n.licencesStatusMoved, Colors.blueGrey),
+        LicenceStatus.trialNeedsCheck => (l10n.licencesStatusTrialNeedsCheck, Colors.orange),
       };
 }
 

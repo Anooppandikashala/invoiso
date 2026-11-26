@@ -89,7 +89,7 @@ class TemplatePackStore {
   })  : _decoder = decoder ?? appPackDecoder(),
         _baseDir = baseDir ?? getApplicationSupportDirectory,
         _isLicensed = isLicensed ??
-            ((id) async => await LicenceService().watermarkFor(id) == LicenceWatermark.none),
+            ((id) async => await LicenceService().accessFor(id) == TemplateAccess.open),
         _now = now ?? DateTime.now;
 
   Future<List<InstalledPack>> list() async {

@@ -1644,5 +1644,7 @@
   "pdfPackRemoved": "{name} སུབ་ཟིན།",
   "storeInstalled": "བཙུགས་ཟིན།",
   "pdfPackNoJsonCopy": "Invoiso Template འདེམས་ཡོད་སྐབས་སྤྱོད་མི་ཐུབ།",
-  "storeDownloadFromAccount": "རྩིས་ཐོའི་ཤོག་ངོས་ནས་ཕབ་ལེན།"
+  "storeDownloadFromAccount": "རྩིས་ཐོའི་ཤོག་ངོས་ནས་ཕབ་ལེན།",
+  "licencesEndedReminder": "{names} ཡི་ཆོག་མཆན། {reason}། ད་ནི་ PREVIEW ཆུ་རྟགས་དང་བཅས་པར་སྐྲུན་གྱི་ཡོད། སྒྲིག་འགོད། → ཆོག་མཆན་ལ་ལྟ་བའམ། PDF སྒྲིག་འགོད་ནང་དཔེ་གཞི་གཞན་ཞིག་འདེམས་རོགས།",
+  "licencesStatusTrialNeedsCheck": "ཚོད་ལྟ། – དྲ་བ་དགོས།"
 }

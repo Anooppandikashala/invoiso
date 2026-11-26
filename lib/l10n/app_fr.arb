@@ -1694,5 +1694,7 @@
   "pdfPackRemoved": "{name} retiré",
   "storeInstalled": "Installé",
   "pdfPackNoJsonCopy": "Indisponible lorsqu'un Invoiso Template est sélectionné",
-  "storeDownloadFromAccount": "Télécharger depuis la page du compte"
+  "storeDownloadFromAccount": "Télécharger depuis la page du compte",
+  "licencesEndedReminder": "Licence de {names} : {reason}. Le modèle s'imprime désormais avec le filigrane PREVIEW. Voir Paramètres → Licences, ou choisissez un autre modèle dans les paramètres PDF.",
+  "licencesStatusTrialNeedsCheck": "Essai – connexion requise"
 }

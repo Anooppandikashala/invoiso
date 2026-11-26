@@ -67,8 +67,10 @@ class _Registry implements CompanyRegistryRepository {
   dynamic noSuchMethod(Invocation invocation) => null;
 }
 
-Uint8List _devPack() => Uint8List.fromList(utf8.encode('INVDEV1\n${jsonEncode({
-      'manifest': {'templateId': 'gst-tax-invoice', 'name': 'GST Tax Invoice', 'version': 1, 'minEngine': 2},
+// Free, so it can be selected without a licence (paid + no licence = locked).
+Uint8List _devPack({String id = 'gst-tax-invoice', String name = 'GST Tax Invoice', bool free = true}) =>
+    Uint8List.fromList(utf8.encode('INVDEV1\n${jsonEncode({
+      'manifest': {'templateId': id, 'name': name, 'version': 1, 'minEngine': 2, 'free': free},
       'layout': {
         'engine': 2,
         'layout': [
@@ -90,7 +92,8 @@ void main() {
   tearDown(() => tmp.deleteSync(recursive: true));
 
   Future<void> settle(WidgetTester tester) async {
-    for (var i = 0; i < 8; i++) {
+    // Real I/O (files, prefs, licence checks) advances ~one await per pass.
+    for (var i = 0; i < 25; i++) {
       await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 30)));
       await tester.pump(const Duration(milliseconds: 100));
     }
@@ -109,6 +112,11 @@ void main() {
           baseDir: () async => tmp,
         ).install(_devPack()));
     expect(result!.status, PackInstallStatus.installed);
+    // A paid template with no licence on this PC: listed but locked.
+    await tester.runAsync(() => TemplatePackStore(
+          decoder: const DevPackDecoder(NoPackDecoder(), enabled: true),
+          baseDir: () async => tmp,
+        ).install(_devPack(id: 'paid-design', name: 'Paid Design', free: false)));
 
     final repo = _Repo();
     BackendServices.configure(
@@ -135,8 +143,14 @@ void main() {
     final tile = find.widgetWithText(TemplateListTile, 'GST Tax Invoice');
     expect(find.text(l10n.storeTitle.toUpperCase()), findsOneWidget);
     expect(tile, findsOneWidget);
-    // No licence held → preview status; no Edit JSON on the tile.
-    expect(find.descendant(of: tile, matching: find.text(l10n.pdfPackStatusPreview)), findsOneWidget);
+    // Free template: usable; no Edit JSON on the tile.
+    expect(find.descendant(of: tile, matching: find.text(l10n.pdfPackStatusFree)), findsOneWidget);
+    // Paid template without a licence: greyed out, can't be selected.
+    final paid = find.widgetWithText(TemplateListTile, 'Paid Design');
+    expect(tester.widget<TemplateListTile>(paid).isDisabled, isTrue);
+    await tester.tap(paid);
+    await settle(tester);
+    expect(find.text('Paid Design'), findsOneWidget); // tile only, not in the headers
     expect(find.descendant(of: tile, matching: find.byTooltip(l10n.pdfLayoutEditTooltip)), findsNothing);
     expect(find.descendant(of: tile, matching: find.byTooltip(l10n.pdfPackRemoveTooltip)), findsOneWidget);
 

@@ -1694,5 +1694,7 @@
   "pdfPackRemoved": "{name} हटाइयो",
   "storeInstalled": "इन्स्टल छ",
   "pdfPackNoJsonCopy": "Invoiso Template छानिएको बेला उपलब्ध छैन",
-  "storeDownloadFromAccount": "खाता पेजबाट डाउनलोड गर्नुहोस्"
+  "storeDownloadFromAccount": "खाता पेजबाट डाउनलोड गर्नुहोस्",
+  "licencesEndedReminder": "{names} को लाइसेन्स: {reason}। अब यो PREVIEW वाटरमार्कसहित प्रिन्ट हुन्छ। सेटिङ → लाइसेन्सहरू हेर्नुहोस्, वा PDF सेटिङमा अर्को टेम्प्लेट छान्नुहोस्।",
+  "licencesStatusTrialNeedsCheck": "परीक्षण – इन्टरनेट चाहिन्छ"
 }

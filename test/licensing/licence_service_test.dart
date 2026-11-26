@@ -50,7 +50,7 @@ void main() {
       final held = await service().licences();
       expect(held.single.lid, 'L001001');
       expect(held.single.status, LicenceStatus.active);
-      expect(await service().watermarkFor('gst-tax-invoice'), LicenceWatermark.none);
+      expect(await service().accessFor('gst-tax-invoice'), TemplateAccess.open);
     });
 
     test('passes the server error through', () async {
@@ -90,11 +90,11 @@ void main() {
     test('under 30 days: active', () async => expect(await statusAfter(const Duration(days: 29)), LicenceStatus.active));
     test('30–60 days: check overdue (still works)', () async {
       expect(await statusAfter(const Duration(days: 40)), LicenceStatus.checkOverdue);
-      expect(await service().watermarkFor('gst-tax-invoice'), LicenceWatermark.none);
+      expect(await service().accessFor('gst-tax-invoice'), TemplateAccess.open);
     });
-    test('60+ days: verification pending watermark', () async {
+    test('60+ days: verification pending watermark (still prints)', () async {
       expect(await statusAfter(const Duration(days: 61)), LicenceStatus.verificationPending);
-      expect(await service().watermarkFor('gst-tax-invoice'), LicenceWatermark.verificationPending);
+      expect(await service().accessFor('gst-tax-invoice'), TemplateAccess.verificationPending);
     });
 
     test('clock moved back below the highest time seen: pending', () async {
@@ -114,7 +114,7 @@ void main() {
     test('Template Pass past its end date: expired', () async {
       await holdLicence(checked: day0, vu: '2026-11-20T23:59:59Z');
       expect((await service().licences()).single.status, LicenceStatus.expired);
-      expect(await service().watermarkFor('gst-tax-invoice'), LicenceWatermark.preview);
+      expect(await service().accessFor('gst-tax-invoice'), TemplateAccess.locked);
     });
 
     test('tokens copied from another computer: moved', () async {
@@ -128,14 +128,14 @@ void main() {
     });
   });
 
-  group('watermark', () {
-    test('no licence for the template: preview', () async {
-      expect(await service().watermarkFor('gst-tax-invoice'), LicenceWatermark.preview);
+  group('access', () {
+    test('no licence for the template: locked', () async {
+      expect(await service().accessFor('gst-tax-invoice'), TemplateAccess.locked);
     });
 
     test('a Pass (ALL) covers every template', () async {
       await LicenceStore().save([StoredLicence(licence: await signer.licence(tids: ['ALL']), lease: await signer.lease(day0))]);
-      expect(await service().watermarkFor('any-template'), LicenceWatermark.none);
+      expect(await service().accessFor('any-template'), TemplateAccess.open);
     });
   });
 
@@ -167,7 +167,7 @@ void main() {
         api.verifyResult = LicenceApiResult.error(error);
         await service().checkAll();
         expect((await service().licences()).single.status, status, reason: error);
-        expect(await service().watermarkFor('gst-tax-invoice'), LicenceWatermark.preview);
+        expect(await service().accessFor('gst-tax-invoice'), TemplateAccess.locked);
       }
     });
 
@@ -234,10 +234,126 @@ void main() {
     });
   });
 
-  test('watermark text for the template engine', () {
-    expect(LicenceWatermark.none.overlayText, isNull);
-    expect(LicenceWatermark.preview.overlayText, 'PREVIEW');
-    expect(LicenceWatermark.verificationPending.overlayText, 'LICENCE VERIFICATION PENDING');
+  test('watermark text for the template engine: only verification pending', () {
+    expect(TemplateAccess.open.overlayText, isNull);
+    expect(TemplateAccess.locked.overlayText, isNull);
+    expect(TemplateAccess.verificationPending.overlayText, 'LICENCE VERIFICATION PENDING');
+  });
+
+  group('trials (7 days, must check in every 24 h)', () {
+    final vu = day0.add(const Duration(days: 7)).toIso8601String();
+    Future<void> holdTrial({required DateTime checked, bool leaseOnly = false, String? leaseVu}) async {
+      await LicenceStore().save([
+        StoredLicence(
+          licence: await signer.licence(vu: leaseOnly ? null : vu, trial: !leaseOnly),
+          lease: await signer.lease(checked, vu: leaseVu ?? vu, trial: true),
+        ),
+      ]);
+    }
+
+    test('checked within 24 h: works, no watermark', () async {
+      await holdTrial(checked: day0);
+      now = day0.add(const Duration(hours: 23));
+      final held = (await service().licences()).single;
+      expect(held.trial, isTrue);
+      expect(held.status, LicenceStatus.active);
+      expect(await service().accessFor('gst-tax-invoice'), TemplateAccess.open);
+    });
+
+    test('24 h without a successful check: locked until a check succeeds', () async {
+      await holdTrial(checked: day0);
+      now = day0.add(const Duration(hours: 25));
+      expect((await service().licences()).single.status, LicenceStatus.trialNeedsCheck);
+      expect(await service().accessFor('gst-tax-invoice'), TemplateAccess.locked);
+      api.verifyResult = LicenceApiResult.ok({'lease': await signer.lease(now, vu: vu, trial: true)});
+      await service().checkAll();
+      expect(await service().accessFor('gst-tax-invoice'), TemplateAccess.open);
+    });
+
+    test('past the end date: expired and locked (by PC clock or by server check time)', () async {
+      await holdTrial(checked: day0);
+      now = day0.add(const Duration(days: 7, minutes: 1));
+      expect((await service().licences()).single.status, LicenceStatus.expired);
+      expect(await service().accessFor('gst-tax-invoice'), TemplateAccess.locked);
+      // PC clock set back before the end, but the server's check time is past it.
+      await holdTrial(checked: day0.add(const Duration(days: 8)));
+      now = day0.add(const Duration(days: 6));
+      expect((await service().licences()).single.status, LicenceStatus.expired);
+    });
+
+    test('clock moved back: locked, no offline grace', () async {
+      await holdTrial(checked: day0);
+      now = day0.subtract(const Duration(days: 2));
+      expect((await service().licences()).single.status, LicenceStatus.trialNeedsCheck);
+    });
+
+    test('made a trial later on the server: the signed lease says so', () async {
+      // Licence issued as a normal one (no end date, no trial flag) …
+      await holdTrial(checked: day0, leaseOnly: true);
+      now = day0.add(const Duration(hours: 30));
+      // … but the newest lease carries trial + end date: 24 h rule applies.
+      expect((await service().licences()).single.trial, isTrue);
+      expect((await service().licences()).single.status, LicenceStatus.trialNeedsCheck);
+    });
+
+    test('end date in the newest lease wins (e.g. Pass extended)', () async {
+      await LicenceStore().save([
+        StoredLicence(
+          licence: await signer.licence(vu: day0.add(const Duration(days: 1)).toIso8601String()),
+          lease: await signer.lease(day0, vu: day0.add(const Duration(days: 400)).toIso8601String()),
+        ),
+      ]);
+      now = day0.add(const Duration(days: 10));
+      expect((await service().licences()).single.status, LicenceStatus.active);
+    });
+
+    test('daily check runs every 6 h while a trial is held', () async {
+      await holdTrial(checked: day0);
+      api.verifyResult = LicenceApiResult.ok({'lease': await signer.lease(day0, vu: vu, trial: true)});
+      await service().dailyCheck();
+      now = day0.add(const Duration(hours: 5));
+      await service().dailyCheck();
+      expect(api.verifyCalls, 1);
+      now = day0.add(const Duration(hours: 7));
+      await service().dailyCheck();
+      expect(api.verifyCalls, 2);
+    });
+  });
+
+  group('ended licences (start-up message)', () {
+    test('revoked / refunded / moved templates are reported with their reason', () async {
+      for (final (error, status) in [
+        ('licence_revoked', LicenceStatus.revoked),
+        ('licence_refunded', LicenceStatus.refunded),
+        ('moved', LicenceStatus.moved),
+      ]) {
+        await holdLicence(checked: day0, serverError: error);
+        expect(await service().endedFor(['gst-tax-invoice']), {'gst-tax-invoice': status}, reason: error);
+      }
+    });
+
+    test('active, overdue or pending licences and never-licensed templates are not', () async {
+      await holdLicence(checked: day0);
+      expect(await service().endedFor(['gst-tax-invoice']), isEmpty); // active
+      now = day0.add(const Duration(days: 70));
+      expect(await service().endedFor(['gst-tax-invoice']), isEmpty); // pending: own reminder
+      expect(await service().endedFor(['teal-services']), isEmpty); // never licensed here
+    });
+
+    test('a revoked licence is not reported when a Pass still covers the template', () async {
+      await LicenceStore().save([
+        StoredLicence(
+          licence: await signer.licence(lid: 'L001001'),
+          lease: await signer.lease(day0, lid: 'L001001'),
+          serverError: 'licence_revoked',
+        ),
+        StoredLicence(
+          licence: await signer.licence(lid: 'L001002', tids: ['ALL']),
+          lease: await signer.lease(day0, lid: 'L001002'),
+        ),
+      ]);
+      expect(await service().endedFor(['gst-tax-invoice']), isEmpty);
+    });
   });
 
   group('deactivate', () {

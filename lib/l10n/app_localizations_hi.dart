@@ -7123,4 +7123,12 @@ class AppLocalizationsHi extends AppLocalizations {
 
   @override
   String get storeDownloadFromAccount => 'खाता पेज से डाउनलोड करें';
+
+  @override
+  String licencesEndedReminder(String names, String reason) {
+    return '$names का लाइसेंस: $reason। अब यह PREVIEW वॉटरमार्क के साथ प्रिंट होता है। सेटिंग्स → लाइसेंस देखें, या PDF सेटिंग्स में दूसरा टेम्पलेट चुनें।';
+  }
+
+  @override
+  String get licencesStatusTrialNeedsCheck => 'ट्रायल – इंटरनेट चाहिए';
 }

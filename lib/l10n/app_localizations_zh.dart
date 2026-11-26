@@ -6849,4 +6849,12 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get storeDownloadFromAccount => '从账户页面下载';
+
+  @override
+  String licencesEndedReminder(String names, String reason) {
+    return '$names 的许可证：$reason。现在打印时会带有 PREVIEW 水印。请查看 设置 → 许可证，或在 PDF 设置中选择其他模板。';
+  }
+
+  @override
+  String get licencesStatusTrialNeedsCheck => '试用 – 需要联网';
 }

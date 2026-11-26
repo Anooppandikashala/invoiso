@@ -7241,4 +7241,12 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get storeDownloadFromAccount => 'Télécharger depuis la page du compte';
+
+  @override
+  String licencesEndedReminder(String names, String reason) {
+    return 'Licence de $names : $reason. Le modèle s\'imprime désormais avec le filigrane PREVIEW. Voir Paramètres → Licences, ou choisissez un autre modèle dans les paramètres PDF.';
+  }
+
+  @override
+  String get licencesStatusTrialNeedsCheck => 'Essai – connexion requise';
 }

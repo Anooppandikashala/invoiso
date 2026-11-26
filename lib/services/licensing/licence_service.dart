@@ -23,15 +23,25 @@ enum LicenceStatus {
   /// The licence is now active on another computer (or these tokens were
   /// copied from one).
   moved,
+
+  /// Trial without a successful server check in the last 24 hours (or the
+  /// clock was moved back): locked until a check succeeds.
+  trialNeedsCheck,
 }
 
-/// Watermark a paid template must print with.
-enum LicenceWatermark {
-  none(null),
-  verificationPending('LICENCE VERIFICATION PENDING'),
-  preview('PREVIEW');
+/// What a paid template may do (PaidTemplatesPlan.md §17.12).
+enum TemplateAccess {
+  /// Prints normally.
+  open(null),
 
-  const LicenceWatermark(this.overlayText);
+  /// Paid licence 60+ days without a check: prints with this watermark.
+  verificationPending('LICENCE VERIFICATION PENDING'),
+
+  /// No valid licence (none, revoked, refunded, expired, moved, trial ended
+  /// or not checked in 24 h): the template can't be used.
+  locked(null);
+
+  const TemplateAccess(this.overlayText);
 
   /// Text for the engine's `TemplateOptions.overlayText` (English, like the
   /// DECLINED stamp, so every PDF font can draw it).
@@ -47,12 +57,25 @@ class HeldLicence {
 
   String get lid => licence.lid;
   DateTime? get lastCheck => lease.checkedAt;
+
+  /// Trial per the licence or the newest lease (server can set it later).
+  bool get trial => licence.trial || lease.trial;
+
+  /// End date from the newest lease when it carries one, else the licence.
+  DateTime? get validUntil => lease.payload['vu'] != null ? lease.validUntil : licence.validUntil;
   bool covers(String templateId) => licence.templateIds.contains(templateId) || licence.templateIds.contains('ALL');
 }
 
 class LicenceService {
   static const overdueAfter = Duration(days: 30);
   static const pendingAfter = Duration(days: 60);
+
+  /// A trial must reach the server at least this often, or it is locked.
+  static const trialCheckEvery = Duration(hours: 24);
+
+  /// How often the daily check runs while a trial is held (stays well inside
+  /// [trialCheckEvery] when online).
+  static const trialCheckInterval = Duration(hours: 6);
   static const _clockSlack = Duration(days: 1);
 
   // Server answers that are decisions about the licence (not network noise).
@@ -106,27 +129,60 @@ class LicenceService {
     final fromServer = _definitive[s.serverError];
     if (fromServer != null) return fromServer;
     if (licence.activationCode != code || lease.activationCode != code) return LicenceStatus.moved;
-    final validUntil = licence.validUntil;
-    if (validUntil != null && now.isAfter(validUntil)) return LicenceStatus.expired;
     final checked = lease.checkedAt;
-    // Clock behind the last server check or the highest time seen = can't trust it.
-    if (checked == null || clockMovedBack || now.isBefore(checked.subtract(_clockSlack))) {
-      return LicenceStatus.verificationPending;
+    // Newest signed end date (lease) wins; past it by the PC clock or by the
+    // server's own check time → expired.
+    final validUntil = lease.payload['vu'] != null ? lease.validUntil : licence.validUntil;
+    if (validUntil != null &&
+        (now.isAfter(validUntil) || (checked != null && !checked.isBefore(validUntil)))) {
+      return LicenceStatus.expired;
     }
+    // Clock behind the last server check or the highest time seen = can't trust it.
+    final clockUntrusted = checked == null || clockMovedBack || now.isBefore(checked.subtract(_clockSlack));
+    // Trials: no offline grace — a successful check every 24 h or locked.
+    if (licence.trial || lease.trial) {
+      return clockUntrusted || now.difference(checked).abs() >= trialCheckEvery
+          ? LicenceStatus.trialNeedsCheck
+          : LicenceStatus.active;
+    }
+    if (clockUntrusted) return LicenceStatus.verificationPending;
     final age = now.difference(checked);
     if (age >= pendingAfter) return LicenceStatus.verificationPending;
     if (age >= overdueAfter) return LicenceStatus.checkOverdue;
     return LicenceStatus.active;
   }
 
-  /// Watermark for a paid template, from the best licence covering it.
-  Future<LicenceWatermark> watermarkFor(String templateId) async {
+  /// What a paid template may do, from the best licence covering it.
+  Future<TemplateAccess> accessFor(String templateId) async {
     final statuses = (await licences()).where((l) => l.covers(templateId)).map((l) => l.status).toSet();
     if (statuses.contains(LicenceStatus.active) || statuses.contains(LicenceStatus.checkOverdue)) {
-      return LicenceWatermark.none;
+      return TemplateAccess.open;
     }
-    if (statuses.contains(LicenceStatus.verificationPending)) return LicenceWatermark.verificationPending;
-    return LicenceWatermark.preview;
+    if (statuses.contains(LicenceStatus.verificationPending)) return TemplateAccess.verificationPending;
+    return TemplateAccess.locked;
+  }
+
+  static const _endedStates = {
+    LicenceStatus.revoked,
+    LicenceStatus.refunded,
+    LicenceStatus.expired,
+    LicenceStatus.moved,
+  };
+
+  /// Of [templateIds] (installed paid templates), the ones that now print
+  /// with PREVIEW because their licence ended — revoked, refunded, expired or
+  /// moved — with that status. Not included: templates never licensed here,
+  /// and ones another licence still covers (e.g. a Pass).
+  Future<Map<String, LicenceStatus>> endedFor(Iterable<String> templateIds) async {
+    final held = await licences();
+    final ended = <String, LicenceStatus>{};
+    for (final id in templateIds) {
+      final covering = held.where((l) => l.covers(id)).toList();
+      if (covering.any((l) => !_endedStates.contains(l.status))) continue;
+      final first = covering.where((l) => _endedStates.contains(l.status)).firstOrNull;
+      if (first != null) ended[id] = first.status;
+    }
+    return ended;
   }
 
   /// Activate [key] on this computer; [email] = the one used to buy it.
@@ -174,7 +230,9 @@ class LicenceService {
   /// Run [checkAll] if the last check reaching the server was 24 h+ ago (app start / timer).
   Future<void> dailyCheck() async {
     final last = await _store.lastCheckAttempt();
-    if (last != null && _now().toUtc().difference(last) < const Duration(hours: 24)) return;
+    // Trials must check in every 24 h: check every 6 h while one is held.
+    final every = (await licences()).any((l) => l.trial) ? trialCheckInterval : const Duration(hours: 24);
+    if (last != null && _now().toUtc().difference(last) < every) return;
     await checkAll();
   }
 

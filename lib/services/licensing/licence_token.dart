@@ -57,7 +57,11 @@ class LicenceToken {
   String get businessName => payload['name'] as String? ?? '';
   String get gstin => payload['gstin'] as String? ?? '';
 
-  /// Template Pass end date (null = forever).
+  /// 7-day trial (signed into the licence, and into each lease since T1b).
+  bool get trial => payload['trial'] == true;
+
+  /// End date: Pass or trial (null = forever). Leases carry the server's current
+  /// value since T1b.
   DateTime? get validUntil {
     final vu = payload['vu'];
     return vu is String ? DateTime.tryParse(vu) : null;

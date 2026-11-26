@@ -10,7 +10,8 @@ class ActiveTemplatePack {
   final String templateId;
   final Map<String, dynamic> layout;
 
-  /// Engine `overlayText`: null when free or licensed.
+  /// Engine `overlayText`: only "LICENCE VERIFICATION PENDING" (paid licence
+  /// 60+ days without a check); null when free or licensed.
   final String? overlayText;
 
   const ActiveTemplatePack(this.templateId, this.layout, this.overlayText);
@@ -36,10 +37,11 @@ Future<ActiveTemplatePack?> loadActiveTemplatePack(
     if (pack == null) return _skip(templateId, decoded.failure?.name ?? 'not decoded');
     if (pack.manifest.templateId != templateId) return _skip(templateId, 'id mismatch');
     if (pack.manifest.minEngine > kTemplateEngineVersion) return _skip(templateId, 'needs newer engine');
-    final overlay = pack.manifest.free
-        ? null
-        : (await (licences ?? LicenceService()).watermarkFor(templateId)).overlayText;
-    return ActiveTemplatePack(templateId, pack.layout, overlay);
+    if (pack.manifest.free) return ActiveTemplatePack(templateId, pack.layout, null);
+    // No valid licence (or trial ended / not checked in 24 h): not used at all.
+    final access = await (licences ?? LicenceService()).accessFor(templateId);
+    if (access == TemplateAccess.locked) return _skip(templateId, 'no valid licence');
+    return ActiveTemplatePack(templateId, pack.layout, access.overlayText);
   } catch (e) {
     return _skip(templateId, e.runtimeType.toString());
   }

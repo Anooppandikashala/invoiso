@@ -10,10 +10,10 @@ import 'package:invoiso/services/templates/template_pack_store.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class _Licences extends LicenceService {
-  LicenceWatermark watermark = LicenceWatermark.preview;
+  TemplateAccess access = TemplateAccess.locked;
 
   @override
-  Future<LicenceWatermark> watermarkFor(String templateId) async => watermark;
+  Future<TemplateAccess> accessFor(String templateId) async => access;
 }
 
 Uint8List _pack({String id = 'gst-tax-invoice', bool free = false, int minEngine = 2}) =>
@@ -44,22 +44,22 @@ void main() {
     expect(await load(''), isNull);
   });
 
-  test('watermark follows the licence; free templates never get one', () async {
+  test('licence decides: open prints clean, pending watermarked, locked not used; free always works', () async {
     await store.install(_pack());
-    licences.watermark = LicenceWatermark.none;
+    licences.access = TemplateAccess.open;
     final licensed = await load('gst-tax-invoice');
     expect(licensed!.layout['engine'], 2);
     expect(licensed.overlayText, isNull);
 
-    licences.watermark = LicenceWatermark.preview;
-    expect((await load('gst-tax-invoice'))!.overlayText, 'PREVIEW');
-
-    licences.watermark = LicenceWatermark.verificationPending;
+    licences.access = TemplateAccess.verificationPending;
     expect((await load('gst-tax-invoice'))!.overlayText, 'LICENCE VERIFICATION PENDING');
 
+    // No valid licence / trial ended: not used at all (built-in template prints).
+    licences.access = TemplateAccess.locked;
+    expect(await load('gst-tax-invoice'), isNull);
+
     await store.install(_pack(id: 'teal-services', free: true));
-    licences.watermark = LicenceWatermark.preview;
-    expect((await load('teal-services'))!.overlayText, isNull);
+    expect((await load('teal-services'))!.overlayText, isNull); // free: never locked
   });
 
   test('falls back to built-in: missing file, no decoder, needs newer engine', () async {
@@ -74,6 +74,7 @@ void main() {
   });
 
   test('logs name the template and the reason, never its content (§9.5b #6)', () async {
+    licences.access = TemplateAccess.open;
     final logs = <String>[];
     final original = debugPrint;
     debugPrint = (String? m, {int? wrapWidth}) => logs.add(m ?? '');

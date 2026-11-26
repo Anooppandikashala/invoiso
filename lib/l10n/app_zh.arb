@@ -1694,5 +1694,7 @@
   "pdfPackRemoved": "已移除 {name}",
   "storeInstalled": "已安装",
   "pdfPackNoJsonCopy": "选中 Invoiso Template 时不可用",
-  "storeDownloadFromAccount": "从账户页面下载"
+  "storeDownloadFromAccount": "从账户页面下载",
+  "licencesEndedReminder": "{names} 的许可证：{reason}。现在打印时会带有 PREVIEW 水印。请查看 设置 → 许可证，或在 PDF 设置中选择其他模板。",
+  "licencesStatusTrialNeedsCheck": "试用 – 需要联网"
 }

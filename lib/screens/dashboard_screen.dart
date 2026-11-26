@@ -12,6 +12,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:invoiso/common/constants.dart';
 import 'package:invoiso/common/app_config.dart';
 import 'package:invoiso/services/licensing/licence_service.dart';
+import 'package:invoiso/services/templates/template_pack_store.dart';
 import 'package:invoiso/providers/app_config_provider.dart';
 import 'package:invoiso/providers/attachments_settings_provider.dart';
 import 'package:invoiso/providers/cash_exchange_settings_provider.dart';
@@ -245,13 +246,28 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
         final service = LicenceService();
         await service.dailyCheck();
         if (!remind || !mounted) return;
+        // Installed paid templates whose licence ended (revoked, refunded,
+        // expired, moved) now print with PREVIEW: say which and why.
+        final paid = (await TemplatePackStore().list()).where((p) => !p.free).toList();
+        final ended = await service.endedFor(paid.map((p) => p.templateId));
         final late = (await service.licences()).any((l) =>
             l.status == LicenceStatus.checkOverdue ||
             l.status == LicenceStatus.verificationPending);
-        if (!late || !mounted) return;
+        if ((ended.isEmpty && !late) || !mounted) return;
+        final l10n = AppLocalizations.of(context)!;
+        final message = ended.isNotEmpty
+            ? l10n.licencesEndedReminder(
+                paid.where((p) => ended.containsKey(p.templateId)).map((p) => p.name).join(', '),
+                switch (ended.values.first) {
+                  LicenceStatus.refunded => l10n.licencesStatusRefunded,
+                  LicenceStatus.expired => l10n.licencesStatusExpired,
+                  LicenceStatus.moved => l10n.licencesStatusMoved,
+                  _ => l10n.licencesStatusRevoked,
+                })
+            : l10n.licencesStartupReminder;
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text(AppLocalizations.of(context)!.licencesStartupReminder),
-          duration: const Duration(seconds: 8),
+          content: Text(message),
+          duration: const Duration(seconds: 10),
         ));
       }()
           .catchError((_) {}));

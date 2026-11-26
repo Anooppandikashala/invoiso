@@ -7102,4 +7102,12 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get storeDownloadFromAccount => 'Download from Account page';
+
+  @override
+  String licencesEndedReminder(String names, String reason) {
+    return 'Licence for $names: $reason. It now prints with a PREVIEW watermark. See Settings → Licences, or pick another template in PDF Settings.';
+  }
+
+  @override
+  String get licencesStatusTrialNeedsCheck => 'Trial – needs internet';
 }

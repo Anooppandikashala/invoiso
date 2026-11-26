@@ -7111,4 +7111,12 @@ class AppLocalizationsBo extends AppLocalizations {
 
   @override
   String get storeDownloadFromAccount => 'རྩིས་ཐོའི་ཤོག་ངོས་ནས་ཕབ་ལེན།';
+
+  @override
+  String licencesEndedReminder(String names, String reason) {
+    return '$names ཡི་ཆོག་མཆན། $reason། ད་ནི་ PREVIEW ཆུ་རྟགས་དང་བཅས་པར་སྐྲུན་གྱི་ཡོད། སྒྲིག་འགོད། → ཆོག་མཆན་ལ་ལྟ་བའམ། PDF སྒྲིག་འགོད་ནང་དཔེ་གཞི་གཞན་ཞིག་འདེམས་རོགས།';
+  }
+
+  @override
+  String get licencesStatusTrialNeedsCheck => 'ཚོད་ལྟ། – དྲ་བ་དགོས།';
 }

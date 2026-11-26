@@ -7226,4 +7226,12 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get storeDownloadFromAccount => 'Descargar desde la página de cuenta';
+
+  @override
+  String licencesEndedReminder(String names, String reason) {
+    return 'Licencia de $names: $reason. Ahora se imprime con la marca de agua PREVIEW. Vea Ajustes → Licencias o elija otra plantilla en Ajustes PDF.';
+  }
+
+  @override
+  String get licencesStatusTrialNeedsCheck => 'Prueba – necesita internet';
 }
