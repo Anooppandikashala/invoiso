@@ -1624,7 +1624,6 @@
   "pdfPackInstallSubtitle": "Invoiso Template ཡིག་ཆ (.invoiso) སྣོན་པ།",
   "pdfPackStatusFree": "རིན་མེད།",
   "pdfPackStatusLicensed": "ཆོག་མཆན་ཡོད།",
-  "pdfPackStatusPreview": "སྔོན་ལྟ། – ཆོག་མཆན་མེད།",
   "pdfPackStatusPending": "ཆོག་མཆན་བདེན་དཔང་སྒུག་བཞིན།",
   "pdfPackStatusUnavailable": "ཁ་ཕྱེ་མི་ཐུབ།",
   "pdfPackVersion": "པར་གཞི་ {version}",
@@ -1645,6 +1644,10 @@
   "storeInstalled": "བཙུགས་ཟིན།",
   "pdfPackNoJsonCopy": "Invoiso Template འདེམས་ཡོད་སྐབས་སྤྱོད་མི་ཐུབ།",
   "storeDownloadFromAccount": "རྩིས་ཐོའི་ཤོག་ངོས་ནས་ཕབ་ལེན།",
-  "licencesEndedReminder": "{names} ཡི་ཆོག་མཆན། {reason}། ད་ནི་ PREVIEW ཆུ་རྟགས་དང་བཅས་པར་སྐྲུན་གྱི་ཡོད། སྒྲིག་འགོད། → ཆོག་མཆན་ལ་ལྟ་བའམ། PDF སྒྲིག་འགོད་ནང་དཔེ་གཞི་གཞན་ཞིག་འདེམས་རོགས།",
-  "licencesStatusTrialNeedsCheck": "ཚོད་ལྟ། – དྲ་བ་དགོས།"
+  "licencesEndedReminder": "{names} ཡི་ཆོག་མཆན། {reason}། དེ་ད་ནས་བེད་སྤྱོད་བྱེད་མི་ཐུབ། ཚོང་ཐོར་ནང་འདྲེས་དཔེ་གཞི་སྤྱོད། སྒྲིག་འགོད། → ཆོག་མཆན་ལ་ལྟོས།",
+  "licencesStatusTrialNeedsCheck": "ཚོད་ལྟ། – དྲ་བ་དགོས།",
+  "pdfPackStatusNeedsLicence": "ཆོག་མཆན་དགོས།",
+  "pdfPackStatusTrialEnded": "ཚོད་ལྟ་རྫོགས་སོང་།",
+  "pdfPackStatusTrialUntil": "ཚོད་ལྟ། · {date} ལ་རྫོགས།",
+  "licencesTrialOfflineReminder": "{names} ཡི་ཚོད་ལྟར་དྲ་བ་དགོས། མུ་མཐུད་དུ་བེད་སྤྱོད་བྱེད་པར་གློག་ཀླད་འདི་དྲ་བར་མཐུད་རོགས།"
 }

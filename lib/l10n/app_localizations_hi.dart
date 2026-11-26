@@ -7044,9 +7044,6 @@ class AppLocalizationsHi extends AppLocalizations {
   String get pdfPackStatusLicensed => 'लाइसेंस प्राप्त';
 
   @override
-  String get pdfPackStatusPreview => 'पूर्वावलोकन – लाइसेंस नहीं';
-
-  @override
   String get pdfPackStatusPending => 'लाइसेंस सत्यापन लंबित';
 
   @override
@@ -7126,9 +7123,25 @@ class AppLocalizationsHi extends AppLocalizations {
 
   @override
   String licencesEndedReminder(String names, String reason) {
-    return '$names का लाइसेंस: $reason। अब यह PREVIEW वॉटरमार्क के साथ प्रिंट होता है। सेटिंग्स → लाइसेंस देखें, या PDF सेटिंग्स में दूसरा टेम्पलेट चुनें।';
+    return '$names का लाइसेंस: $reason। इसे अब उपयोग नहीं किया जा सकता; इनवॉइस बिल्ट-इन टेम्पलेट से बनेंगे। सेटिंग्स → लाइसेंस देखें।';
   }
 
   @override
   String get licencesStatusTrialNeedsCheck => 'ट्रायल – इंटरनेट चाहिए';
+
+  @override
+  String get pdfPackStatusNeedsLicence => 'लाइसेंस चाहिए';
+
+  @override
+  String get pdfPackStatusTrialEnded => 'ट्रायल समाप्त';
+
+  @override
+  String pdfPackStatusTrialUntil(String date) {
+    return 'ट्रायल · $date को समाप्त';
+  }
+
+  @override
+  String licencesTrialOfflineReminder(String names) {
+    return '$names के ट्रायल के लिए इंटरनेट चाहिए। इसे उपयोग करते रहने के लिए इस कंप्यूटर को इंटरनेट से जोड़ें।';
+  }
 }

@@ -83,6 +83,21 @@ void main() {
     expect(find.text(l10n.licencesRenewOffline), findsOneWidget);
   });
 
+  testWidgets('a trial card shows its end date and no offline renewal', (tester) async {
+    final vu = now.add(const Duration(days: 7)).toIso8601String();
+    await tester.runAsync(() async => LicenceStore().save([
+          StoredLicence(
+            licence: await signer.licence(vu: vu, trial: true),
+            lease: await signer.lease(now, vu: vu, trial: true),
+          ),
+        ]));
+    await pump(tester);
+    expect(find.textContaining('Trial · ends'), findsOneWidget);
+    expect(find.text(l10n.licencesStatusActive), findsOneWidget);
+    expect(find.text(l10n.licencesCheckNow), findsOneWidget);
+    expect(find.text(l10n.licencesRenewOffline), findsNothing);
+  });
+
   testWidgets('Enter licence key shows the server error in plain words', (tester) async {
     api.activateResult = const LicenceApiResult.error('active_elsewhere');
     await pump(tester);

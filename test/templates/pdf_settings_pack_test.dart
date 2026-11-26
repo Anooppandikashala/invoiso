@@ -148,6 +148,7 @@ void main() {
     // Paid template without a licence: greyed out, can't be selected.
     final paid = find.widgetWithText(TemplateListTile, 'Paid Design');
     expect(tester.widget<TemplateListTile>(paid).isDisabled, isTrue);
+    expect(find.descendant(of: paid, matching: find.text(l10n.pdfPackStatusNeedsLicence)), findsOneWidget);
     await tester.tap(paid);
     await settle(tester);
     expect(find.text('Paid Design'), findsOneWidget); // tile only, not in the headers

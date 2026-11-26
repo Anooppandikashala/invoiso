@@ -48,6 +48,30 @@ enum TemplateAccess {
   final String? overlayText;
 }
 
+/// How an installed paid template stands, for what the user sees (tile,
+/// start-up message). Order = priority when several licences cover it.
+enum TemplateLicenceView {
+  /// Paid licence valid (or check overdue): prints.
+  licensed,
+
+  /// Running trial (see [until]): prints.
+  trial,
+
+  /// Paid licence 60+ days without a check: prints with a watermark.
+  verificationPending,
+
+  /// Trial without a server check for 24 h: locked until a check succeeds.
+  trialNeedsCheck,
+
+  /// Trial past its end date: locked.
+  trialEnded,
+
+  /// No licence, or revoked / refunded / moved / expired: locked.
+  needsLicence;
+
+  bool get locked => index >= TemplateLicenceView.trialNeedsCheck.index;
+}
+
 class HeldLicence {
   final LicenceToken licence;
   final LicenceToken lease;
@@ -152,6 +176,23 @@ class LicenceService {
     return LicenceStatus.active;
   }
 
+  /// How [templateId] stands for the user, from the best licence covering it;
+  /// [until] = end date of a running trial.
+  Future<({TemplateLicenceView view, DateTime? until})> viewFor(String templateId) async {
+    final covering = (await licences()).where((l) => l.covers(templateId)).toList();
+    bool any(bool Function(HeldLicence l) test) => covering.any(test);
+    bool usable(HeldLicence l) => l.status == LicenceStatus.active || l.status == LicenceStatus.checkOverdue;
+    if (any((l) => usable(l) && !l.trial)) return (view: TemplateLicenceView.licensed, until: null);
+    final trial = covering.where((l) => usable(l) && l.trial).firstOrNull;
+    if (trial != null) return (view: TemplateLicenceView.trial, until: trial.validUntil);
+    if (any((l) => l.status == LicenceStatus.verificationPending)) {
+      return (view: TemplateLicenceView.verificationPending, until: null);
+    }
+    if (any((l) => l.status == LicenceStatus.trialNeedsCheck)) return (view: TemplateLicenceView.trialNeedsCheck, until: null);
+    if (any((l) => l.trial && l.status == LicenceStatus.expired)) return (view: TemplateLicenceView.trialEnded, until: null);
+    return (view: TemplateLicenceView.needsLicence, until: null);
+  }
+
   /// What a paid template may do, from the best licence covering it.
   Future<TemplateAccess> accessFor(String templateId) async {
     final statuses = (await licences()).where((l) => l.covers(templateId)).map((l) => l.status).toSet();
@@ -169,18 +210,18 @@ class LicenceService {
     LicenceStatus.moved,
   };
 
-  /// Of [templateIds] (installed paid templates), the ones that now print
-  /// with PREVIEW because their licence ended — revoked, refunded, expired or
-  /// moved — with that status. Not included: templates never licensed here,
-  /// and ones another licence still covers (e.g. a Pass).
-  Future<Map<String, LicenceStatus>> endedFor(Iterable<String> templateIds) async {
+  /// Of [templateIds] (installed paid templates), the ones that can't be used
+  /// any more because their licence ended — revoked, refunded, expired (incl.
+  /// trial ended) or moved — with that licence. Not included: templates never
+  /// licensed here, and ones another licence still covers (e.g. a Pass).
+  Future<Map<String, HeldLicence>> endedFor(Iterable<String> templateIds) async {
     final held = await licences();
-    final ended = <String, LicenceStatus>{};
+    final ended = <String, HeldLicence>{};
     for (final id in templateIds) {
       final covering = held.where((l) => l.covers(id)).toList();
       if (covering.any((l) => !_endedStates.contains(l.status))) continue;
       final first = covering.where((l) => _endedStates.contains(l.status)).firstOrNull;
-      if (first != null) ended[id] = first.status;
+      if (first != null) ended[id] = first;
     }
     return ended;
   }

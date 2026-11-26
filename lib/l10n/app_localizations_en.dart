@@ -7021,9 +7021,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get pdfPackStatusLicensed => 'Licensed';
 
   @override
-  String get pdfPackStatusPreview => 'Preview – not licensed';
-
-  @override
   String get pdfPackStatusPending => 'Licence verification pending';
 
   @override
@@ -7105,9 +7102,25 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String licencesEndedReminder(String names, String reason) {
-    return 'Licence for $names: $reason. It now prints with a PREVIEW watermark. See Settings → Licences, or pick another template in PDF Settings.';
+    return 'Licence for $names: $reason. It can\'t be used any more; invoices use the built-in template. See Settings → Licences.';
   }
 
   @override
   String get licencesStatusTrialNeedsCheck => 'Trial – needs internet';
+
+  @override
+  String get pdfPackStatusNeedsLicence => 'Needs a licence';
+
+  @override
+  String get pdfPackStatusTrialEnded => 'Trial ended';
+
+  @override
+  String pdfPackStatusTrialUntil(String date) {
+    return 'Trial · ends $date';
+  }
+
+  @override
+  String licencesTrialOfflineReminder(String names) {
+    return 'Your trial of $names needs an internet connection. Connect this computer to keep using it.';
+  }
 }

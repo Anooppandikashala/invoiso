@@ -307,6 +307,41 @@ void main() {
       expect((await service().licences()).single.status, LicenceStatus.active);
     });
 
+    test('what the user sees (viewFor) for each standing', () async {
+      Future<TemplateLicenceView> view() async => (await service().viewFor('gst-tax-invoice')).view;
+      expect(await view(), TemplateLicenceView.needsLicence); // nothing held
+      await holdTrial(checked: day0);
+      now = day0.add(const Duration(hours: 2));
+      final running = await service().viewFor('gst-tax-invoice');
+      expect(running.view, TemplateLicenceView.trial);
+      expect(running.until, DateTime.parse(vu));
+      now = day0.add(const Duration(hours: 30));
+      expect(await view(), TemplateLicenceView.trialNeedsCheck);
+      expect((await view()).locked, isTrue);
+      now = day0.add(const Duration(days: 8));
+      expect(await view(), TemplateLicenceView.trialEnded);
+      // Fresh store: the trial steps above moved the highest time seen to day 8.
+      SharedPreferences.setMockInitialValues({});
+      await holdLicence(checked: day0);
+      now = day0.add(const Duration(days: 1));
+      expect(await view(), TemplateLicenceView.licensed);
+      now = day0.add(const Duration(days: 61));
+      expect(await view(), TemplateLicenceView.verificationPending);
+      expect((await view()).locked, isFalse);
+      await holdLicence(checked: day0, serverError: 'licence_revoked');
+      expect(await view(), TemplateLicenceView.needsLicence);
+    });
+
+    test('a bought licence wins over an ended trial', () async {
+      await LicenceStore().save([
+        StoredLicence(licence: await signer.licence(lid: 'L001001', vu: vu, trial: true),
+            lease: await signer.lease(day0, lid: 'L001001', vu: vu, trial: true)),
+        StoredLicence(licence: await signer.licence(lid: 'L001002'), lease: await signer.lease(day0.add(const Duration(days: 8)), lid: 'L001002')),
+      ]);
+      now = day0.add(const Duration(days: 9));
+      expect((await service().viewFor('gst-tax-invoice')).view, TemplateLicenceView.licensed);
+    });
+
     test('daily check runs every 6 h while a trial is held', () async {
       await holdTrial(checked: day0);
       api.verifyResult = LicenceApiResult.ok({'lease': await signer.lease(day0, vu: vu, trial: true)});
@@ -328,7 +363,7 @@ void main() {
         ('moved', LicenceStatus.moved),
       ]) {
         await holdLicence(checked: day0, serverError: error);
-        expect(await service().endedFor(['gst-tax-invoice']), {'gst-tax-invoice': status}, reason: error);
+        expect((await service().endedFor(['gst-tax-invoice']))['gst-tax-invoice']?.status, status, reason: error);
       }
     });
 

@@ -7031,9 +7031,6 @@ class AppLocalizationsBo extends AppLocalizations {
   String get pdfPackStatusLicensed => 'ཆོག་མཆན་ཡོད།';
 
   @override
-  String get pdfPackStatusPreview => 'སྔོན་ལྟ། – ཆོག་མཆན་མེད།';
-
-  @override
   String get pdfPackStatusPending => 'ཆོག་མཆན་བདེན་དཔང་སྒུག་བཞིན།';
 
   @override
@@ -7114,9 +7111,25 @@ class AppLocalizationsBo extends AppLocalizations {
 
   @override
   String licencesEndedReminder(String names, String reason) {
-    return '$names ཡི་ཆོག་མཆན། $reason། ད་ནི་ PREVIEW ཆུ་རྟགས་དང་བཅས་པར་སྐྲུན་གྱི་ཡོད། སྒྲིག་འགོད། → ཆོག་མཆན་ལ་ལྟ་བའམ། PDF སྒྲིག་འགོད་ནང་དཔེ་གཞི་གཞན་ཞིག་འདེམས་རོགས།';
+    return '$names ཡི་ཆོག་མཆན། $reason། དེ་ད་ནས་བེད་སྤྱོད་བྱེད་མི་ཐུབ། ཚོང་ཐོར་ནང་འདྲེས་དཔེ་གཞི་སྤྱོད། སྒྲིག་འགོད། → ཆོག་མཆན་ལ་ལྟོས།';
   }
 
   @override
   String get licencesStatusTrialNeedsCheck => 'ཚོད་ལྟ། – དྲ་བ་དགོས།';
+
+  @override
+  String get pdfPackStatusNeedsLicence => 'ཆོག་མཆན་དགོས།';
+
+  @override
+  String get pdfPackStatusTrialEnded => 'ཚོད་ལྟ་རྫོགས་སོང་།';
+
+  @override
+  String pdfPackStatusTrialUntil(String date) {
+    return 'ཚོད་ལྟ། · $date ལ་རྫོགས།';
+  }
+
+  @override
+  String licencesTrialOfflineReminder(String names) {
+    return '$names ཡི་ཚོད་ལྟར་དྲ་བ་དགོས། མུ་མཐུད་དུ་བེད་སྤྱོད་བྱེད་པར་གློག་ཀླད་འདི་དྲ་བར་མཐུད་རོགས།';
+  }
 }

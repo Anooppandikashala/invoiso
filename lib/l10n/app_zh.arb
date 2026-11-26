@@ -1674,7 +1674,6 @@
   "pdfPackInstallSubtitle": "添加 Invoiso Template 文件（.invoiso）",
   "pdfPackStatusFree": "免费",
   "pdfPackStatusLicensed": "已授权",
-  "pdfPackStatusPreview": "预览 – 未授权",
   "pdfPackStatusPending": "许可证待验证",
   "pdfPackStatusUnavailable": "无法打开",
   "pdfPackVersion": "版本 {version}",
@@ -1695,6 +1694,10 @@
   "storeInstalled": "已安装",
   "pdfPackNoJsonCopy": "选中 Invoiso Template 时不可用",
   "storeDownloadFromAccount": "从账户页面下载",
-  "licencesEndedReminder": "{names} 的许可证：{reason}。现在打印时会带有 PREVIEW 水印。请查看 设置 → 许可证，或在 PDF 设置中选择其他模板。",
-  "licencesStatusTrialNeedsCheck": "试用 – 需要联网"
+  "licencesEndedReminder": "{names} 的许可证：{reason}。该模板已无法使用；发票将使用内置模板。请查看 设置 → 许可证。",
+  "licencesStatusTrialNeedsCheck": "试用 – 需要联网",
+  "pdfPackStatusNeedsLicence": "需要许可证",
+  "pdfPackStatusTrialEnded": "试用已结束",
+  "pdfPackStatusTrialUntil": "试用 · {date} 结束",
+  "licencesTrialOfflineReminder": "{names} 的试用需要联网。请连接此电脑以继续使用。"
 }

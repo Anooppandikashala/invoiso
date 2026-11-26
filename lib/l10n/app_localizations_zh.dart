@@ -6771,9 +6771,6 @@ class AppLocalizationsZh extends AppLocalizations {
   String get pdfPackStatusLicensed => '已授权';
 
   @override
-  String get pdfPackStatusPreview => '预览 – 未授权';
-
-  @override
   String get pdfPackStatusPending => '许可证待验证';
 
   @override
@@ -6852,9 +6849,25 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String licencesEndedReminder(String names, String reason) {
-    return '$names 的许可证：$reason。现在打印时会带有 PREVIEW 水印。请查看 设置 → 许可证，或在 PDF 设置中选择其他模板。';
+    return '$names 的许可证：$reason。该模板已无法使用；发票将使用内置模板。请查看 设置 → 许可证。';
   }
 
   @override
   String get licencesStatusTrialNeedsCheck => '试用 – 需要联网';
+
+  @override
+  String get pdfPackStatusNeedsLicence => '需要许可证';
+
+  @override
+  String get pdfPackStatusTrialEnded => '试用已结束';
+
+  @override
+  String pdfPackStatusTrialUntil(String date) {
+    return '试用 · $date 结束';
+  }
+
+  @override
+  String licencesTrialOfflineReminder(String names) {
+    return '$names 的试用需要联网。请连接此电脑以继续使用。';
+  }
 }

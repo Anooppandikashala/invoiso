@@ -1674,7 +1674,6 @@
   "pdfPackInstallSubtitle": "Invoiso Template फ़ाइल (.invoiso) जोड़ें",
   "pdfPackStatusFree": "मुफ़्त",
   "pdfPackStatusLicensed": "लाइसेंस प्राप्त",
-  "pdfPackStatusPreview": "पूर्वावलोकन – लाइसेंस नहीं",
   "pdfPackStatusPending": "लाइसेंस सत्यापन लंबित",
   "pdfPackStatusUnavailable": "खोला नहीं जा सकता",
   "pdfPackVersion": "संस्करण {version}",
@@ -1695,6 +1694,10 @@
   "storeInstalled": "इंस्टॉल है",
   "pdfPackNoJsonCopy": "Invoiso Template चुने होने पर उपलब्ध नहीं",
   "storeDownloadFromAccount": "खाता पेज से डाउनलोड करें",
-  "licencesEndedReminder": "{names} का लाइसेंस: {reason}। अब यह PREVIEW वॉटरमार्क के साथ प्रिंट होता है। सेटिंग्स → लाइसेंस देखें, या PDF सेटिंग्स में दूसरा टेम्पलेट चुनें।",
-  "licencesStatusTrialNeedsCheck": "ट्रायल – इंटरनेट चाहिए"
+  "licencesEndedReminder": "{names} का लाइसेंस: {reason}। इसे अब उपयोग नहीं किया जा सकता; इनवॉइस बिल्ट-इन टेम्पलेट से बनेंगे। सेटिंग्स → लाइसेंस देखें।",
+  "licencesStatusTrialNeedsCheck": "ट्रायल – इंटरनेट चाहिए",
+  "pdfPackStatusNeedsLicence": "लाइसेंस चाहिए",
+  "pdfPackStatusTrialEnded": "ट्रायल समाप्त",
+  "pdfPackStatusTrialUntil": "ट्रायल · {date} को समाप्त",
+  "licencesTrialOfflineReminder": "{names} के ट्रायल के लिए इंटरनेट चाहिए। इसे उपयोग करते रहने के लिए इस कंप्यूटर को इंटरनेट से जोड़ें।"
 }

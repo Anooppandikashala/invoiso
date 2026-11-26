@@ -7160,9 +7160,6 @@ class AppLocalizationsFr extends AppLocalizations {
   String get pdfPackStatusLicensed => 'Sous licence';
 
   @override
-  String get pdfPackStatusPreview => 'Aperçu – sans licence';
-
-  @override
   String get pdfPackStatusPending => 'Vérification de licence en attente';
 
   @override
@@ -7244,9 +7241,25 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String licencesEndedReminder(String names, String reason) {
-    return 'Licence de $names : $reason. Le modèle s\'imprime désormais avec le filigrane PREVIEW. Voir Paramètres → Licences, ou choisissez un autre modèle dans les paramètres PDF.';
+    return 'Licence de $names : $reason. Il ne peut plus être utilisé ; les factures utilisent le modèle intégré. Voir Paramètres → Licences.';
   }
 
   @override
   String get licencesStatusTrialNeedsCheck => 'Essai – connexion requise';
+
+  @override
+  String get pdfPackStatusNeedsLicence => 'Licence requise';
+
+  @override
+  String get pdfPackStatusTrialEnded => 'Essai terminé';
+
+  @override
+  String pdfPackStatusTrialUntil(String date) {
+    return 'Essai · fin le $date';
+  }
+
+  @override
+  String licencesTrialOfflineReminder(String names) {
+    return 'Votre essai de $names nécessite une connexion internet. Connectez cet ordinateur pour continuer à l\'utiliser.';
+  }
 }

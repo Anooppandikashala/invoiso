@@ -11990,12 +11990,6 @@ abstract class AppLocalizations {
   /// **'Licensed'**
   String get pdfPackStatusLicensed;
 
-  /// No description provided for @pdfPackStatusPreview.
-  ///
-  /// In en, this message translates to:
-  /// **'Preview – not licensed'**
-  String get pdfPackStatusPreview;
-
   /// No description provided for @pdfPackStatusPending.
   ///
   /// In en, this message translates to:
@@ -12119,7 +12113,7 @@ abstract class AppLocalizations {
   /// No description provided for @licencesEndedReminder.
   ///
   /// In en, this message translates to:
-  /// **'Licence for {names}: {reason}. It now prints with a PREVIEW watermark. See Settings → Licences, or pick another template in PDF Settings.'**
+  /// **'Licence for {names}: {reason}. It can\'t be used any more; invoices use the built-in template. See Settings → Licences.'**
   String licencesEndedReminder(String names, String reason);
 
   /// No description provided for @licencesStatusTrialNeedsCheck.
@@ -12127,6 +12121,30 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Trial – needs internet'**
   String get licencesStatusTrialNeedsCheck;
+
+  /// No description provided for @pdfPackStatusNeedsLicence.
+  ///
+  /// In en, this message translates to:
+  /// **'Needs a licence'**
+  String get pdfPackStatusNeedsLicence;
+
+  /// No description provided for @pdfPackStatusTrialEnded.
+  ///
+  /// In en, this message translates to:
+  /// **'Trial ended'**
+  String get pdfPackStatusTrialEnded;
+
+  /// No description provided for @pdfPackStatusTrialUntil.
+  ///
+  /// In en, this message translates to:
+  /// **'Trial · ends {date}'**
+  String pdfPackStatusTrialUntil(String date);
+
+  /// No description provided for @licencesTrialOfflineReminder.
+  ///
+  /// In en, this message translates to:
+  /// **'Your trial of {names} needs an internet connection. Connect this computer to keep using it.'**
+  String licencesTrialOfflineReminder(String names);
 }
 
 class _AppLocalizationsDelegate

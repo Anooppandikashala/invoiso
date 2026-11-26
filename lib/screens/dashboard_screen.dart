@@ -246,25 +246,32 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
         final service = LicenceService();
         await service.dailyCheck();
         if (!remind || !mounted) return;
-        // Installed paid templates whose licence ended (revoked, refunded,
-        // expired, moved) now print with PREVIEW: say which and why.
+        // Installed paid templates that can't be used any more (licence ended)
+        // or whose trial needs a server check: say which and why.
         final paid = (await TemplatePackStore().list()).where((p) => !p.free).toList();
         final ended = await service.endedFor(paid.map((p) => p.templateId));
+        final offline = [
+          for (final p in paid)
+            if ((await service.viewFor(p.templateId)).view == TemplateLicenceView.trialNeedsCheck) p.name,
+        ];
         final late = (await service.licences()).any((l) =>
             l.status == LicenceStatus.checkOverdue ||
             l.status == LicenceStatus.verificationPending);
-        if ((ended.isEmpty && !late) || !mounted) return;
+        if ((ended.isEmpty && offline.isEmpty && !late) || !mounted) return;
         final l10n = AppLocalizations.of(context)!;
+        String reason(HeldLicence l) => switch (l.status) {
+              LicenceStatus.expired => l.trial ? l10n.pdfPackStatusTrialEnded : l10n.licencesStatusExpired,
+              LicenceStatus.refunded => l10n.licencesStatusRefunded,
+              LicenceStatus.moved => l10n.licencesStatusMoved,
+              _ => l10n.licencesStatusRevoked,
+            };
         final message = ended.isNotEmpty
             ? l10n.licencesEndedReminder(
                 paid.where((p) => ended.containsKey(p.templateId)).map((p) => p.name).join(', '),
-                switch (ended.values.first) {
-                  LicenceStatus.refunded => l10n.licencesStatusRefunded,
-                  LicenceStatus.expired => l10n.licencesStatusExpired,
-                  LicenceStatus.moved => l10n.licencesStatusMoved,
-                  _ => l10n.licencesStatusRevoked,
-                })
-            : l10n.licencesStartupReminder;
+                reason(ended.values.first))
+            : offline.isNotEmpty
+                ? l10n.licencesTrialOfflineReminder(offline.join(', '))
+                : l10n.licencesStartupReminder;
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
           content: Text(message),
           duration: const Duration(seconds: 10),

@@ -7145,9 +7145,6 @@ class AppLocalizationsEs extends AppLocalizations {
   String get pdfPackStatusLicensed => 'Con licencia';
 
   @override
-  String get pdfPackStatusPreview => 'Vista previa – sin licencia';
-
-  @override
   String get pdfPackStatusPending => 'Verificación de licencia pendiente';
 
   @override
@@ -7229,9 +7226,25 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String licencesEndedReminder(String names, String reason) {
-    return 'Licencia de $names: $reason. Ahora se imprime con la marca de agua PREVIEW. Vea Ajustes → Licencias o elija otra plantilla en Ajustes PDF.';
+    return 'Licencia de $names: $reason. Ya no se puede usar; las facturas usan la plantilla integrada. Vea Ajustes → Licencias.';
   }
 
   @override
   String get licencesStatusTrialNeedsCheck => 'Prueba – necesita internet';
+
+  @override
+  String get pdfPackStatusNeedsLicence => 'Necesita licencia';
+
+  @override
+  String get pdfPackStatusTrialEnded => 'Prueba terminada';
+
+  @override
+  String pdfPackStatusTrialUntil(String date) {
+    return 'Prueba · termina $date';
+  }
+
+  @override
+  String licencesTrialOfflineReminder(String names) {
+    return 'Su prueba de $names necesita conexión a internet. Conecte este equipo para seguir usándola.';
+  }
 }

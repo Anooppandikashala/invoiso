@@ -25,6 +25,8 @@ import 'package:invoiso/services/thermal_printer_service_v1.dart';
 import 'package:invoiso/models/custom_invoice_layout.dart';
 import 'package:invoiso/screens/settings/template_store_dialog.dart';
 import 'package:invoiso/services/templates/active_template_pack.dart';
+import 'package:intl/intl.dart';
+import 'package:invoiso/services/licensing/licence_service.dart';
 import 'package:invoiso/services/templates/template_pack_store.dart';
 
 class PdfSettingsScreenV2 extends ConsumerStatefulWidget {
@@ -60,6 +62,8 @@ class _PdfSettingsScreenV2State extends ConsumerState<PdfSettingsScreenV2> {
   final _packStore = TemplatePackStore();
   List<InstalledPack> _packs = [];
   Map<String, ActiveTemplatePack?> _packInfo = {}; // null = can't be used
+  // Licence standing of each installed paid template (tile label, locked or not).
+  Map<String, ({TemplateLicenceView view, DateTime? until})> _packViews = {};
   String? _savedPackId;
   String? _selectedPackId;
   String? _savedThemeColorHex;
@@ -231,10 +235,15 @@ class _PdfSettingsScreenV2State extends ConsumerState<PdfSettingsScreenV2> {
       for (final p in packs)
         p.templateId: await loadActiveTemplatePack(p.templateId, store: _packStore),
     };
+    final licences = LicenceService();
+    final views = {
+      for (final p in packs.where((p) => !p.free)) p.templateId: await licences.viewFor(p.templateId),
+    };
     if (!mounted) return;
     setState(() {
       _packs = packs;
       _packInfo = info;
+      _packViews = views;
     });
   }
 
@@ -1579,15 +1588,28 @@ class _PdfSettingsScreenV2State extends ConsumerState<PdfSettingsScreenV2> {
 
   Widget _packTile(InstalledPack pack, AppLocalizations l10n) {
     final info = _packInfo[pack.templateId];
-    final (String label, Color color) = info == null
-        ? (l10n.pdfPackStatusUnavailable, Colors.red)
-        : pack.free
-            ? (l10n.pdfPackStatusFree, Colors.green)
-            : switch (info.overlayText) {
-                null => (l10n.pdfPackStatusLicensed, Colors.green),
-                'PREVIEW' => (l10n.pdfPackStatusPreview, Colors.orange),
-                _ => (l10n.pdfPackStatusPending, Colors.orange),
-              };
+    final standing = _packViews[pack.templateId];
+    final locked = !pack.free && (standing?.view.locked ?? true);
+    final (String label, Color color) = locked
+        ? switch (standing?.view) {
+            TemplateLicenceView.trialNeedsCheck => (l10n.licencesStatusTrialNeedsCheck, Colors.orange),
+            TemplateLicenceView.trialEnded => (l10n.pdfPackStatusTrialEnded, Colors.red),
+            _ => (l10n.pdfPackStatusNeedsLicence, Colors.red),
+          }
+        : info == null
+            ? (l10n.pdfPackStatusUnavailable, Colors.red) // file can't be opened
+            : pack.free
+                ? (l10n.pdfPackStatusFree, Colors.green)
+                : switch (standing!.view) {
+                    TemplateLicenceView.trial => (
+                        l10n.pdfPackStatusTrialUntil(standing.until == null
+                            ? '—'
+                            : DateFormat.MMMd(Localizations.localeOf(context).toString())
+                                .format(standing.until!.toLocal())),
+                        Colors.blue),
+                    TemplateLicenceView.verificationPending => (l10n.pdfPackStatusPending, Colors.orange),
+                    _ => (l10n.pdfPackStatusLicensed, Colors.green),
+                  };
     return TemplateListTile(
       template: InvoiceTemplate.classic,
       name: pack.name,
@@ -1604,7 +1626,7 @@ class _PdfSettingsScreenV2State extends ConsumerState<PdfSettingsScreenV2> {
       // Thumbnail shows the look only (fine per §9.5b); layout stays in memory.
       blockLayout: info?.layout,
       thermalDetailedTemplate: false,
-      isDisabled: info == null,
+      isDisabled: locked || info == null,
       onTap: () => _applyPack(pack),
       onDelete: () => _removePack(pack),
     );

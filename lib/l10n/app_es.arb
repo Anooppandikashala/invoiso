@@ -1674,7 +1674,6 @@
   "pdfPackInstallSubtitle": "Añadir un archivo de Invoiso Template (.invoiso)",
   "pdfPackStatusFree": "Gratis",
   "pdfPackStatusLicensed": "Con licencia",
-  "pdfPackStatusPreview": "Vista previa – sin licencia",
   "pdfPackStatusPending": "Verificación de licencia pendiente",
   "pdfPackStatusUnavailable": "No se puede abrir",
   "pdfPackVersion": "Versión {version}",
@@ -1695,6 +1694,10 @@
   "storeInstalled": "Instalada",
   "pdfPackNoJsonCopy": "No disponible mientras haya una Invoiso Template seleccionada",
   "storeDownloadFromAccount": "Descargar desde la página de cuenta",
-  "licencesEndedReminder": "Licencia de {names}: {reason}. Ahora se imprime con la marca de agua PREVIEW. Vea Ajustes → Licencias o elija otra plantilla en Ajustes PDF.",
-  "licencesStatusTrialNeedsCheck": "Prueba – necesita internet"
+  "licencesEndedReminder": "Licencia de {names}: {reason}. Ya no se puede usar; las facturas usan la plantilla integrada. Vea Ajustes → Licencias.",
+  "licencesStatusTrialNeedsCheck": "Prueba – necesita internet",
+  "pdfPackStatusNeedsLicence": "Necesita licencia",
+  "pdfPackStatusTrialEnded": "Prueba terminada",
+  "pdfPackStatusTrialUntil": "Prueba · termina {date}",
+  "licencesTrialOfflineReminder": "Su prueba de {names} necesita conexión a internet. Conecte este equipo para seguir usándola."
 }

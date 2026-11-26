@@ -349,7 +349,10 @@ class _LicencesScreenState extends ConsumerState<LicencesScreen> {
         l.status == LicenceStatus.trialNeedsCheck; // Check now unlocks it
     final meta = [
       if (l.lastCheck != null) l10n.licencesLastCheck(dateFormat.format(l.lastCheck!.toLocal())),
-      if (l.licence.validUntil != null) l10n.licencesValidUntil(dateFormat.format(l.licence.validUntil!.toLocal())),
+      if (l.validUntil != null)
+        l.trial
+            ? l10n.pdfPackStatusTrialUntil(dateFormat.format(l.validUntil!.toLocal()))
+            : l10n.licencesValidUntil(dateFormat.format(l.validUntil!.toLocal())),
     ];
 
     return _card(Column(
@@ -382,7 +385,8 @@ class _LicencesScreenState extends ConsumerState<LicencesScreen> {
                 icon: const Icon(Icons.sync_rounded, size: 16),
                 label: Text(l10n.licencesCheckNow),
               ),
-              TextButton.icon(
+              // Trials must check in online; the server refuses offline renewal.
+              if (!l.trial) TextButton.icon(
                 onPressed: _busy ? null : () => _renewOffline(l),
                 icon: const Icon(Icons.wifi_off_rounded, size: 16),
                 label: Text(l10n.licencesRenewOffline),
