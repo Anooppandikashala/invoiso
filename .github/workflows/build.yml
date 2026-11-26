@@ -26,6 +26,23 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      # Official .invoiso decoder from the private repo (skipped in forks).
+      - name: Check out official template decoder
+        if: ${{ vars.OFFICIAL_TEMPLATES == 'true' }}
+        uses: actions/checkout@v4
+        with:
+          repository: Anooppandikashala/invoiso-template-packs
+          token: ${{ secrets.PACKS_REPO_TOKEN }}
+          path: _template_packs
+
+      - name: Apply official template decoder
+        if: ${{ vars.OFFICIAL_TEMPLATES == 'true' }}
+        shell: bash
+        env:
+          INVT_AES_KEY: ${{ secrets.INVT_AES_KEY }}
+          INVT_SIGN_PUBLIC_KEY: ${{ secrets.INVT_SIGN_PUBLIC_KEY }}
+        run: bash _template_packs/apply.sh . && rm -rf _template_packs
+
       - name: Set up Flutter
         uses: subosito/flutter-action@v2
         with:
@@ -118,6 +135,23 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # Official .invoiso decoder from the private repo (skipped in forks).
+      - name: Check out official template decoder
+        if: ${{ vars.OFFICIAL_TEMPLATES == 'true' }}
+        uses: actions/checkout@v4
+        with:
+          repository: Anooppandikashala/invoiso-template-packs
+          token: ${{ secrets.PACKS_REPO_TOKEN }}
+          path: _template_packs
+
+      - name: Apply official template decoder
+        if: ${{ vars.OFFICIAL_TEMPLATES == 'true' }}
+        shell: bash
+        env:
+          INVT_AES_KEY: ${{ secrets.INVT_AES_KEY }}
+          INVT_SIGN_PUBLIC_KEY: ${{ secrets.INVT_SIGN_PUBLIC_KEY }}
+        run: bash _template_packs/apply.sh . && rm -rf _template_packs
+
       - uses: subosito/flutter-action@v2
         with:
           flutter-version: '3.32.8'
@@ -180,6 +214,23 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+
+      # Official .invoiso decoder from the private repo (skipped in forks).
+      - name: Check out official template decoder
+        if: ${{ vars.OFFICIAL_TEMPLATES == 'true' }}
+        uses: actions/checkout@v4
+        with:
+          repository: Anooppandikashala/invoiso-template-packs
+          token: ${{ secrets.PACKS_REPO_TOKEN }}
+          path: _template_packs
+
+      - name: Apply official template decoder
+        if: ${{ vars.OFFICIAL_TEMPLATES == 'true' }}
+        shell: bash
+        env:
+          INVT_AES_KEY: ${{ secrets.INVT_AES_KEY }}
+          INVT_SIGN_PUBLIC_KEY: ${{ secrets.INVT_SIGN_PUBLIC_KEY }}
+        run: bash _template_packs/apply.sh . && rm -rf _template_packs
 
       - uses: subosito/flutter-action@v2
         with:
@@ -362,6 +413,23 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # Official .invoiso decoder from the private repo (skipped in forks).
+      - name: Check out official template decoder
+        if: ${{ vars.OFFICIAL_TEMPLATES == 'true' }}
+        uses: actions/checkout@v4
+        with:
+          repository: Anooppandikashala/invoiso-template-packs
+          token: ${{ secrets.PACKS_REPO_TOKEN }}
+          path: _template_packs
+
+      - name: Apply official template decoder
+        if: ${{ vars.OFFICIAL_TEMPLATES == 'true' }}
+        shell: bash
+        env:
+          INVT_AES_KEY: ${{ secrets.INVT_AES_KEY }}
+          INVT_SIGN_PUBLIC_KEY: ${{ secrets.INVT_SIGN_PUBLIC_KEY }}
+        run: bash _template_packs/apply.sh . && rm -rf _template_packs
+
       - uses: subosito/flutter-action@v2
         with:
           flutter-version: '3.32.8'
@@ -478,6 +546,23 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # Official .invoiso decoder from the private repo (skipped in forks).
+      - name: Check out official template decoder
+        if: ${{ vars.OFFICIAL_TEMPLATES == 'true' }}
+        uses: actions/checkout@v4
+        with:
+          repository: Anooppandikashala/invoiso-template-packs
+          token: ${{ secrets.PACKS_REPO_TOKEN }}
+          path: _template_packs
+
+      - name: Apply official template decoder
+        if: ${{ vars.OFFICIAL_TEMPLATES == 'true' }}
+        shell: bash
+        env:
+          INVT_AES_KEY: ${{ secrets.INVT_AES_KEY }}
+          INVT_SIGN_PUBLIC_KEY: ${{ secrets.INVT_SIGN_PUBLIC_KEY }}
+        run: bash _template_packs/apply.sh . && rm -rf _template_packs
+
       - uses: subosito/flutter-action@v2
         with:
           flutter-version: '3.32.8'
@@ -592,6 +677,23 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
+      # Official .invoiso decoder from the private repo (skipped in forks).
+      - name: Check out official template decoder
+        if: ${{ vars.OFFICIAL_TEMPLATES == 'true' }}
+        uses: actions/checkout@v4
+        with:
+          repository: Anooppandikashala/invoiso-template-packs
+          token: ${{ secrets.PACKS_REPO_TOKEN }}
+          path: _template_packs
+
+      - name: Apply official template decoder
+        if: ${{ vars.OFFICIAL_TEMPLATES == 'true' }}
+        shell: bash
+        env:
+          INVT_AES_KEY: ${{ secrets.INVT_AES_KEY }}
+          INVT_SIGN_PUBLIC_KEY: ${{ secrets.INVT_SIGN_PUBLIC_KEY }}
+        run: bash _template_packs/apply.sh . && rm -rf _template_packs
 
       - name: Set up Flutter
         uses: subosito/flutter-action@v2

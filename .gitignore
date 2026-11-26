@@ -94,3 +94,5 @@ supabase/
 thermal_printer_test/
 # Local template designs + dev packs (paid designs, never public)
 sample_layouts/
+# Private .invoiso codec, copied in for official builds only (never commit)
+lib/services/templates/invt_codec.dart
