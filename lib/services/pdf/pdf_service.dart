@@ -33,6 +33,7 @@ import 'package:invoiso_template_engine/invoiso_template_engine.dart';
 import 'template_data_adapter.dart';
 import 'pdf_attachments_page.dart';
 import 'package:invoiso/utils/formatters.dart';
+import 'package:invoiso/services/templates/active_template_pack.dart';
 
 class PDFService {
   static Uint8List? _logoBytesCache;
@@ -155,7 +156,10 @@ class PDFService {
       BackendServices.settings.getSetting(SettingKey.paymentQrEntries), // 67
       BackendServices.settings.getSetting(SettingKey.activeCustomLayout), // 68
       BackendServices.settings.getSetting(SettingKey.pdfRepeatTableHeader), // 69
+      BackendServices.settings.getSetting(SettingKey.activeTemplatePack), // 70
     ]);
+    // Installed .invoiso template, decoded in memory only; replaces a custom layout.
+    final pack = await loadActiveTemplatePack(results[70] as String?);
 
     final rawPrefix = (results[2] as String?) ?? 'INV';
     String dashed(String raw) {
@@ -252,7 +256,8 @@ class PDFService {
       attachmentsAsList: results[65] == 'list',
       paymentQrFromImage: results[66] == 'image',
       paymentQrEntries: PaymentQrEntry.listFromJson(results[67] as String?),
-      blockLayout: _activeCustomLayoutFromJson(results[68] as String?)?.blockLayout,
+      blockLayout: pack?.layout ?? _activeCustomLayoutFromJson(results[68] as String?)?.blockLayout,
+      overlayText: pack?.overlayText,
       repeatTableHeader: results[69] == 'true',
     );
   }
@@ -376,6 +381,7 @@ class PDFService {
             watermarkOpacity: s.watermarkOpacity,
             watermarkFullPage: s.watermarkFullPage,
             repeatTableHeader: s.repeatTableHeader,
+            overlayText: s.overlayText,
           ),
           assets: TemplateAssets(
               logo: s.showLogo ? s.logoBytes : null,
@@ -403,7 +409,8 @@ class PDFService {
         }
         return blockPdf;
       } catch (e, st) {
-        debugPrint('Custom layout failed, using built-in template: $e\n$st');
+        // Type + stack only: the message could quote a template's layout (§9.5b).
+        debugPrint('Custom layout failed, using built-in template: ${e.runtimeType}\n$st');
       }
     }
 

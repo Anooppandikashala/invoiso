@@ -126,6 +126,7 @@ enum SettingKey {
   customInvoiceLayouts, // JSON list of user-inserted CustomInvoiceLayout definitions
   activeCustomLayout, // JSON of the custom layout currently active for PDF rendering (empty = built-in template)
   pdfRepeatTableHeader, // 'true' = items table header repeats on every PDF page (default false)
+  activeTemplatePack, // templateId of the installed .invoiso template this company prints with (empty = none); never its layout
 }
 
 extension SettingKeyExtension on SettingKey {
@@ -385,6 +386,8 @@ extension SettingKeyExtension on SettingKey {
         return 'active_custom_layout';
       case SettingKey.pdfRepeatTableHeader:
         return 'pdf_repeat_table_header';
+      case SettingKey.activeTemplatePack:
+        return 'active_template_pack';
 
     }
   }

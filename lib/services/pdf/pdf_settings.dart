@@ -91,6 +91,10 @@ class PdfGenerationSettings {
   /// replaces the built-in template when present.
   final Map<String, dynamic>? blockLayout;
 
+  /// Licence watermark over every page of an installed template ("PREVIEW" /
+  /// "LICENCE VERIFICATION PENDING"); null = none.
+  final String? overlayText;
+
   const PdfGenerationSettings({
     required this.company,
     required this.template,
@@ -165,6 +169,7 @@ class PdfGenerationSettings {
     this.tableItemsScale = 1.0,
     this.totalsScale = 1.0,
     this.blockLayout,
+    this.overlayText,
   });
 
   /// Number prefix for a document [type]; quotation/receipt fall back to the

@@ -46,7 +46,7 @@ void main() {
     signatureBytes = await File('assets/images/sig.jpeg').readAsBytes();
   });
 
-  PdfGenerationSettings settingsFor(CustomInvoiceLayout layout) {
+  PdfGenerationSettings settingsFor(CustomInvoiceLayout layout, {String? overlayText}) {
     final template = layout.effectiveBaseTemplate;
     final pageFormat = PDFService.pageSizeToFormat(layout.pageSize);
     final fontSizeScale = pdfFontSizeFromKey(layout.fontSize).scale;
@@ -115,6 +115,7 @@ void main() {
         fontSizeScale,
       ),
       blockLayout: layout.blockLayout,
+      overlayText: overlayText,
     );
   }
 
@@ -233,6 +234,31 @@ void main() {
     // Page size alone does not prove the imported layout drew anything.
     expect(_textOperatorCount(doc), greaterThan(0),
         reason: 'imported layout rendered a blank page');
+  });
+
+  test('licence overlay text is drawn over an installed template', () async {
+    final layout = CustomInvoiceLayout(
+      id: 'pack',
+      name: 'Pack',
+      description: '',
+      baseTemplate: InvoiceTemplate.classic,
+      pageSize: PageSize.a4,
+      blockLayout: {
+        'engine': 2,
+        'layout': [
+          {'type': 'text', 'value': '{{company.name}}'},
+        ],
+      },
+      createdAt: DateTime(2026, 11, 26),
+    );
+    final invoice = PdfPreviewSample.createSampleInvoice();
+    final plain = PDFService.generateInvoicePDFWithSettings(invoice, settingsFor(layout));
+    final preview = PDFService.generateInvoicePDFWithSettings(
+        invoice, settingsFor(layout, overlayText: 'PREVIEW'));
+    await plain.save();
+    await preview.save();
+    // One extra text run per page: the diagonal watermark.
+    expect(_textOperatorCount(preview), _textOperatorCount(plain) + preview.document.pdfPageList.pages.length);
   });
 
   test('unknown block types render their readable content, not a blank page',
