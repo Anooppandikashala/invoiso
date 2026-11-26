@@ -4,6 +4,7 @@ import 'package:invoiso/l10n/app_localizations.dart';
 import 'package:invoiso/providers/repositories.dart';
 import 'package:invoiso/services/licensing/licence_service.dart';
 import 'package:invoiso/services/licensing/template_catalog.dart';
+import 'package:invoiso/services/templates/template_pack_store.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 /// "Get more templates…": the marketplace catalogue with Buy (pre-filled
@@ -25,6 +26,7 @@ class _TemplateStoreDialogState extends ConsumerState<_TemplateStoreDialog> {
   bool _loading = true;
   Set<String> _licensedIds = {};
   bool _allLicensed = false;
+  Set<String> _installedIds = {};
 
   @override
   void initState() {
@@ -41,9 +43,11 @@ class _TemplateStoreDialogState extends ConsumerState<_TemplateStoreDialog> {
         l.status != LicenceStatus.refunded &&
         l.status != LicenceStatus.expired &&
         l.status != LicenceStatus.moved);
+    final installed = {for (final p in await TemplatePackStore().list()) p.templateId};
     final fresh = await _catalogService.refresh();
     if (!mounted) return;
     setState(() {
+      _installedIds = installed;
       _catalog = fresh ?? _catalog;
       _licensedIds = {for (final l in held) ...l.licence.templateIds};
       _allLicensed = _licensedIds.contains('ALL');
@@ -166,6 +170,7 @@ class _TemplateStoreDialogState extends ConsumerState<_TemplateStoreDialog> {
                   children: [
                     Text(t.name, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 15)),
                     if (licensed) _chip(l10n.storeLicensed, Colors.green),
+                    if (_installedIds.contains(t.id)) _chip(l10n.storeInstalled, Colors.blue),
                     if (!available) _chip(l10n.storeComingSoon, Colors.blueGrey),
                   ],
                 ),

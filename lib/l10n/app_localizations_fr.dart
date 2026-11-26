@@ -6775,11 +6775,11 @@ class AppLocalizationsFr extends AppLocalizations {
   }
 
   @override
-  String get pdfLayoutAddTitle => 'Ajouter une mise en page personnalisée';
+  String get pdfLayoutAddTitle => 'Ajouter un modèle';
 
   @override
   String get pdfLayoutAddSubtitle =>
-      'Importez un fichier de mise en page .json ou enregistrez les réglages actuels comme nouvelle mise en page.';
+      'Importez ou créez une mise en page, installez un Invoiso Template ou saisissez une clé de licence.';
 
   @override
   String get pdfLayoutCreateEditJsonTitle => 'Créer / modifier le JSON';
@@ -6870,7 +6870,7 @@ class AppLocalizationsFr extends AppLocalizations {
   }
 
   @override
-  String get pdfLayoutAddButton => 'Ajouter une mise en page';
+  String get pdfLayoutAddButton => 'Ajouter un modèle';
 
   @override
   String get pdfLayoutInsertedSection => 'VOS MISES EN PAGE AJOUTÉES';
@@ -7145,4 +7145,97 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get pdfLayoutEnterKeySubtitle => 'Activez un modèle acheté';
+
+  @override
+  String get pdfPackInstallTitle => 'Installer un modèle…';
+
+  @override
+  String get pdfPackInstallSubtitle =>
+      'Ajouter un fichier Invoiso Template (.invoiso)';
+
+  @override
+  String get pdfPackStatusFree => 'Gratuit';
+
+  @override
+  String get pdfPackStatusLicensed => 'Sous licence';
+
+  @override
+  String get pdfPackStatusPreview => 'Aperçu – sans licence';
+
+  @override
+  String get pdfPackStatusPending => 'Vérification de licence en attente';
+
+  @override
+  String get pdfPackStatusUnavailable => 'Impossible à ouvrir';
+
+  @override
+  String pdfPackVersion(int version) {
+    return 'Version $version';
+  }
+
+  @override
+  String pdfPackUpdated(String name, int version) {
+    return '$name mis à jour en version $version';
+  }
+
+  @override
+  String pdfPackAlreadyInstalled(String name) {
+    return '$name est déjà installé';
+  }
+
+  @override
+  String pdfPackOlderThanInstalled(String name) {
+    return 'Une version plus récente de $name est déjà installée';
+  }
+
+  @override
+  String get pdfPackNotSupported =>
+      'Cette version d\'Invoiso ne peut pas ouvrir les Invoiso Templates. Téléchargez l\'application officielle sur invoiso.co.in.';
+
+  @override
+  String get pdfPackNotGenuine =>
+      'Ce fichier n\'est pas un modèle Invoiso authentique.';
+
+  @override
+  String get pdfPackNeedsAppUpdate =>
+      'Ce modèle nécessite une version plus récente d\'Invoiso. Veuillez mettre l\'application à jour.';
+
+  @override
+  String pdfPackLicenceNeeded(String name) {
+    return 'Une licence est nécessaire pour mettre à jour $name. La version installée est conservée.';
+  }
+
+  @override
+  String get pdfPackInstalledTitle => 'Modèle installé';
+
+  @override
+  String pdfPackUseNow(String name) {
+    return '$name est installé. L\'utiliser maintenant ?';
+  }
+
+  @override
+  String get pdfPackUseButton => 'Utiliser';
+
+  @override
+  String get pdfPackLaterButton => 'Plus tard';
+
+  @override
+  String get pdfPackRemoveTooltip => 'Retirer le modèle';
+
+  @override
+  String pdfPackRemoveConfirm(String name) {
+    return 'Retirer $name de cet ordinateur ? Les entreprises qui l\'utilisent imprimeront avec le modèle intégré. Vous pourrez le réinstaller plus tard.';
+  }
+
+  @override
+  String pdfPackRemoved(String name) {
+    return '$name retiré';
+  }
+
+  @override
+  String get storeInstalled => 'Installé';
+
+  @override
+  String get pdfPackNoJsonCopy =>
+      'Indisponible lorsqu\'un Invoiso Template est sélectionné';
 }

@@ -148,10 +148,10 @@ void main() {
     await tester.pump(const Duration(seconds: 1));
 
     debugPrint('templates label size: ${tester.getSize(find.text('TEMPLATES'))}');
-    debugPrint('add layout size: ${tester.getSize(find.text('Add Layout'))}');
+    debugPrint('add layout size: ${tester.getSize(find.text('Add Template'))}');
 
-    expect(find.text('Add Layout'), findsOneWidget);
-    await tester.tap(find.text('Add Layout'));
+    expect(find.text('Add Template'), findsOneWidget);
+    await tester.tap(find.text('Add Template'));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 500));
 
@@ -183,7 +183,7 @@ void main() {
     expect(repo.layouts, hasLength(1));
 
     // Add a second layout through the JSON editor.
-    await tester.tap(find.text('Add Layout'));
+    await tester.tap(find.text('Add Template'));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 500));
     await tester.tap(find.text('Create / Edit JSON'));

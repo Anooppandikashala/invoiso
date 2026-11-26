@@ -92,3 +92,5 @@ new-dashboard-design.png
 sample_layout.json
 supabase/
 thermal_printer_test/
+# Local template designs + dev packs (paid designs, never public)
+sample_layouts/

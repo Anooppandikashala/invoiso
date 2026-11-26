@@ -16,6 +16,8 @@ import 'package:invoiso/database/invoice_attachment_service.dart';
 import 'package:invoiso/models/invoice_attachment.dart';
 import 'package:archive/archive_io.dart';
 import 'package:image/image.dart' as img;
+import 'package:invoiso/services/templates/template_pack_store.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -267,6 +269,51 @@ void main() {
     expect(File(join(dbDir, 'escape.txt')).existsSync(), isFalse);
     expect(File(join(dbDir, 'escape2.txt')).existsSync(), isFalse);
     expect((await InvoiceAttachmentService.listFor('inv1')).length, 1);
+  });
+
+  test('active template: backup carries its file, restore on a fresh PC installs it', () async {
+    SharedPreferences.setMockInitialValues({});
+    final pack = utf8.encode('INVDEV1\n${jsonEncode({
+      'manifest': {'templateId': 'gst-tax-invoice', 'name': 'GST Tax Invoice', 'version': 2, 'minEngine': 2},
+      'layout': {'engine': 2, 'layout': []},
+    })}');
+    expect((await TemplatePackStore().install(pack)).status, PackInstallStatus.installed);
+    await (await DatabaseHelper().database).insert(
+        'settings', {'key': 'active_template_pack', 'value': 'gst-tax-invoice'},
+        conflictAlgorithm: ConflictAlgorithm.replace);
+
+    final path = await backup(); // no photos, but a template → zip
+    expect(isZip(path), isTrue);
+    expect(await BackupManager().verifyBackup(path), isTrue);
+    final entry = ZipDecoder()
+        .decodeBytes(File(path).readAsBytesSync())
+        .findFile('templates/gst-tax-invoice.invoiso');
+    expect(entry!.content, pack, reason: 'stored exactly as installed');
+
+    // "New PC": template not installed.
+    await TemplatePackStore().remove('gst-tax-invoice');
+    final r = await BackupManager().restoreBackup(backupPath: path);
+    expect(r.success, isTrue, reason: r.message);
+    expect((await TemplatePackStore().find('gst-tax-invoice'))!.version, 2);
+    expect(await TemplatePackStore().bytesOf('gst-tax-invoice'), pack);
+  });
+
+  test('restore keeps a newer installed template', () async {
+    SharedPreferences.setMockInitialValues({});
+    List<int> pack(int v) => utf8.encode('INVDEV1\n${jsonEncode({
+          'manifest': {'templateId': 'teal-services', 'name': 'Teal', 'version': v, 'free': true},
+          'layout': {'engine': 2, 'layout': []},
+        })}');
+    await TemplatePackStore().install(Uint8List.fromList(pack(1)));
+    await (await DatabaseHelper().database).insert(
+        'settings', {'key': 'active_template_pack', 'value': 'teal-services'},
+        conflictAlgorithm: ConflictAlgorithm.replace);
+    final path = await backup();
+    await TemplatePackStore().install(Uint8List.fromList(pack(3)));
+
+    final r = await BackupManager().restoreBackup(backupPath: path);
+    expect(r.success, isTrue, reason: r.message);
+    expect((await TemplatePackStore().find('teal-services'))!.version, 3);
   });
 
   test('a zip without a database is refused and current data kept', () async {

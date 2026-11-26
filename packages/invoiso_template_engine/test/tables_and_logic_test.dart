@@ -116,6 +116,8 @@ void main() {
     final upi = await _render(layout, _data(upi: 'upi://pay?pa=sample@upi&am=10.00'));
     expect(upi.text, contains('Pay via UPI'));
     expect(upi.raw.length, greaterThan(none.raw.length));
+    // No caption under the QR, so the built-in Courier font is never pulled in.
+    expect(upi.raw, isNot(contains('/Courier')));
   });
 
   test('grid: one cell per item, bold label parts, odd cell blank or spanning',

@@ -24,6 +24,8 @@ import 'package:printing/printing.dart';
 import 'package:invoiso/services/thermal_printer_service_v1.dart';
 import 'package:invoiso/models/custom_invoice_layout.dart';
 import 'package:invoiso/screens/settings/template_store_dialog.dart';
+import 'package:invoiso/services/templates/active_template_pack.dart';
+import 'package:invoiso/services/templates/template_pack_store.dart';
 
 class PdfSettingsScreenV2 extends ConsumerStatefulWidget {
   final VoidCallback? onNavigateToCustomization;
@@ -52,6 +54,14 @@ class _PdfSettingsScreenV2State extends ConsumerState<PdfSettingsScreenV2> {
   String? _selectedCustomLayoutId;
   Map<String, dynamic>? _savedBlockLayout;
   Map<String, dynamic>? _previewedBlockLayout;
+  // Installed .invoiso templates (device-level). A pack's layout lives only in
+  // _packInfo (memory) and never in _previewedBlockLayout, which feeds the
+  // JSON editor, "save as layout" and the stored custom layout (§9.5b).
+  final _packStore = TemplatePackStore();
+  List<InstalledPack> _packs = [];
+  Map<String, ActiveTemplatePack?> _packInfo = {}; // null = can't be used
+  String? _savedPackId;
+  String? _selectedPackId;
   String? _savedThemeColorHex;
   String? _previewedThemeColorHex;
   final _themeColorController = TextEditingController();
@@ -193,9 +203,71 @@ class _PdfSettingsScreenV2State extends ConsumerState<PdfSettingsScreenV2> {
       _savedPdfSectionSizes = savedPdfSectionSizes;
       _previewedPdfSectionSizes = Map.of(savedPdfSectionSizes);
     });
+    final activePackId = await ref
+        .read(settingsRepositoryProvider)
+        .getSetting(SettingKey.activeTemplatePack);
+    await _loadPacks();
+    if (mounted &&
+        activePackId != null &&
+        _packs.any((p) => p.templateId == activePackId)) {
+      setState(() {
+        _savedPackId = activePackId;
+        _selectedPackId = activePackId;
+        _selectedCustomLayoutId = null;
+        _previewedBlockLayout = null;
+        _savedBlockLayout = null;
+      });
+    }
     try {
       _basePdfSettings = await PDFService.fetchPdfSettings();
     } catch (_) {}
+    _schedulePdfPreviewUpdate(immediate: true);
+  }
+
+  /// Installed templates + whether each can be used and its licence watermark.
+  Future<void> _loadPacks() async {
+    final packs = await _packStore.list();
+    final info = <String, ActiveTemplatePack?>{
+      for (final p in packs)
+        p.templateId: await loadActiveTemplatePack(p.templateId, store: _packStore),
+    };
+    if (!mounted) return;
+    setState(() {
+      _packs = packs;
+      _packInfo = info;
+    });
+  }
+
+  ActiveTemplatePack? get _previewedPack =>
+      _selectedPackId == null ? null : _packInfo[_selectedPackId];
+
+  InstalledPack? get _selectedPack =>
+      _packs.where((p) => p.templateId == _selectedPackId).firstOrNull;
+
+  // Name / description / "Active" of what is previewed: installed template,
+  // else custom layout, else built-in template.
+  String _previewedName(BuildContext context) =>
+      _selectedPack?.name ??
+      _activeCustomLayout?.name ??
+      templateName(context, _previewedTemplate);
+
+  String _previewedDescription(BuildContext context) {
+    final pack = _selectedPack;
+    if (pack != null) return AppLocalizations.of(context)!.pdfPackVersion(pack.version);
+    return _activeCustomLayout?.description ??
+        templateDescription(context, _previewedTemplate);
+  }
+
+  bool get _previewedIsSaved => _selectedPackId != null
+      ? _selectedPackId == _savedPackId
+      : _savedPackId == null && _savedTemplate == _previewedTemplate;
+
+  void _applyPack(InstalledPack pack) {
+    setState(() {
+      _selectedPackId = pack.templateId;
+      _selectedCustomLayoutId = null;
+      _previewedBlockLayout = null;
+    });
     _schedulePdfPreviewUpdate(immediate: true);
   }
 
@@ -281,6 +353,15 @@ class _PdfSettingsScreenV2State extends ConsumerState<PdfSettingsScreenV2> {
           ref
               .read(settingsRepositoryProvider)
               .deleteSetting(SettingKey.activeCustomLayout),
+        // Installed template: only its id is stored, never its layout.
+        if (_selectedPackId != null)
+          ref
+              .read(settingsRepositoryProvider)
+              .setSetting(SettingKey.activeTemplatePack, _selectedPackId!)
+        else
+          ref
+              .read(settingsRepositoryProvider)
+              .deleteSetting(SettingKey.activeTemplatePack),
       ]);
       setState(() {
         _savedTemplate = _previewedTemplate;
@@ -297,6 +378,7 @@ class _PdfSettingsScreenV2State extends ConsumerState<PdfSettingsScreenV2> {
         _savedPdfSectionSizes = Map.of(_previewedPdfSectionSizes);
 
         _savedBlockLayout = _previewedBlockLayout;
+        _savedPackId = _selectedPackId;
       });
       if (!mounted) return;
       if (showSavedSnackBar) {
@@ -435,7 +517,8 @@ class _PdfSettingsScreenV2State extends ConsumerState<PdfSettingsScreenV2> {
         paymentQrEntries: base.paymentQrEntries,
         attachmentsAsList: base.attachmentsAsList,
         repeatTableHeader: _previewedRepeatTableHeader,
-        blockLayout: _previewedBlockLayout,
+        blockLayout: _previewedPack?.layout ?? _previewedBlockLayout,
+        overlayText: _previewedPack?.overlayText,
       );
 
       final sampleInvoice = PdfPreviewSample.createSampleInvoice(
@@ -596,7 +679,8 @@ class _PdfSettingsScreenV2State extends ConsumerState<PdfSettingsScreenV2> {
           _previewedPdfFontSize != _savedPdfFontSize ||
           _pdfSectionSizeKeys.any((k) =>
               _previewedPdfSectionSizes[k] != _savedPdfSectionSizes[k]) ||
-          jsonEncode(_previewedBlockLayout) != jsonEncode(_savedBlockLayout));
+          jsonEncode(_previewedBlockLayout) != jsonEncode(_savedBlockLayout) ||
+          _selectedPackId != _savedPackId);
 
   Future<void> _handlePrintPreview() async {
     final l10n = AppLocalizations.of(context)!;
@@ -640,6 +724,7 @@ class _PdfSettingsScreenV2State extends ConsumerState<PdfSettingsScreenV2> {
     final effectiveThemeColor = layout.effectiveThemeColorHex;
     setState(() {
       _selectedCustomLayoutId = layout.id;
+      _selectedPackId = null;
       _previewedTemplate = effectiveTemplate;
       _previewedPageSize = layout.pageSize;
       _previewedLandscape = layout.landscape;
@@ -769,6 +854,7 @@ class _PdfSettingsScreenV2State extends ConsumerState<PdfSettingsScreenV2> {
 
   Future<void> _showAddLayoutDialog() async {
     final l10n = AppLocalizations.of(context)!;
+    final packSelected = _selectedPackId != null;
     showModalBottomSheet(
       context: context,
       shape: const RoundedRectangleBorder(
@@ -800,7 +886,12 @@ class _PdfSettingsScreenV2State extends ConsumerState<PdfSettingsScreenV2> {
                 ),
                 title: Text(l10n.pdfLayoutCreateEditJsonTitle,
                     style: const TextStyle(fontWeight: FontWeight.w600)),
-                subtitle: Text(l10n.pdfLayoutCreateEditJsonSubtitle),
+                // Off while an Invoiso Template is selected: the result would
+                // look like a copy of it, but never contains its layout (§9.5b).
+                subtitle: Text(packSelected
+                    ? l10n.pdfPackNoJsonCopy
+                    : l10n.pdfLayoutCreateEditJsonSubtitle),
+                enabled: !packSelected,
                 onTap: () {
                   Navigator.pop(ctx);
                   _showJsonLayoutDialog();
@@ -830,10 +921,28 @@ class _PdfSettingsScreenV2State extends ConsumerState<PdfSettingsScreenV2> {
                 ),
                 title: Text(l10n.pdfLayoutSaveCurrentTitle,
                     style: const TextStyle(fontWeight: FontWeight.w600)),
-                subtitle: Text(l10n.pdfLayoutSaveCurrentSubtitle),
+                subtitle: Text(packSelected
+                    ? l10n.pdfPackNoJsonCopy
+                    : l10n.pdfLayoutSaveCurrentSubtitle),
+                enabled: !packSelected,
                 onTap: () {
                   Navigator.pop(ctx);
                   _saveCurrentAsCustomLayout();
+                },
+              ),
+              const Divider(),
+              ListTile(
+                leading: const CircleAvatar(
+                  backgroundColor: Color(0xFFFCE7F3),
+                  child: Icon(Icons.download_for_offline_outlined,
+                      color: Color(0xFF9D174D)),
+                ),
+                title: Text(l10n.pdfPackInstallTitle,
+                    style: const TextStyle(fontWeight: FontWeight.w600)),
+                subtitle: Text(l10n.pdfPackInstallSubtitle),
+                onTap: () {
+                  Navigator.pop(ctx);
+                  _installTemplatePack();
                 },
               ),
               const Divider(),
@@ -1175,6 +1284,7 @@ class _PdfSettingsScreenV2State extends ConsumerState<PdfSettingsScreenV2> {
   void _resetToDefaultV2() {
     setState(() {
       _selectedCustomLayoutId = null;
+      _selectedPackId = null;
       _previewedBlockLayout = null;
       _previewedTemplate = InvoiceTemplate.classic;
       _previewedPageSize = PageSize.a4;
@@ -1320,7 +1430,9 @@ class _PdfSettingsScreenV2State extends ConsumerState<PdfSettingsScreenV2> {
                   .where((l) => l.pageSize == _previewedPageSize)
                   .toList();
 
-              if (visibleTemplates.isEmpty && matchingCustomLayouts.isEmpty) {
+              if (visibleTemplates.isEmpty &&
+                  matchingCustomLayouts.isEmpty &&
+                  _packs.isEmpty) {
                 return Center(
                   child: Text(
                       l10n.pdfSettingsNoTemplatesForPageSizeMessage(
@@ -1335,6 +1447,40 @@ class _PdfSettingsScreenV2State extends ConsumerState<PdfSettingsScreenV2> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    // Installed Invoiso Templates: every paper size (each
+                    // prints on its own); no Edit JSON / copy / export.
+                    if (_packs.isNotEmpty) ...[
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 6),
+                        child: Text(
+                          l10n.storeTitle.toUpperCase(),
+                          style: TextStyle(
+                            fontSize: 10,
+                            fontWeight: FontWeight.w700,
+                            letterSpacing: 0.5,
+                            color: Theme.of(context).primaryColor,
+                          ),
+                        ),
+                      ),
+                      for (final pack in _packs)
+                        Padding(
+                          padding: const EdgeInsets.only(bottom: 8),
+                          child: _packTile(pack, l10n),
+                        ),
+                      if (matchingCustomLayouts.isEmpty) ...[
+                        const SizedBox(height: 6),
+                        Text(
+                          l10n.pdfLayoutDefaultSection,
+                          style: TextStyle(
+                            fontSize: 10,
+                            fontWeight: FontWeight.w700,
+                            letterSpacing: 0.5,
+                            color: Theme.of(context).colorScheme.onSurfaceVariant,
+                          ),
+                        ),
+                        const SizedBox(height: 6),
+                      ],
+                    ],
                     if (matchingCustomLayouts.isNotEmpty) ...[
                       Padding(
                         padding: const EdgeInsets.only(bottom: 6),
@@ -1401,6 +1547,7 @@ class _PdfSettingsScreenV2State extends ConsumerState<PdfSettingsScreenV2> {
                           description: description,
                           themeColor: _activePreviewColor,
                             isPreviewed: _selectedCustomLayoutId == null &&
+                                _selectedPackId == null &&
                                 _previewedTemplate == template,
                           isSaved: _savedTemplate == template,
                           thermalDetailedTemplate:
@@ -1409,7 +1556,10 @@ class _PdfSettingsScreenV2State extends ConsumerState<PdfSettingsScreenV2> {
                             isInserted: false,
                             onDelete: null,
                             onTap: () {
-                              setState(() => _selectedCustomLayoutId = null);
+                              setState(() {
+                                _selectedCustomLayoutId = null;
+                                _selectedPackId = null;
+                              });
                               _setPreviewedTemplate(template);
                             },
                           isDisabled: false,
@@ -1427,10 +1577,146 @@ class _PdfSettingsScreenV2State extends ConsumerState<PdfSettingsScreenV2> {
     );
   }
 
+  Widget _packTile(InstalledPack pack, AppLocalizations l10n) {
+    final info = _packInfo[pack.templateId];
+    final (String label, Color color) = info == null
+        ? (l10n.pdfPackStatusUnavailable, Colors.red)
+        : pack.free
+            ? (l10n.pdfPackStatusFree, Colors.green)
+            : switch (info.overlayText) {
+                null => (l10n.pdfPackStatusLicensed, Colors.green),
+                'PREVIEW' => (l10n.pdfPackStatusPreview, Colors.orange),
+                _ => (l10n.pdfPackStatusPending, Colors.orange),
+              };
+    return TemplateListTile(
+      template: InvoiceTemplate.classic,
+      name: pack.name,
+      description: l10n.pdfPackVersion(pack.version),
+      themeColor: _activePreviewColor,
+      isPreviewed: _selectedPackId == pack.templateId,
+      isSaved: false,
+      isDefault: false,
+      isInserted: true,
+      insertedLabel: l10n.storeTitle,
+      statusLabel: label,
+      statusColor: color,
+      deleteTooltip: l10n.pdfPackRemoveTooltip,
+      // Thumbnail shows the look only (fine per §9.5b); layout stays in memory.
+      blockLayout: info?.layout,
+      thermalDetailedTemplate: false,
+      isDisabled: info == null,
+      onTap: () => _applyPack(pack),
+      onDelete: () => _removePack(pack),
+    );
+  }
+
+  Future<void> _installTemplatePack() async {
+    final l10n = AppLocalizations.of(context)!;
+    final messenger = ScaffoldMessenger.of(context);
+    PackInstallResult result;
+    try {
+      final picked = await FilePicker.platform.pickFiles(
+        type: FileType.custom,
+        allowedExtensions: ['invoiso'],
+        withData: true,
+      );
+      if (picked == null || picked.files.isEmpty) return;
+      final file = picked.files.single;
+      final bytes = file.bytes ??
+          (file.path != null ? await File(file.path!).readAsBytes() : null);
+      if (bytes == null) return;
+      result = await _packStore.install(bytes);
+    } catch (_) {
+      result = const PackInstallResult(PackInstallStatus.notGenuine);
+    }
+    if (!mounted) return;
+    final name = result.manifest?.name ?? '';
+    final message = switch (result.status) {
+      PackInstallStatus.installed => null,
+      PackInstallStatus.updated => l10n.pdfPackUpdated(name, result.manifest!.version),
+      PackInstallStatus.alreadyInstalled => l10n.pdfPackAlreadyInstalled(name),
+      PackInstallStatus.olderThanInstalled => l10n.pdfPackOlderThanInstalled(name),
+      PackInstallStatus.notSupported => l10n.pdfPackNotSupported,
+      PackInstallStatus.notGenuine => l10n.pdfPackNotGenuine,
+      PackInstallStatus.needsAppUpdate => l10n.pdfPackNeedsAppUpdate,
+      PackInstallStatus.licenceNeededForUpdate => l10n.pdfPackLicenceNeeded(name),
+    };
+    if (result.status == PackInstallStatus.installed ||
+        result.status == PackInstallStatus.updated) {
+      await _loadPacks();
+      if (!mounted) return;
+    }
+    if (message != null) {
+      messenger.showSnackBar(SnackBar(content: Text(message)));
+      if (result.status == PackInstallStatus.updated &&
+          _selectedPackId == result.manifest!.templateId) {
+        _schedulePdfPreviewUpdate(immediate: true);
+      }
+      return;
+    }
+    final use = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(l10n.pdfPackInstalledTitle),
+        content: Text(l10n.pdfPackUseNow(name)),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: Text(l10n.pdfPackLaterButton)),
+          FilledButton(
+              onPressed: () => Navigator.pop(ctx, true),
+              child: Text(l10n.pdfPackUseButton)),
+        ],
+      ),
+    );
+    if (use == true && mounted) {
+      final pack = _packs
+          .where((p) => p.templateId == result.manifest!.templateId)
+          .firstOrNull;
+      if (pack != null) _applyPack(pack);
+    }
+  }
+
+  Future<void> _removePack(InstalledPack pack) async {
+    final l10n = AppLocalizations.of(context)!;
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(l10n.pdfPackRemoveTooltip),
+        content: Text(l10n.pdfPackRemoveConfirm(pack.name)),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: Text(l10n.actionCancel)),
+          FilledButton(
+              onPressed: () => Navigator.pop(ctx, true),
+              child: Text(l10n.actionDelete)),
+        ],
+      ),
+    );
+    if (ok != true) return;
+    await _packStore.remove(pack.templateId);
+    if (_savedPackId == pack.templateId) {
+      await ref
+          .read(settingsRepositoryProvider)
+          .deleteSetting(SettingKey.activeTemplatePack);
+      _savedPackId = null;
+    }
+    if (_selectedPackId == pack.templateId) {
+      setState(() => _selectedPackId = null);
+      _schedulePdfPreviewUpdate(immediate: true);
+    }
+    await _loadPacks();
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(l10n.pdfPackRemoved(pack.name))));
+    }
+  }
+
   Widget _pageSizeDropdownV2() {
     // A custom template prints on its own paper size, so the setting is
     // locked while one is selected.
-    final locked = _previewedBlockLayout != null;
+    final locked = _previewedBlockLayout != null || _selectedPackId != null;
     return DropdownButtonFormField<PageSize>(
       value: _previewedPageSize,
       isExpanded: true,
@@ -1467,9 +1753,9 @@ class _PdfSettingsScreenV2State extends ConsumerState<PdfSettingsScreenV2> {
 
   Widget _settingsColumnV2() {
     final l10n = AppLocalizations.of(context)!;
-    final name = templateName(context, _previewedTemplate);
-    final description = templateDescription(context, _previewedTemplate);
-    final isActive = _savedTemplate == _previewedTemplate;
+    final name = _previewedName(context);
+    final description = _previewedDescription(context);
+    final isActive = _previewedIsSaved;
 
     return Container(
       width: 320,
@@ -1578,6 +1864,10 @@ class _PdfSettingsScreenV2State extends ConsumerState<PdfSettingsScreenV2> {
       previewedTemplate: _previewedTemplate,
       savedTemplate: _savedTemplate,
       customLayout: _activeCustomLayout,
+      name: _previewedName(context),
+      description: _previewedDescription(context),
+      isSaved: _previewedIsSaved,
+      sketchLayout: _previewedPack?.layout,
       themeColor: _activePreviewColor,
       thermalDetailedTemplate: _previewedThermalItemLayout != "table",
       landscape: _previewedLandscape,
@@ -2253,6 +2543,14 @@ class _PreviewPanel extends StatelessWidget {
   final InvoiceTemplate previewedTemplate;
   final InvoiceTemplate savedTemplate;
   final CustomInvoiceLayout? customLayout;
+
+  /// Shown in the header; null = from [customLayout] / the built-in template.
+  final String? name;
+  final String? description;
+  final bool? isSaved;
+
+  /// Installed template's layout for the sketch (memory only).
+  final Map<String, dynamic>? sketchLayout;
   final Color themeColor;
   final bool thermalDetailedTemplate;
   final bool landscape;
@@ -2267,6 +2565,10 @@ class _PreviewPanel extends StatelessWidget {
     required this.previewedTemplate,
       required this.savedTemplate,
     this.customLayout,
+    this.name,
+    this.description,
+    this.isSaved,
+    this.sketchLayout,
       required this.themeColor,
       required this.thermalDetailedTemplate,
     this.landscape = false,
@@ -2281,11 +2583,15 @@ class _PreviewPanel extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    final name = customLayout?.name ?? templateName(context, previewedTemplate);
-    final description = customLayout?.description ??
+    final name = this.name ??
+        customLayout?.name ??
+        templateName(context, previewedTemplate);
+    final description = this.description ??
+        customLayout?.description ??
         templateDescription(context, previewedTemplate);
-    final isSaved = savedTemplate == previewedTemplate;
-    final hasBlockLayout = customLayout?.blockLayout?['layout'] is List;
+    final isSaved = this.isSaved ?? savedTemplate == previewedTemplate;
+    final sketch = sketchLayout ?? customLayout?.blockLayout;
+    final hasBlockLayout = sketch?['layout'] is List;
 
     return Column(
       children: [
@@ -2501,7 +2807,7 @@ class _PreviewPanel extends StatelessWidget {
                   duration: const Duration(milliseconds: 250),
                   child: FittedBox(
                     key: ValueKey(
-                              '${customLayout?.id ?? previewedTemplate.name}-${_colorToHex(themeColor)}-$landscape'),
+                              '${customLayout?.id ?? name}-${_colorToHex(themeColor)}-$landscape'),
                     fit: BoxFit.contain,
                     child: Container(
                       decoration: BoxDecoration(
@@ -2517,7 +2823,7 @@ class _PreviewPanel extends StatelessWidget {
                               children: [
                                 if (hasBlockLayout)
                                   BlockLayoutSketch(
-                                    document: customLayout!.blockLayout,
+                                    document: sketch,
                                     themeColor: themeColor,
                                     width: landscape ? 520 : 390,
                                     height: landscape ? 390 : 520,

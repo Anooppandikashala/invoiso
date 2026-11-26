@@ -1,6 +1,6 @@
 {
-  "version": 16,
-  "updated_at": "2026-11-20",
+  "version": 17,
+  "updated_at": "2026-11-26",
   "categories": [
     { "id": "general", "label": "General" },
     { "id": "data-privacy", "label": "Data & Privacy" },
@@ -13,8 +13,8 @@
       "id": "faq_free",
       "category": "general",
       "question": "Is Invoiso completely free?",
-      "answer": "Yes — Invoiso is **100% free** and open source. No subscriptions, no hidden fees, and no premium tiers.\n\nDownload it, use it for as long as you like, and even contribute on GitHub if you want.",
-      "keywords": ["free", "subscription", "price", "cost", "premium"]
+      "answer": "Yes — the Invoiso app is **100% free** and open source. No subscriptions, no hidden fees, and every feature is free, including all built-in invoice templates.\n\nThe only paid extra is optional **Invoiso Templates**: ready-made invoice designs you can buy if you want a different look. You never need one to use Invoiso.\n\nDownload it, use it for as long as you like, and even contribute on GitHub if you want.",
+      "keywords": ["free", "subscription", "price", "cost", "premium", "paid"]
     },
     {
       "id": "faq_offline",
@@ -393,6 +393,41 @@
       "question": "How do I see what I owe my suppliers and what's overdue?",
       "answer": "Turn on **Purchase Bills & Suppliers**, then open **Reports → Purchases**:\n\n- **Payables** — unpaid bills by supplier, aged by **due date**: Current, 0–30, 31–60, 61–90, 90+ days overdue, and **No Due Date**. Set the due date on the purchase bill.\n- **Supplier statement** — pick a supplier to see the opening balance, bills, payments and a running balance for the period, like a ledger. Bills show as credit and payments as debit.\n\nBoth export to CSV and PDF.",
       "keywords": ["payables", "accounts payable", "supplier dues", "amount owed", "overdue bills", "supplier statement", "supplier ledger", "aging"]
+    },
+    {
+      "id": "faq_invoiso_templates",
+      "category": "features",
+      "question": "What are Invoiso Templates?",
+      "answer": "**Invoiso Templates** are optional, ready-made invoice designs sold on the Invoiso Templates website. Some are free.\n\nThey print with your own company details and **follow all your PDF settings** (logo, GST, bank details, text size and more) — only the design changes. The built-in templates stay free and keep working.\n\nTo browse them: **Settings → PDF Settings → Add Template → Get more templates…**",
+      "keywords": ["invoiso templates", "paid template", "premium template", "buy template", "new design", "marketplace"]
+    },
+    {
+      "id": "faq_install_template",
+      "category": "features",
+      "question": "How do I install an Invoiso Template?",
+      "answer": "1. Download the `.invoiso` file — free ones from the template's page, bought ones from your **Account** page on the Invoiso Templates website.\n2. Open **Settings → PDF Settings → Add Template → Install template…** and pick the file.\n3. Choose **Use** (or select it later under **Invoiso Templates** in the template list) and press **Save Settings**.\n\nA template is installed once per computer and can be used by every company on it. A newer file for the same template updates it; an older one is refused.",
+      "keywords": ["install template", ".invoiso", "import template", "template file", "update template"]
+    },
+    {
+      "id": "faq_template_licence",
+      "category": "features",
+      "question": "How do I activate a template I bought?",
+      "answer": "Open **Settings → Licences → Enter licence key** and enter:\n\n- the **licence key** you received, and\n- the **email** you bought it with.\n\nThe licence then covers that template on **this computer**, for every company on it. Until it is activated, a paid template prints with a **PREVIEW** watermark.\n\nThe app checks the licence about once a day when you are online. If it can't check for 30 days you get a reminder; after 60 days the template prints with a \"Licence verification pending\" watermark until a check succeeds. Your invoices are never blocked.",
+      "keywords": ["licence", "license", "licence key", "activate", "preview watermark", "verification pending"]
+    },
+    {
+      "id": "faq_renew_offline",
+      "category": "features",
+      "question": "My computer is never online. How do I keep the template licence active?",
+      "answer": "Use **Renew offline**:\n\n1. **Settings → Licences → Renew offline** on the licence card shows a **request code**. Copy it.\n2. Email it to us from any phone or computer.\n3. We send back a **renewal code**. Paste it in the same dialog and press **Apply**.\n\nThat counts as a check, so the licence stays active for another 30 days.",
+      "keywords": ["renew offline", "offline licence", "no internet", "renewal code", "request code"]
+    },
+    {
+      "id": "faq_move_licence",
+      "category": "features",
+      "question": "How do I move a template licence to another computer?",
+      "answer": "A licence works on **one computer** at a time.\n\n1. On the old computer: **Settings → Licences → Deactivate**.\n2. On the new computer: **Enter licence key** with the same key and email.\n\nIf the old computer is lost, deactivate it from your **Account** page on the Invoiso Templates website. Restoring a backup on a new computer brings the template file, but the licence must be activated again.",
+      "keywords": ["move licence", "new computer", "deactivate", "transfer licence", "active elsewhere"]
     }
   ]
 }

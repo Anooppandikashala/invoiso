@@ -4,6 +4,7 @@ import 'package:invoiso/common/app_config.dart';
 import 'package:invoiso/database/company_registry_service.dart';
 import 'package:invoiso/database/database_helper.dart';
 import 'package:invoiso/database/invoice_attachment_service.dart';
+import 'package:invoiso/services/templates/template_pack_store.dart';
 import 'package:archive/archive_io.dart';
 import 'package:invoiso/utils/fs_utils.dart';
 import 'package:path/path.dart';
@@ -20,9 +21,12 @@ import 'package:invoiso/models/backup_results.dart';
 class BackupManager {
   static const String _backupExtension = '.invoicedb';
   static const String _jsonExtension = '.json';
-  // Inside a zip .invoicedb: the database, plus attachments/<invoice>/<file>.
+  // Inside a zip .invoicedb: the database, plus attachments/<invoice>/<file>
+  // and templates/<templateId>.invoiso (the installed template this company
+  // prints with, still encrypted).
   static const String _zipDbName = 'invoice.db';
   static const String _zipAttachmentsDir = 'attachments';
+  static const String _zipTemplatesDir = 'templates';
 
   // Tables excluded from JSON exports (contain sensitive data).
   static const Set<String> _excludedFromJsonExport = {'users'};
@@ -100,9 +104,10 @@ class BackupManager {
     final backupPath = join(backupDir, '$backupName$_backupExtension');
 
     final photos = await _attachmentFiles();
-    if (photos.isEmpty) {
-      // No photos: a bare SQLite file, exactly as before — older app
-      // versions can still restore it.
+    final template = await _activeTemplateFile();
+    if (photos.isEmpty && template == null) {
+      // No photos or template: a bare SQLite file, exactly as before — older
+      // app versions can still restore it.
       await File(dbPath).copy(backupPath);
       return backupPath;
     }
@@ -118,6 +123,10 @@ class BackupManager {
       await encoder.addFile(
           f, posix.joinAll([_zipAttachmentsDir, ...split(relative(f.path, from: root))]));
     }
+    if (template != null) {
+      encoder.addArchiveFile(ArchiveFile(
+          '$_zipTemplatesDir/${template.$1}.invoiso', template.$2.length, template.$2));
+    }
     await encoder.close();
     return backupPath;
   }
@@ -127,6 +136,32 @@ class BackupManager {
     final dir = Directory(InvoiceAttachmentService.companyDir);
     if (!await dir.exists()) return [];
     return dir.list(recursive: true).where((e) => e is File).cast<File>().toList();
+  }
+
+  // The installed .invoiso template this company prints with (id + file bytes
+  // exactly as stored), or null. Licences are never backed up (§17.5 Q3).
+  Future<(String, List<int>)?> _activeTemplateFile() async {
+    final rows = await (await DatabaseHelper().database).query('settings',
+        where: 'key = ?', whereArgs: [SettingKey.activeTemplatePack.key]);
+    final id = rows.isEmpty ? null : rows.first['value'] as String?;
+    if (id == null || id.isEmpty) return null;
+    final bytes = await TemplatePackStore().bytesOf(id);
+    return bytes == null ? null : (id, bytes);
+  }
+
+  // Installs templates from a restored zip through the normal install rules
+  // (missing → installed, older here → updated, newer here → kept). A
+  // template problem never fails the restore.
+  Future<void> _installBackedUpTemplates(String dir) async {
+    final folder = Directory(dir);
+    if (!await folder.exists()) return;
+    final store = TemplatePackStore();
+    await for (final f in folder.list()) {
+      if (f is! File || !f.path.endsWith('.invoiso')) continue;
+      try {
+        await store.install(await f.readAsBytes());
+      } catch (_) {}
+    }
   }
 
   // A zip starts with "PK"; a bare SQLite backup with "SQLite format 3".
@@ -140,9 +175,9 @@ class BackupManager {
     }
   }
 
-  // Extracts a zip backup into [outDir]: only the database and files under
-  // attachments/ — anything else, or any path escaping [outDir] ("zip
-  // slip"), is ignored. Returns the extracted database file.
+  // Extracts a zip backup into [outDir]: only the database, files under
+  // attachments/ and templates/*.invoiso — anything else, or any path
+  // escaping [outDir] ("zip slip"), is ignored. Returns the extracted database file.
   Future<File> _extractZip(String zipPath, String outDir) async {
     final input = InputFileStream(zipPath);
     try {
@@ -150,7 +185,10 @@ class BackupManager {
       for (final entry in archive.files) {
         if (!entry.isFile) continue;
         final name = entry.name;
-        if (name != _zipDbName && !name.startsWith('$_zipAttachmentsDir/')) continue;
+        final isTemplate = name.startsWith('$_zipTemplatesDir/') && name.endsWith('.invoiso');
+        if (name != _zipDbName && !name.startsWith('$_zipAttachmentsDir/') && !isTemplate) {
+          continue;
+        }
         final target = normalize(join(outDir, joinAll(posix.split(name))));
         if (!isWithin(outDir, target)) continue;
         await Directory(dirname(target)).create(recursive: true);
@@ -275,6 +313,7 @@ class BackupManager {
           isZip ? (await _extractZip(backupPath, unpackDir)).path : backupPath;
       await _restoreDatabaseFile(sourceDb,
           attachmentsFrom: isZip ? join(unpackDir, _zipAttachmentsDir) : null);
+      if (isZip) await _installBackedUpTemplates(join(unpackDir, _zipTemplatesDir));
     } finally {
       final unpacked = Directory(unpackDir);
       if (await unpacked.exists()) await unpacked.delete(recursive: true);

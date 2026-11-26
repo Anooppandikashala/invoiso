@@ -6423,10 +6423,10 @@ class AppLocalizationsZh extends AppLocalizations {
   }
 
   @override
-  String get pdfLayoutAddTitle => '添加自定义布局';
+  String get pdfLayoutAddTitle => '添加模板';
 
   @override
-  String get pdfLayoutAddSubtitle => '导入自定义 .json 布局文件，或将当前设置保存为新布局。';
+  String get pdfLayoutAddSubtitle => '导入或创建布局、安装 Invoiso Template，或输入许可证密钥。';
 
   @override
   String get pdfLayoutCreateEditJsonTitle => '创建 / 编辑 JSON';
@@ -6507,7 +6507,7 @@ class AppLocalizationsZh extends AppLocalizations {
   }
 
   @override
-  String get pdfLayoutAddButton => '添加布局';
+  String get pdfLayoutAddButton => '添加模板';
 
   @override
   String get pdfLayoutInsertedSection => '您添加的布局';
@@ -6757,4 +6757,93 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get pdfLayoutEnterKeySubtitle => '激活您购买的模板';
+
+  @override
+  String get pdfPackInstallTitle => '安装模板…';
+
+  @override
+  String get pdfPackInstallSubtitle => '添加 Invoiso Template 文件（.invoiso）';
+
+  @override
+  String get pdfPackStatusFree => '免费';
+
+  @override
+  String get pdfPackStatusLicensed => '已授权';
+
+  @override
+  String get pdfPackStatusPreview => '预览 – 未授权';
+
+  @override
+  String get pdfPackStatusPending => '许可证待验证';
+
+  @override
+  String get pdfPackStatusUnavailable => '无法打开';
+
+  @override
+  String pdfPackVersion(int version) {
+    return '版本 $version';
+  }
+
+  @override
+  String pdfPackUpdated(String name, int version) {
+    return '$name 已更新到版本 $version';
+  }
+
+  @override
+  String pdfPackAlreadyInstalled(String name) {
+    return '$name 已安装';
+  }
+
+  @override
+  String pdfPackOlderThanInstalled(String name) {
+    return '已安装更新版本的 $name';
+  }
+
+  @override
+  String get pdfPackNotSupported =>
+      '此版本的 Invoiso 无法打开 Invoiso Templates。请从 invoiso.co.in 下载官方应用。';
+
+  @override
+  String get pdfPackNotGenuine => '这不是正版 Invoiso 模板文件。';
+
+  @override
+  String get pdfPackNeedsAppUpdate => '此模板需要更新版本的 Invoiso。请更新应用。';
+
+  @override
+  String pdfPackLicenceNeeded(String name) {
+    return '更新 $name 需要许可证。已保留已安装的版本。';
+  }
+
+  @override
+  String get pdfPackInstalledTitle => '模板已安装';
+
+  @override
+  String pdfPackUseNow(String name) {
+    return '$name 已安装。现在使用吗？';
+  }
+
+  @override
+  String get pdfPackUseButton => '使用';
+
+  @override
+  String get pdfPackLaterButton => '稍后';
+
+  @override
+  String get pdfPackRemoveTooltip => '移除模板';
+
+  @override
+  String pdfPackRemoveConfirm(String name) {
+    return '要从本机移除 $name 吗？使用它的公司将改用内置模板打印。您以后可以重新安装。';
+  }
+
+  @override
+  String pdfPackRemoved(String name) {
+    return '已移除 $name';
+  }
+
+  @override
+  String get storeInstalled => '已安装';
+
+  @override
+  String get pdfPackNoJsonCopy => '选中 Invoiso Template 时不可用';
 }

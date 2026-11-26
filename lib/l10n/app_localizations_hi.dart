@@ -6667,11 +6667,11 @@ class AppLocalizationsHi extends AppLocalizations {
   }
 
   @override
-  String get pdfLayoutAddTitle => 'कस्टम लेआउट जोड़ें';
+  String get pdfLayoutAddTitle => 'टेम्पलेट जोड़ें';
 
   @override
   String get pdfLayoutAddSubtitle =>
-      'कस्टम .json लेआउट फ़ाइल आयात करें या मौजूदा कस्टमाइज़ेशन को नए लेआउट के रूप में सहेजें।';
+      'लेआउट आयात करें या बनाएं, Invoiso Template इंस्टॉल करें, या लाइसेंस कुंजी दर्ज करें।';
 
   @override
   String get pdfLayoutCreateEditJsonTitle => 'JSON बनाएं / संपादित करें';
@@ -6758,7 +6758,7 @@ class AppLocalizationsHi extends AppLocalizations {
   }
 
   @override
-  String get pdfLayoutAddButton => 'लेआउट जोड़ें';
+  String get pdfLayoutAddButton => 'टेम्पलेट जोड़ें';
 
   @override
   String get pdfLayoutInsertedSection => 'आपके जोड़े गए लेआउट';
@@ -7029,4 +7029,95 @@ class AppLocalizationsHi extends AppLocalizations {
 
   @override
   String get pdfLayoutEnterKeySubtitle => 'खरीदा हुआ टेम्पलेट सक्रिय करें';
+
+  @override
+  String get pdfPackInstallTitle => 'टेम्पलेट इंस्टॉल करें…';
+
+  @override
+  String get pdfPackInstallSubtitle =>
+      'Invoiso Template फ़ाइल (.invoiso) जोड़ें';
+
+  @override
+  String get pdfPackStatusFree => 'मुफ़्त';
+
+  @override
+  String get pdfPackStatusLicensed => 'लाइसेंस प्राप्त';
+
+  @override
+  String get pdfPackStatusPreview => 'पूर्वावलोकन – लाइसेंस नहीं';
+
+  @override
+  String get pdfPackStatusPending => 'लाइसेंस सत्यापन लंबित';
+
+  @override
+  String get pdfPackStatusUnavailable => 'खोला नहीं जा सकता';
+
+  @override
+  String pdfPackVersion(int version) {
+    return 'संस्करण $version';
+  }
+
+  @override
+  String pdfPackUpdated(String name, int version) {
+    return '$name संस्करण $version में अपडेट हुआ';
+  }
+
+  @override
+  String pdfPackAlreadyInstalled(String name) {
+    return '$name पहले से इंस्टॉल है';
+  }
+
+  @override
+  String pdfPackOlderThanInstalled(String name) {
+    return '$name का नया संस्करण पहले से इंस्टॉल है';
+  }
+
+  @override
+  String get pdfPackNotSupported =>
+      'Invoiso का यह संस्करण Invoiso Templates नहीं खोल सकता। invoiso.co.in से आधिकारिक ऐप डाउनलोड करें।';
+
+  @override
+  String get pdfPackNotGenuine => 'यह असली Invoiso टेम्पलेट फ़ाइल नहीं है।';
+
+  @override
+  String get pdfPackNeedsAppUpdate =>
+      'इस टेम्पलेट के लिए Invoiso का नया संस्करण चाहिए। कृपया ऐप अपडेट करें।';
+
+  @override
+  String pdfPackLicenceNeeded(String name) {
+    return '$name अपडेट करने के लिए लाइसेंस चाहिए। इंस्टॉल किया गया संस्करण रखा गया है।';
+  }
+
+  @override
+  String get pdfPackInstalledTitle => 'टेम्पलेट इंस्टॉल हुआ';
+
+  @override
+  String pdfPackUseNow(String name) {
+    return '$name इंस्टॉल हो गया। अभी उपयोग करें?';
+  }
+
+  @override
+  String get pdfPackUseButton => 'उपयोग करें';
+
+  @override
+  String get pdfPackLaterButton => 'बाद में';
+
+  @override
+  String get pdfPackRemoveTooltip => 'टेम्पलेट हटाएं';
+
+  @override
+  String pdfPackRemoveConfirm(String name) {
+    return '$name को इस कंप्यूटर से हटाएं? इसका उपयोग करने वाली कंपनियां बिल्ट-इन टेम्पलेट से प्रिंट करेंगी। आप इसे बाद में फिर इंस्टॉल कर सकते हैं।';
+  }
+
+  @override
+  String pdfPackRemoved(String name) {
+    return '$name हटाया गया';
+  }
+
+  @override
+  String get storeInstalled => 'इंस्टॉल है';
+
+  @override
+  String get pdfPackNoJsonCopy => 'Invoiso Template चुने होने पर उपलब्ध नहीं';
 }

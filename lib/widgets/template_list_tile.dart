@@ -80,6 +80,16 @@ class TemplateListTile extends StatelessWidget {
   final VoidCallback? onEdit;
   final VoidCallback? onDelete;
 
+  /// Text of the [isInserted] badge (default "Inserted").
+  final String? insertedLabel;
+
+  /// Extra status chip (e.g. a template's licence state).
+  final String? statusLabel;
+  final Color? statusColor;
+
+  /// Tooltip of the remove button (default "Remove inserted layout").
+  final String? deleteTooltip;
+
   /// Imported block document (`page` + `theme` + `layout`). When present the
   /// thumbnail renders the inserted layout itself instead of the built-in
   /// template sketch.
@@ -101,6 +111,10 @@ class TemplateListTile extends StatelessWidget {
     this.isInserted = false,
     this.onEdit,
     this.onDelete,
+    this.insertedLabel,
+    this.statusLabel,
+    this.statusColor,
+    this.deleteTooltip,
     this.blockLayout,
   });
 
@@ -186,7 +200,7 @@ class TemplateListTile extends StatelessWidget {
                             icon: const Icon(Icons.delete_outline,
                                 size: 16, color: Colors.red),
                             onPressed: onDelete,
-                            tooltip: l10n.pdfLayoutRemoveTooltip,
+                            tooltip: deleteTooltip ?? l10n.pdfLayoutRemoveTooltip,
                             padding: EdgeInsets.zero,
                             constraints: const BoxConstraints(
                                 minWidth: 24, minHeight: 24),
@@ -232,10 +246,29 @@ class TemplateListTile extends StatelessWidget {
                           borderRadius: BorderRadius.circular(3),
                         ),
                         child: Text(
-                          l10n.pdfLayoutInsertedBadge,
+                          insertedLabel ?? l10n.pdfLayoutInsertedBadge,
                           style: TextStyle(
                             fontSize: AppFontSize.xsmall,
                             color: primaryColor,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                    ],
+                    if (statusLabel != null) ...[
+                      const SizedBox(height: 4),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 5, vertical: 1),
+                        decoration: BoxDecoration(
+                          color: (statusColor ?? primaryColor).withValues(alpha: 0.15),
+                          borderRadius: BorderRadius.circular(3),
+                        ),
+                        child: Text(
+                          statusLabel!,
+                          style: TextStyle(
+                            fontSize: AppFontSize.xsmall,
+                            color: statusColor ?? primaryColor,
                             fontWeight: FontWeight.w600,
                           ),
                         ),

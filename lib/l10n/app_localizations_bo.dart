@@ -6649,11 +6649,11 @@ class AppLocalizationsBo extends AppLocalizations {
   }
 
   @override
-  String get pdfLayoutAddTitle => 'རང་སྒྲིག་བཀོད་པ་སྣོན་པ།';
+  String get pdfLayoutAddTitle => 'དཔེ་གཞི་སྣོན་པ།';
 
   @override
   String get pdfLayoutAddSubtitle =>
-      'རང་སྒྲིག་ .json བཀོད་པའི་ཡིག་ཆ་ནང་འདྲེན་བྱེད་པའམ། ད་ལྟའི་སྒྲིག་འགོད་བཀོད་པ་གསར་པ་ལྟར་ཉར་ཚགས་བྱེད།';
+      'བཀོད་པ་ནང་འདྲེན་ནམ་གསར་བཟོ་བྱེད་པ། Invoiso Template འཇུག་པ། ཡང་ན་ཆོག་མཆན་ལྡེ་མིག་འཇུག་པ།';
 
   @override
   String get pdfLayoutCreateEditJsonTitle => 'JSON བཟོ་བ། / བཅོས་སྒྲིག';
@@ -6741,7 +6741,7 @@ class AppLocalizationsBo extends AppLocalizations {
   }
 
   @override
-  String get pdfLayoutAddButton => 'བཀོད་པ་སྣོན་པ།';
+  String get pdfLayoutAddButton => 'དཔེ་གཞི་སྣོན་པ།';
 
   @override
   String get pdfLayoutInsertedSection => 'ཁྱེད་ཀྱིས་བསྣན་པའི་བཀོད་པ།';
@@ -7016,4 +7016,96 @@ class AppLocalizationsBo extends AppLocalizations {
   @override
   String get pdfLayoutEnterKeySubtitle =>
       'ཉོས་ཟིན་པའི་དཔེ་གཞི་སྤྱོད་འགོ་འཛུགས།';
+
+  @override
+  String get pdfPackInstallTitle => 'དཔེ་གཞི་འཇུག་པ…';
+
+  @override
+  String get pdfPackInstallSubtitle =>
+      'Invoiso Template ཡིག་ཆ (.invoiso) སྣོན་པ།';
+
+  @override
+  String get pdfPackStatusFree => 'རིན་མེད།';
+
+  @override
+  String get pdfPackStatusLicensed => 'ཆོག་མཆན་ཡོད།';
+
+  @override
+  String get pdfPackStatusPreview => 'སྔོན་ལྟ། – ཆོག་མཆན་མེད།';
+
+  @override
+  String get pdfPackStatusPending => 'ཆོག་མཆན་བདེན་དཔང་སྒུག་བཞིན།';
+
+  @override
+  String get pdfPackStatusUnavailable => 'ཁ་ཕྱེ་མི་ཐུབ།';
+
+  @override
+  String pdfPackVersion(int version) {
+    return 'པར་གཞི་ $version';
+  }
+
+  @override
+  String pdfPackUpdated(String name, int version) {
+    return '$name པར་གཞི་ $version ལ་གསར་བསྒྱུར་བྱས་ཟིན།';
+  }
+
+  @override
+  String pdfPackAlreadyInstalled(String name) {
+    return '$name སྔོན་ནས་བཙུགས་ཟིན།';
+  }
+
+  @override
+  String pdfPackOlderThanInstalled(String name) {
+    return '$name ཡི་པར་གཞི་གསར་བ་སྔོན་ནས་བཙུགས་ཟིན།';
+  }
+
+  @override
+  String get pdfPackNotSupported =>
+      'Invoiso ཡི་པར་གཞི་འདིས་ Invoiso Templates ཁ་ཕྱེ་མི་ཐུབ། invoiso.co.in ནས་གཞུང་འབྲེལ་མཉེན་ཆས་ཕབ་ལེན་བྱོས།';
+
+  @override
+  String get pdfPackNotGenuine => 'འདི་ Invoiso ཡི་དཔེ་གཞི་ཡིག་ཆ་ངོ་མ་མ་རེད།';
+
+  @override
+  String get pdfPackNeedsAppUpdate =>
+      'དཔེ་གཞི་འདི་ལ་ Invoiso ཡི་པར་གཞི་གསར་བ་དགོས། མཉེན་ཆས་གསར་བསྒྱུར་བྱོས།';
+
+  @override
+  String pdfPackLicenceNeeded(String name) {
+    return '$name གསར་བསྒྱུར་བྱེད་པར་ཆོག་མཆན་དགོས། བཙུགས་ཟིན་པའི་པར་གཞི་ཉར་ཡོད།';
+  }
+
+  @override
+  String get pdfPackInstalledTitle => 'དཔེ་གཞི་བཙུགས་ཟིན།';
+
+  @override
+  String pdfPackUseNow(String name) {
+    return '$name བཙུགས་ཟིན། ད་ལྟ་བེད་སྤྱོད་བྱེད་དམ།';
+  }
+
+  @override
+  String get pdfPackUseButton => 'བེད་སྤྱོད།';
+
+  @override
+  String get pdfPackLaterButton => 'རྗེས་སུ།';
+
+  @override
+  String get pdfPackRemoveTooltip => 'དཔེ་གཞི་སུབ་པ།';
+
+  @override
+  String pdfPackRemoveConfirm(String name) {
+    return '$name གློག་ཀླད་འདི་ནས་སུབ་བམ། དེ་བེད་སྤྱོད་བྱེད་པའི་ཚོང་ཁང་རྣམས་ཀྱིས་ནང་འདྲེས་དཔེ་གཞི་ཐོག་པར་སྐྲུན་བྱེད། རྗེས་སུ་ཡང་བསྐྱར་འཇུག་ཆོག';
+  }
+
+  @override
+  String pdfPackRemoved(String name) {
+    return '$name སུབ་ཟིན།';
+  }
+
+  @override
+  String get storeInstalled => 'བཙུགས་ཟིན།';
+
+  @override
+  String get pdfPackNoJsonCopy =>
+      'Invoiso Template འདེམས་ཡོད་སྐབས་སྤྱོད་མི་ཐུབ།';
 }

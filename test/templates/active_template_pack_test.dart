@@ -1,7 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
-import 'dart:typed_data';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:invoiso/services/licensing/licence_service.dart';
 import 'package:invoiso/services/templates/active_template_pack.dart';
@@ -71,6 +71,27 @@ void main() {
     // A file that slipped past install (e.g. restored from a backup).
     File('${dir.path}/templates/gst-tax-invoice.invoiso').writeAsBytesSync(_pack(minEngine: 99));
     expect(await load('gst-tax-invoice'), isNull);
+  });
+
+  test('logs name the template and the reason, never its content (§9.5b #6)', () async {
+    final logs = <String>[];
+    final original = debugPrint;
+    debugPrint = (String? m, {int? wrapWidth}) => logs.add(m ?? '');
+    addTearDown(() => debugPrint = original);
+
+    final secret = Uint8List.fromList(utf8.encode('INVDEV1\n${jsonEncode({
+          'manifest': {'templateId': 'gst-tax-invoice', 'name': 'GST', 'version': 1, 'minEngine': 99},
+          'layout': {'engine': 2, 'layout': [{'type': 'text', 'value': 'SECRET-LAYOUT'}]},
+        })}'));
+    await store.install(_pack());
+    File('${dir.path}/templates/gst-tax-invoice.invoiso').writeAsBytesSync(secret);
+    expect(await load('gst-tax-invoice'), isNull); // needs newer engine
+    File('${dir.path}/templates/gst-tax-invoice.invoiso').writeAsBytesSync(utf8.encode('INVDEV1\n{SECRET-LAYOUT'));
+    expect(await load('gst-tax-invoice'), isNull); // not genuine
+
+    expect(logs, isNotEmpty);
+    expect(logs.every((l) => l.contains('gst-tax-invoice')), isTrue);
+    expect(logs.any((l) => l.contains('SECRET-LAYOUT')), isFalse);
   });
 
   test('a file that is not the selected template is not used', () async {

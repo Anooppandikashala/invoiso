@@ -230,7 +230,7 @@ void main() {
     );
     await tester.pump(const Duration(seconds: 1));
 
-    await tester.tap(find.text('Add Layout'));
+    await tester.tap(find.text('Add Template'));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 500));
     await tester.tap(find.text('Import from JSON File'));
@@ -308,7 +308,7 @@ void main() {
     );
     await tester.pump(const Duration(seconds: 1));
 
-    await tester.tap(find.text('Add Layout'));
+    await tester.tap(find.text('Add Template'));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 500));
     await tester.tap(find.text('Import from JSON File'));
@@ -374,7 +374,7 @@ void main() {
     );
     await tester.pump(const Duration(seconds: 1));
 
-    await tester.tap(find.text('Add Layout'));
+    await tester.tap(find.text('Add Template'));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 500));
     await tester.tap(find.text('Import from JSON File'));

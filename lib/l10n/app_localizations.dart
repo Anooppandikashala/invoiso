@@ -11327,13 +11327,13 @@ abstract class AppLocalizations {
   /// No description provided for @pdfLayoutAddTitle.
   ///
   /// In en, this message translates to:
-  /// **'Add Custom Layout'**
+  /// **'Add Template'**
   String get pdfLayoutAddTitle;
 
   /// No description provided for @pdfLayoutAddSubtitle.
   ///
   /// In en, this message translates to:
-  /// **'Import a custom .json layout file or save current customizations as a new layout.'**
+  /// **'Import or create a layout, install an Invoiso Template, or enter a licence key.'**
   String get pdfLayoutAddSubtitle;
 
   /// No description provided for @pdfLayoutCreateEditJsonTitle.
@@ -11483,7 +11483,7 @@ abstract class AppLocalizations {
   /// No description provided for @pdfLayoutAddButton.
   ///
   /// In en, this message translates to:
-  /// **'Add Layout'**
+  /// **'Add Template'**
   String get pdfLayoutAddButton;
 
   /// No description provided for @pdfLayoutInsertedSection.
@@ -11965,6 +11965,150 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Activate a template you bought'**
   String get pdfLayoutEnterKeySubtitle;
+
+  /// No description provided for @pdfPackInstallTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Install template…'**
+  String get pdfPackInstallTitle;
+
+  /// No description provided for @pdfPackInstallSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Add an Invoiso Template file (.invoiso)'**
+  String get pdfPackInstallSubtitle;
+
+  /// No description provided for @pdfPackStatusFree.
+  ///
+  /// In en, this message translates to:
+  /// **'Free'**
+  String get pdfPackStatusFree;
+
+  /// No description provided for @pdfPackStatusLicensed.
+  ///
+  /// In en, this message translates to:
+  /// **'Licensed'**
+  String get pdfPackStatusLicensed;
+
+  /// No description provided for @pdfPackStatusPreview.
+  ///
+  /// In en, this message translates to:
+  /// **'Preview – not licensed'**
+  String get pdfPackStatusPreview;
+
+  /// No description provided for @pdfPackStatusPending.
+  ///
+  /// In en, this message translates to:
+  /// **'Licence verification pending'**
+  String get pdfPackStatusPending;
+
+  /// No description provided for @pdfPackStatusUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Can\'t be opened'**
+  String get pdfPackStatusUnavailable;
+
+  /// No description provided for @pdfPackVersion.
+  ///
+  /// In en, this message translates to:
+  /// **'Version {version}'**
+  String pdfPackVersion(int version);
+
+  /// No description provided for @pdfPackUpdated.
+  ///
+  /// In en, this message translates to:
+  /// **'{name} updated to version {version}'**
+  String pdfPackUpdated(String name, int version);
+
+  /// No description provided for @pdfPackAlreadyInstalled.
+  ///
+  /// In en, this message translates to:
+  /// **'{name} is already installed'**
+  String pdfPackAlreadyInstalled(String name);
+
+  /// No description provided for @pdfPackOlderThanInstalled.
+  ///
+  /// In en, this message translates to:
+  /// **'A newer version of {name} is already installed'**
+  String pdfPackOlderThanInstalled(String name);
+
+  /// No description provided for @pdfPackNotSupported.
+  ///
+  /// In en, this message translates to:
+  /// **'This version of Invoiso can\'t open Invoiso Templates. Download the official app from invoiso.co.in.'**
+  String get pdfPackNotSupported;
+
+  /// No description provided for @pdfPackNotGenuine.
+  ///
+  /// In en, this message translates to:
+  /// **'This is not a genuine Invoiso template file.'**
+  String get pdfPackNotGenuine;
+
+  /// No description provided for @pdfPackNeedsAppUpdate.
+  ///
+  /// In en, this message translates to:
+  /// **'This template needs a newer version of Invoiso. Please update the app.'**
+  String get pdfPackNeedsAppUpdate;
+
+  /// No description provided for @pdfPackLicenceNeeded.
+  ///
+  /// In en, this message translates to:
+  /// **'A licence is needed to update {name}. The installed version is kept.'**
+  String pdfPackLicenceNeeded(String name);
+
+  /// No description provided for @pdfPackInstalledTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Template installed'**
+  String get pdfPackInstalledTitle;
+
+  /// No description provided for @pdfPackUseNow.
+  ///
+  /// In en, this message translates to:
+  /// **'{name} is installed. Use it now?'**
+  String pdfPackUseNow(String name);
+
+  /// No description provided for @pdfPackUseButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Use'**
+  String get pdfPackUseButton;
+
+  /// No description provided for @pdfPackLaterButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Later'**
+  String get pdfPackLaterButton;
+
+  /// No description provided for @pdfPackRemoveTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove template'**
+  String get pdfPackRemoveTooltip;
+
+  /// No description provided for @pdfPackRemoveConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove {name} from this computer? Companies using it will print with the built-in template. You can install it again later.'**
+  String pdfPackRemoveConfirm(String name);
+
+  /// No description provided for @pdfPackRemoved.
+  ///
+  /// In en, this message translates to:
+  /// **'Removed {name}'**
+  String pdfPackRemoved(String name);
+
+  /// No description provided for @storeInstalled.
+  ///
+  /// In en, this message translates to:
+  /// **'Installed'**
+  String get storeInstalled;
+
+  /// No description provided for @pdfPackNoJsonCopy.
+  ///
+  /// In en, this message translates to:
+  /// **'Not available while an Invoiso Template is selected'**
+  String get pdfPackNoJsonCopy;
 }
 
 class _AppLocalizationsDelegate

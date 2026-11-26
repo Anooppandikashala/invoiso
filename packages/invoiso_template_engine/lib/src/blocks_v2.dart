@@ -333,8 +333,10 @@ extension _BlocksV2 on _BlockLayoutRenderer {
       code = pw.Image(pw.MemoryImage(assets.paymentQr!),
           width: size, height: size, fit: pw.BoxFit.contain);
     } else if (source != 'image' && payload.isNotEmpty) {
+      // drawText off: a QR has no caption text, and the default would pull
+      // in the built-in Courier font (no Unicode, debug warning).
       code = pw.BarcodeWidget(
-          barcode: pw.Barcode.qrCode(), data: payload, width: size, height: size);
+          barcode: pw.Barcode.qrCode(), data: payload, width: size, height: size, drawText: false);
     }
     if (code == null) return null;
     final title = _resolveLine((block['title'] ?? '').toString());
