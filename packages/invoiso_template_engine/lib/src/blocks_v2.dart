@@ -369,7 +369,9 @@ extension _BlocksV2 on _BlockLayoutRenderer {
   /// `source`, `border` grid|horizontal|outer|none, `borderWidth`,
   /// `borderColor`, `header` {background, color, bold, size} or false,
   /// `size`, `cellPadding`, `zebra` colour, `footerRows` [{cells: {columnId:
-  /// text|{value, bold, italic, align}}, bold, italic, background, if}],
+  /// text|{value, bold, italic, align}}, bold, italic, background, if,
+  /// repeat: data list path → one row per entry, `{{row.x}}` like body rows
+  /// (e.g. charges)}],
   /// `repeatHeader` (true / false; omitted → the user's "repeat table header"
   /// setting), `detailRow` {value, if, style…}: a full-width line under each
   /// row (e.g. description on its own line) when its `if` holds.
@@ -518,34 +520,43 @@ extension _BlocksV2 on _BlockLayoutRenderer {
       _row = saved;
     }
     final footerRows = <pw.TableRow>[];
+    final savedFooterRow = _row;
     for (final raw in (block['footerRows'] is List ? block['footerRows'] as List : const [])) {
       final footer = _BlockLayoutRenderer._asMap(raw);
       if (!_truthy(footer['if'])) continue;
       final cells = _BlockLayoutRenderer._asMap(footer['cells']);
-      footerRows.add(pw.TableRow(
-        decoration: footer['background'] == null
-            ? null
-            : pw.BoxDecoration(
-                color: _BlockLayoutRenderer._color(footer['background'],
-                    fallback: PdfColors.white)),
-        children: [
-          for (var i = 0; i < columns.length; i++)
-            () {
-              final cell = cells[columnId(i)] is Map
-                  ? _BlockLayoutRenderer._asMap(cells[columnId(i)])
-                  : {'value': cells[columnId(i)] ?? ''};
-              final spec = _truthy(cell['if']) ? cell : {'value': ''};
-              return pw.Padding(
-                padding: padding,
-                child: cellText(_resolve(spec['value'].toString()), spec,
-                    columns[i]['align'],
-                    role: 'totals',
-                    bold: footer['bold'] == true, italic: footer['italic'] == true),
-              );
-            }(),
-        ],
-      ));
+      // `repeat`: one row per entry of a data list; otherwise a single row.
+      final repeat = footer['repeat'];
+      final repeated = repeat is String ? _rawLookup(repeat.toLowerCase()) : null;
+      final entries = repeat is String ? (repeated is List ? repeated : const []) : const [null];
+      for (final entry in entries) {
+        if (repeat is String) _row = _rowOf(entry);
+        footerRows.add(pw.TableRow(
+          decoration: footer['background'] == null
+              ? null
+              : pw.BoxDecoration(
+                  color: _BlockLayoutRenderer._color(footer['background'],
+                      fallback: PdfColors.white)),
+          children: [
+            for (var i = 0; i < columns.length; i++)
+              () {
+                final cell = cells[columnId(i)] is Map
+                    ? _BlockLayoutRenderer._asMap(cells[columnId(i)])
+                    : {'value': cells[columnId(i)] ?? ''};
+                final spec = _truthy(cell['if']) ? cell : {'value': ''};
+                return pw.Padding(
+                  padding: padding,
+                  child: cellText(_resolve(spec['value'].toString()), spec,
+                      columns[i]['align'],
+                      role: 'totals',
+                      bold: footer['bold'] == true, italic: footer['italic'] == true),
+                );
+              }(),
+          ],
+        ));
+      }
     }
+    _row = savedFooterRow;
 
     final columnWidths = {
       for (var i = 0; i < columns.length; i++)

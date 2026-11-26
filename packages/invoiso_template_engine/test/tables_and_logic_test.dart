@@ -105,6 +105,47 @@ void main() {
     expect(r.text, contains('C Packing Rs 20.00'));
   });
 
+  test('footer rows can repeat over a list (charges); none when it is empty', () async {
+    final layout = [
+      {
+        'type': 'table',
+        'columns': [
+          {'id': 'desc', 'label': 'Item', 'value': '{{row.name}}'},
+          {'id': 'amt', 'label': 'Amount', 'value': '{{row.amount|number}}'},
+        ],
+        'footerRows': [
+          {'repeat': 'chargesTaxed', 'cells': {'desc': '{{row.label}} ({{row.hsn}})', 'amt': '{{row.amount|number}}'}},
+          {'cells': {'desc': 'TAX ROW', 'amt': '{{totals.tax|number}}'}},
+          {'repeat': 'chargesUntaxed', 'cells': {'desc': '{{row.label}}', 'amt': '{{row.amount|number}}'}},
+          {'cells': {'desc': 'Total', 'amt': '{{row.name}}'}},
+        ],
+      },
+    ];
+    final data = {
+      ..._data(),
+      'chargesTaxed': [
+        {'label': 'Freight', 'amount': 350, 'hsn': '9965'},
+      ],
+      'chargesUntaxed': [
+        {'label': 'Packing', 'amount': 120},
+        {'label': 'Courier', 'amount': 80},
+      ],
+    };
+    final r = await _render(layout, data);
+    // Order: taxed charge, tax row, untaxed charges, total.
+    final text = r.text;
+    expect(text.indexOf('Freight (9965)'), lessThan(text.indexOf('TAX ROW')));
+    expect(text.indexOf('TAX ROW'), lessThan(text.indexOf('Packing')));
+    expect(text.indexOf('Courier'), lessThan(text.indexOf('Total')));
+    expect(text, contains('350.00'));
+    // {{row.x}} is cleared after the repeated rows (no leaked charge data).
+    expect(text, isNot(contains('Total Courier')));
+
+    final none = await _render(layout, {..._data(), 'chargesTaxed': [], 'chargesUntaxed': []});
+    expect(none.text, isNot(contains('Freight')));
+    expect(none.text, contains('TAX ROW'));
+  });
+
   test('qr draws only when there is a UPI payload or payment QR image', () async {
     final layout = [
       {'type': 'qr', 'title': 'Pay via UPI'},

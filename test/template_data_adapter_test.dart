@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:invoiso/common/common.dart';
+import 'package:invoiso/models/additional_cost.dart';
 import 'package:invoiso/models/custom_field_def.dart';
 import 'package:invoiso/models/custom_field_value.dart';
 import 'package:invoiso/models/customer.dart';
@@ -166,6 +167,35 @@ void main() {
     expect(off['invoice']['gstLines'], isEmpty);
     expect(on['invoice']['gstLines'], isNotEmpty);
     expect(on['company']['taxLabel'], 'GSTIN');
+  });
+
+  test('charges split like the built-ins (taxed before tax, untaxed after) + extra discount', () {
+    final s = _invoice();
+    final inv = Invoice(
+      id: 't',
+      customer: s.customer,
+      items: s.items,
+      date: s.date,
+      type: 'Invoice',
+      taxMode: TaxMode.perItem,
+      additionalCosts: [
+        AdditionalCost(label: 'Freight', amount: 350, taxable: true, taxRate: 18, hsn: '9965'),
+        AdditionalCost(label: 'Packing', amount: 120),
+      ],
+      invoiceDiscountType: InvoiceDiscountType.percent,
+      invoiceDiscountValue: 10,
+    );
+    final d = _data(inv);
+    expect(d['chargesTaxed'], [
+      {'label': 'Freight', 'amount': inv.chargeTaxableValue(inv.additionalCosts.first), 'hsn': '9965', 'taxRate': 18.0},
+    ]);
+    expect(d['chargesUntaxed'], [
+      {'label': 'Packing', 'amount': 120.0},
+    ]);
+    final t = d['totals'] as Map<String, dynamic>;
+    expect(t['extraDiscount'], inv.invoiceDiscountAmount);
+    expect(t['extraDiscount'], greaterThan(0));
+    expect(t['extraDiscountLabel'], 'Extra Discount (10.0%)');
   });
 
   test('round off off → no rounding, total stays exact', () {

@@ -233,6 +233,17 @@ Map<String, dynamic> buildTemplateData(
       for (final c in invoice.additionalCosts)
         {'label': c.label, 'amount': c.amount},
     ],
+    // Split like the built-in templates: taxed charges are part of the taxable
+    // value (listed before the tax rows), untaxed ones are added after tax.
+    'chargesTaxed': [
+      for (final c in invoice.additionalCosts)
+        if (invoice.chargeTaxableValue(c) case final v?)
+          {'label': c.label, 'amount': v, 'hsn': c.hsn, 'taxRate': c.taxRate},
+    ],
+    'chargesUntaxed': [
+      for (final c in invoice.additionalCosts)
+        if (invoice.chargeTaxableValue(c) == null) {'label': c.label, 'amount': c.amount},
+    ],
     'totals': {
       'subtotal': invoice.subtotal,
       'grossSubtotal': invoice.grossSubtotal,
@@ -249,6 +260,11 @@ Map<String, dynamic> buildTemplateData(
       'igst': taxSplit.igst,
       'totalQty': invoice.items.fold<double>(0, (sum, i) => sum + i.quantity),
       'charges': invoice.additionalCosts.fold<double>(0, (sum, c) => sum + c.amount),
+      // Extra (invoice-level) discount row, as in the built-ins.
+      'extraDiscount': invoice.invoiceDiscountAmount,
+      'extraDiscountLabel': invoice.invoiceDiscountType == InvoiceDiscountType.percent
+          ? 'Extra Discount (${invoice.invoiceDiscountValue.toStringAsFixed(1)}%)'
+          : 'Extra Discount',
       'previousBalanceDue': previousBalanceDue,
       'totalDue': totalDue,
       'roundedTotal': s.showRoundOff
