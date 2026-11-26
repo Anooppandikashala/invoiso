@@ -412,14 +412,21 @@
       "id": "faq_template_licence",
       "category": "features",
       "question": "How do I activate a template I bought?",
-      "answer": "Open **Settings → Licences → Enter licence key** and enter:\n\n- the **licence key** you received, and\n- the **email** you bought it with.\n\nThe licence then covers that template on **this computer**, for every company on it. Until it is activated, a paid template prints with a **PREVIEW** watermark.\n\nThe app checks the licence about once a day when you are online. If it can't check for 30 days you get a reminder; after 60 days the template prints with a \"Licence verification pending\" watermark until a check succeeds. Your invoices are never blocked.",
-      "keywords": ["licence", "license", "licence key", "activate", "preview watermark", "verification pending"]
+      "answer": "Open **Settings → Licences → Enter licence key** and enter:\n\n- the **licence key** you received, and\n- the **email** you bought it with.\n\nThe licence then covers that template on **this computer**, for every company on it. Until it is activated, a paid template shows **Needs a licence** in PDF Settings and can't be used.\n\nThe app checks the licence about once a day when you are online. If it can't check for 30 days you get a reminder; after 60 days the template prints with a \"Licence verification pending\" watermark until a check succeeds. Your invoices are never blocked.",
+      "keywords": ["licence", "license", "licence key", "activate", "needs a licence", "verification pending"]
+    },
+    {
+      "id": "faq_template_trial",
+      "category": "features",
+      "question": "Can I try a paid template before buying it?",
+      "answer": "Yes. Each template's page shows pictures and a **sample PDF** of a full invoice.\n\nTo try it with your own invoices, ask us for a **7-day trial**. You get a trial key: download the template from your **Account** page, install it (**Settings → PDF Settings → Add Template → Install template…**), then **Settings → Licences → Enter licence key** with the key and your email.\n\nDuring the trial the template works normally. The computer must be **online at least once every 24 hours**; otherwise the template pauses until it connects again. After 7 days it stops working and your invoices use the built-in template. Buy it to keep using it — enter your new key and it works straight away.\n\nOne trial per template.",
+      "keywords": ["trial", "try", "demo", "test template", "before buying", "7 days", "sample pdf"]
     },
     {
       "id": "faq_renew_offline",
       "category": "features",
       "question": "My computer is never online. How do I keep the template licence active?",
-      "answer": "Use **Renew offline**:\n\n1. **Settings → Licences → Renew offline** on the licence card shows a **request code**. Copy it.\n2. Email it to us from any phone or computer.\n3. We send back a **renewal code**. Paste it in the same dialog and press **Apply**.\n\nThat counts as a check, so the licence stays active for another 30 days.",
+      "answer": "Use **Renew offline**:\n\n1. **Settings → Licences → Renew offline** on the licence card shows a **request code**. Copy it.\n2. Email it to us from any phone or computer.\n3. We send back a **renewal code**. Paste it in the same dialog and press **Apply**.\n\nThat counts as a check, so the licence stays active for another 30 days.\n\nTrials can't be renewed offline: a trial needs this computer to be online at least once every 24 hours.",
       "keywords": ["renew offline", "offline licence", "no internet", "renewal code", "request code"]
     },
     {
