@@ -1693,5 +1693,6 @@
   "pdfPackRemoveConfirm": "Retirer {name} de cet ordinateur ? Les entreprises qui l'utilisent imprimeront avec le modèle intégré. Vous pourrez le réinstaller plus tard.",
   "pdfPackRemoved": "{name} retiré",
   "storeInstalled": "Installé",
-  "pdfPackNoJsonCopy": "Indisponible lorsqu'un Invoiso Template est sélectionné"
+  "pdfPackNoJsonCopy": "Indisponible lorsqu'un Invoiso Template est sélectionné",
+  "storeDownloadFromAccount": "Télécharger depuis la page du compte"
 }

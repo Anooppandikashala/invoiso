@@ -1693,5 +1693,6 @@
   "pdfPackRemoveConfirm": "¿Quitar {name} de este equipo? Las empresas que la usan imprimirán con la plantilla integrada. Puede instalarla de nuevo más tarde.",
   "pdfPackRemoved": "{name} quitada",
   "storeInstalled": "Instalada",
-  "pdfPackNoJsonCopy": "No disponible mientras haya una Invoiso Template seleccionada"
+  "pdfPackNoJsonCopy": "No disponible mientras haya una Invoiso Template seleccionada",
+  "storeDownloadFromAccount": "Descargar desde la página de cuenta"
 }

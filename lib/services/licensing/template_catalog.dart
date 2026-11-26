@@ -80,6 +80,8 @@ class StoreCatalog {
 class TemplateCatalogService {
   static const url = 'https://marketplace.invoiso.co.in/catalog.json';
   static const websiteUrl = 'https://marketplace.invoiso.co.in/';
+  // Bought templates are downloaded here (licence-checked; paid files are never public).
+  static const accountUrl = 'https://marketplace.invoiso.co.in/account/';
   static const _cacheKey = 'store_catalog_cache';
   static const _timeout = Duration(seconds: 8);
 

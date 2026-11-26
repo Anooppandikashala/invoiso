@@ -7108,4 +7108,7 @@ class AppLocalizationsBo extends AppLocalizations {
   @override
   String get pdfPackNoJsonCopy =>
       'Invoiso Template འདེམས་ཡོད་སྐབས་སྤྱོད་མི་ཐུབ།';
+
+  @override
+  String get storeDownloadFromAccount => 'རྩིས་ཐོའི་ཤོག་ངོས་ནས་ཕབ་ལེན།';
 }

@@ -1643,5 +1643,6 @@
   "pdfPackRemoveConfirm": "{name} གློག་ཀླད་འདི་ནས་སུབ་བམ། དེ་བེད་སྤྱོད་བྱེད་པའི་ཚོང་ཁང་རྣམས་ཀྱིས་ནང་འདྲེས་དཔེ་གཞི་ཐོག་པར་སྐྲུན་བྱེད། རྗེས་སུ་ཡང་བསྐྱར་འཇུག་ཆོག",
   "pdfPackRemoved": "{name} སུབ་ཟིན།",
   "storeInstalled": "བཙུགས་ཟིན།",
-  "pdfPackNoJsonCopy": "Invoiso Template འདེམས་ཡོད་སྐབས་སྤྱོད་མི་ཐུབ།"
+  "pdfPackNoJsonCopy": "Invoiso Template འདེམས་ཡོད་སྐབས་སྤྱོད་མི་ཐུབ།",
+  "storeDownloadFromAccount": "རྩིས་ཐོའི་ཤོག་ངོས་ནས་ཕབ་ལེན།"
 }

@@ -7120,4 +7120,7 @@ class AppLocalizationsHi extends AppLocalizations {
 
   @override
   String get pdfPackNoJsonCopy => 'Invoiso Template चुने होने पर उपलब्ध नहीं';
+
+  @override
+  String get storeDownloadFromAccount => 'खाता पेज से डाउनलोड करें';
 }

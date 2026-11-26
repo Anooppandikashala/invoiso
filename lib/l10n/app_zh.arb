@@ -1693,5 +1693,6 @@
   "pdfPackRemoveConfirm": "要从本机移除 {name} 吗？使用它的公司将改用内置模板打印。您以后可以重新安装。",
   "pdfPackRemoved": "已移除 {name}",
   "storeInstalled": "已安装",
-  "pdfPackNoJsonCopy": "选中 Invoiso Template 时不可用"
+  "pdfPackNoJsonCopy": "选中 Invoiso Template 时不可用",
+  "storeDownloadFromAccount": "从账户页面下载"
 }

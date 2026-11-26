@@ -12109,6 +12109,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Not available while an Invoiso Template is selected'**
   String get pdfPackNoJsonCopy;
+
+  /// No description provided for @storeDownloadFromAccount.
+  ///
+  /// In en, this message translates to:
+  /// **'Download from Account page'**
+  String get storeDownloadFromAccount;
 }
 
 class _AppLocalizationsDelegate

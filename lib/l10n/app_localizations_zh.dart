@@ -6846,4 +6846,7 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get pdfPackNoJsonCopy => '选中 Invoiso Template 时不可用';
+
+  @override
+  String get storeDownloadFromAccount => '从账户页面下载';
 }

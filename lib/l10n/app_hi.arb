@@ -1693,5 +1693,6 @@
   "pdfPackRemoveConfirm": "{name} को इस कंप्यूटर से हटाएं? इसका उपयोग करने वाली कंपनियां बिल्ट-इन टेम्पलेट से प्रिंट करेंगी। आप इसे बाद में फिर इंस्टॉल कर सकते हैं।",
   "pdfPackRemoved": "{name} हटाया गया",
   "storeInstalled": "इंस्टॉल है",
-  "pdfPackNoJsonCopy": "Invoiso Template चुने होने पर उपलब्ध नहीं"
+  "pdfPackNoJsonCopy": "Invoiso Template चुने होने पर उपलब्ध नहीं",
+  "storeDownloadFromAccount": "खाता पेज से डाउनलोड करें"
 }

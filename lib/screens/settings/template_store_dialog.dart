@@ -190,6 +190,10 @@ class _TemplateStoreDialogState extends ConsumerState<_TemplateStoreDialog> {
             children: [
               if (!t.free && !licensed && available)
                 FilledButton(onPressed: () => _buy(t), child: Text(l10n.storeBuy)),
+              if (!t.free && licensed && available)
+                FilledButton.tonal(
+                    onPressed: () => _open(TemplateCatalogService.accountUrl),
+                    child: Text(l10n.storeDownloadFromAccount)),
               if (t.page != null)
                 TextButton(onPressed: () => _open(t.page!), child: Text(l10n.storeViewOnWebsite)),
             ],

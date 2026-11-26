@@ -7238,4 +7238,7 @@ class AppLocalizationsFr extends AppLocalizations {
   @override
   String get pdfPackNoJsonCopy =>
       'Indisponible lorsqu\'un Invoiso Template est sélectionné';
+
+  @override
+  String get storeDownloadFromAccount => 'Télécharger depuis la page du compte';
 }

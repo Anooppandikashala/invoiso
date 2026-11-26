@@ -3857,5 +3857,6 @@
   "pdfPackRemoved": "Removed {name}",
   "@pdfPackRemoved": {"placeholders": {"name": {"type": "String"}}},
   "storeInstalled": "Installed",
-  "pdfPackNoJsonCopy": "Not available while an Invoiso Template is selected"
+  "pdfPackNoJsonCopy": "Not available while an Invoiso Template is selected",
+  "storeDownloadFromAccount": "Download from Account page"
 }
