@@ -41,7 +41,7 @@
       "id": "faq_data_safe",
       "category": "data-privacy",
       "question": "Is my business data safe with Invoiso?",
-      "answer": "Your data **never leaves your device**. Invoiso stores everything in a local SQLite database — no cloud sync, no remote servers.\n\nYou're in full control, and the built-in **backup** feature keeps your data safe and portable.",
+      "answer": "Your billing data **never leaves your device**. Invoiso stores invoices, customers, products and payments in a local SQLite database — no cloud sync, no remote servers.\n\nOnly if you use **premium templates**, the app contacts our licence server to activate and check the licence (licence key, email, activation code, business name and tax ID — never your invoices).\n\nYou're in full control, and the built-in **backup** feature keeps your data safe and portable.",
       "keywords": ["data safe", "privacy", "security", "local", "sqlite"]
     },
     {
