@@ -82,9 +82,17 @@ jobs:
       #          CMAKE_GENERATOR: "Visual Studio 17 2022"
 
       - name: Build Windows Installer with FastForge
-        run: fastforge package --platform windows --targets exe
+        run: fastforge package --platform windows --targets exe --flutter-build-args="obfuscate,split-debug-info=build/symbols"
         env:
           CMAKE_GENERATOR: "Visual Studio 17 2022"
+
+      # Symbols to decode obfuscated stack traces (flutter symbolize). Not attached to the release.
+      - name: Upload debug symbols
+        uses: actions/upload-artifact@v4
+        with:
+          name: debug-symbols-build-windows
+          path: build/symbols
+          retention-days: 90
 
       - name: Verify installer exists
         shell: bash
@@ -189,13 +197,21 @@ jobs:
 
       - name: Build .deb Package
         run: |
-          fastforge package --platform linux --targets deb
+          fastforge package --platform linux --targets deb --flutter-build-args="obfuscate,split-debug-info=build/symbols"
           VERSION="${GITHUB_REF#refs/tags/}"
           VERSION="${VERSION#test-v}"
           VERSION="${VERSION#v}"
           DEB_FILE=$(find dist/$VERSION -name "*.deb" | head -1)
           echo "Found deb: $DEB_FILE"
           mv "$DEB_FILE" Invoiso-$VERSION-ubuntu22.deb
+
+      # Symbols to decode obfuscated stack traces (flutter symbolize). Not attached to the release.
+      - name: Upload debug symbols
+        uses: actions/upload-artifact@v4
+        with:
+          name: debug-symbols-build-linux
+          path: build/symbols
+          retention-days: 90
 
       - name: Upload .deb
         uses: actions/upload-artifact@v4
@@ -269,7 +285,7 @@ jobs:
 
       - name: Build .deb Package
         run: |
-          fastforge package --platform linux --targets deb
+          fastforge package --platform linux --targets deb --flutter-build-args="obfuscate,split-debug-info=build/symbols"
           VERSION="${GITHUB_REF#refs/tags/}"
           VERSION="${VERSION#test-v}"
           VERSION="${VERSION#v}"
@@ -311,6 +327,14 @@ jobs:
           echo "Repacked with LD_LIBRARY_PATH launcher"
 
           mv "$DEB_FILE" Invoiso-$VERSION-ubuntu24.deb
+
+      # Symbols to decode obfuscated stack traces (flutter symbolize). Not attached to the release.
+      - name: Upload debug symbols
+        uses: actions/upload-artifact@v4
+        with:
+          name: debug-symbols-build-linux-ubuntu24
+          path: build/symbols
+          retention-days: 90
 
       - name: Upload .deb
         uses: actions/upload-artifact@v4
@@ -461,7 +485,15 @@ jobs:
         run: flutter pub get
 
       - name: Build Flutter Linux Release
-        run: flutter build linux --release
+        run: flutter build linux --release --obfuscate --split-debug-info=build/symbols
+
+      # Symbols to decode obfuscated stack traces (flutter symbolize). Not attached to the release.
+      - name: Upload debug symbols
+        uses: actions/upload-artifact@v4
+        with:
+          name: debug-symbols-build-appimage-ubuntu24
+          path: build/symbols
+          retention-days: 90
 
       - name: Prepare AppDir
         run: |
@@ -594,7 +626,15 @@ jobs:
         run: flutter pub get
 
       - name: Build Flutter Linux Release
-        run: flutter build linux --release
+        run: flutter build linux --release --obfuscate --split-debug-info=build/symbols
+
+      # Symbols to decode obfuscated stack traces (flutter symbolize). Not attached to the release.
+      - name: Upload debug symbols
+        uses: actions/upload-artifact@v4
+        with:
+          name: debug-symbols-build-appimage
+          path: build/symbols
+          retention-days: 90
 
       - name: Prepare AppDir
         run: |
@@ -745,7 +785,15 @@ jobs:
           iconutil -c icns "$ICONSET" -o macos/packaging/dmg/AppIcon.icns
 
       - name: Build macOS DMG with FastForge
-        run: fastforge package --platform macos --targets dmg
+        run: fastforge package --platform macos --targets dmg --flutter-build-args="obfuscate,split-debug-info=build/symbols"
+
+      # Symbols to decode obfuscated stack traces (flutter symbolize). Not attached to the release.
+      - name: Upload debug symbols
+        uses: actions/upload-artifact@v4
+        with:
+          name: debug-symbols-build-macos
+          path: build/symbols
+          retention-days: 90
 
       - name: Rename DMG
         run: |
