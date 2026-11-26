@@ -184,7 +184,9 @@ class LicenceService {
   /// Paste the renewal code (an INVL1 lease) from us. Null on success, else
   /// `invalid_code` (not ours / tampered) or `wrong_licence` (other licence/PC).
   Future<String?> renewOffline(String lid, String renewalCode) async {
-    final lease = await LicenceToken.verify(renewalCode, LicenceToken.leasePrefix, publicKeyB64: _publicKey);
+    // Codes pasted from an email often arrive wrapped; tokens never contain spaces.
+    final code = renewalCode.replaceAll(RegExp(r'\s'), '');
+    final lease = await LicenceToken.verify(code, LicenceToken.leasePrefix, publicKeyB64: _publicKey);
     if (lease == null) return 'invalid_code';
     if (lease.lid != lid || lease.activationCode != await _activationCode()) return 'wrong_licence';
     final stored = await _store.load();

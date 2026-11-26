@@ -165,6 +165,10 @@ class _LicencesScreenState extends ConsumerState<LicencesScreen> {
                 controller: controller,
                 minLines: 2,
                 maxLines: 4,
+                // Wraps so the long code is visible, but Enter applies: codes
+                // never contain line breaks.
+                textInputAction: TextInputAction.done,
+                onSubmitted: (v) => Navigator.pop(ctx, v),
                 decoration: InputDecoration(
                     labelText: l10n.licencesRenewCodeLabel, border: const OutlineInputBorder()),
               ),
@@ -181,7 +185,7 @@ class _LicencesScreenState extends ConsumerState<LicencesScreen> {
     );
     if (code == null || code.trim().isEmpty) return;
     await _run(() async {
-      final error = await _service.renewOffline(l.lid, code.trim());
+      final error = await _service.renewOffline(l.lid, code);
       if (mounted) _snack(error == null ? l10n.licencesRenewed : licenceErrorText(l10n, error));
     });
   }
@@ -213,7 +217,7 @@ class _LicencesScreenState extends ConsumerState<LicencesScreen> {
         // Flexible (not Expanded): copy button sits right after the code.
         Flexible(
           child: SelectableText(text,
-              style: style ?? const TextStyle(fontFamily: 'monospace', fontSize: 15, fontWeight: FontWeight.w600)),
+              style: style ?? const TextStyle(fontSize: 16, fontWeight: FontWeight.w600, letterSpacing: 0.5)),
         ),
         const SizedBox(width: 4),
         IconButton(

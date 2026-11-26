@@ -217,6 +217,15 @@ void main() {
       expect((await service().licences()).single.status, LicenceStatus.active);
     });
 
+    test('a renewal code wrapped by an email still works', () async {
+      await holdLicence(checked: day0);
+      now = day0.add(const Duration(days: 70));
+      final code = await signer.lease(now);
+      final wrapped = ' ${code.substring(0, 30)}\n${code.substring(30, 60)} \r\n${code.substring(60)}\n';
+      expect(await service().renewOffline('L001001', wrapped), isNull);
+      expect((await service().licences()).single.status, LicenceStatus.active);
+    });
+
     test('rejects codes for another licence, another PC, or not from us', () async {
       await holdLicence(checked: day0);
       expect(await service().renewOffline('L001001', await signer.lease(day0, lid: 'L009999')), 'wrong_licence');
