@@ -113,6 +113,8 @@ enum SettingKey {
   pdfTableHeaderFontSize, // PdfFontSize key for the items table header; empty/absent = same as pdfFontSize
   pdfTableItemsFontSize, // PdfFontSize key for the items table rows; empty/absent = same as pdfFontSize
   pdfTotalsFontSize, // PdfFontSize key for the totals block; empty/absent = same as pdfFontSize
+  pdfMarginPreset, // PdfPageMargins preset: 'template' (default, each template's own) | 'narrow' | 'normal' | 'wide'
+  pdfLetterheadTopMm, // extra top margin in mm on every page for pre-printed letterhead paper; default '0'
   purchaseBillsBannerDismissed, // '1' once user dismisses the purchase-bills/suppliers discovery banner
   returnsBannerDismissed, // '1' once user dismisses the product-returns notice on the Invoices list
   amountSeparator, // AmountSeparator.key: 'none' | 'international' | 'indian'
@@ -360,6 +362,10 @@ extension SettingKeyExtension on SettingKey {
         return 'pdf_table_items_font_size';
       case SettingKey.pdfTotalsFontSize:
         return 'pdf_totals_font_size';
+      case SettingKey.pdfMarginPreset:
+        return 'pdf_margin_preset';
+      case SettingKey.pdfLetterheadTopMm:
+        return 'pdf_letterhead_top_mm';
       case SettingKey.purchaseBillsBannerDismissed:
         return 'purchase_bills_banner_dismissed';
       case SettingKey.returnsBannerDismissed:

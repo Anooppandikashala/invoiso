@@ -4041,6 +4041,29 @@ class AppLocalizationsHi extends AppLocalizations {
   String get pdfSettingsFontSizeLabel => 'PDF टेक्स्ट का आकार';
 
   @override
+  String get pdfMarginLabel => 'पेज मार्जिन';
+
+  @override
+  String get pdfMarginTemplate => 'टेम्पलेट का अपना';
+
+  @override
+  String get pdfMarginNarrow => 'संकरा (5 मिमी)';
+
+  @override
+  String get pdfMarginNormal => 'सामान्य (8 मिमी)';
+
+  @override
+  String get pdfMarginWide => 'चौड़ा (15 मिमी)';
+
+  @override
+  String get pdfLetterheadTopLabel => 'लेटरहेड के लिए ऊपर जगह';
+
+  @override
+  String pdfLetterheadTopHelp(int max) {
+    return 'पहले से छपे लेटरहेड पेपर के लिए हर पेज पर अतिरिक्त जगह (0–$max मिमी)। थर्मल रसीदों पर लागू नहीं।';
+  }
+
+  @override
   String get pdfSettingsSectionSizesLabel => 'सेक्शन के आकार';
 
   @override

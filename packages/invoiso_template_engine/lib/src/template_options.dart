@@ -46,6 +46,13 @@ class TemplateOptions {
   /// Watermark over the whole page, or centred behind the content.
   final bool watermarkFullPage;
 
+  /// Page-margins setting: all four sides in points, replacing the layout's
+  /// own `page.margin`; null = the layout's margin.
+  final double? pageMarginOverride;
+
+  /// Extra top margin in points on every page (pre-printed letterhead).
+  final double extraTopMargin;
+
   /// "Repeat table header on every page" setting; a table's own
   /// `repeatHeader` wins when the template sets it.
   final bool repeatTableHeader;
@@ -79,6 +86,8 @@ class TemplateOptions {
     this.logoSize,
     this.watermarkOpacity = 0.1,
     this.watermarkFullPage = false,
+    this.pageMarginOverride,
+    this.extraTopMargin = 0,
     this.repeatTableHeader = false,
     this.overlayText,
   });

@@ -8,6 +8,7 @@ import 'package:invoiso/models/company_info.dart';
 import 'package:invoiso/models/custom_field_value.dart';
 import 'package:invoiso/models/invoice.dart';
 import 'package:invoiso/models/customer_field_settings.dart';
+import 'package:invoiso/services/pdf/pdf_settings.dart';
 import 'pdf_widgets.dart';
 
 pw.MultiPage buildModernTemplate(
@@ -54,6 +55,7 @@ pw.MultiPage buildModernTemplate(
   Uint8List? watermarkBytes,
   double watermarkOpacity = 0.12,
   bool watermarkFullPage = false,
+  PdfPageMargins pageMargins = const PdfPageMargins(),
   bool showCgstSgst = false,
   bool showIgst = false,
   bool showTaxColumn = true,
@@ -103,11 +105,14 @@ pw.MultiPage buildModernTemplate(
   final companyIdLine = companyIdParts.join('   ');
 
   final fullPageWatermark = watermarkFullPage && watermarkBytes != null;
+  // Modern's coloured bands run edge to edge (page margin 0), so the margins
+  // setting sets the content's side padding; letterhead space goes on top.
+  final hPad = pageMargins.presetPoints ?? PdfLayout.defaultHMargin;
   return pw.MultiPage(
     pageTheme: pw.PageTheme(
       pageFormat: pageFormat,
       theme: pdfTheme,
-      margin: const pw.EdgeInsets.all(0),
+      margin: pw.EdgeInsets.only(top: pageMargins.letterheadTopPoints),
       buildBackground: fullPageWatermark
           ? (context) =>
               buildFullPageWatermark(watermarkBytes, watermarkOpacity)
@@ -130,8 +135,8 @@ pw.MultiPage buildModernTemplate(
       pw.Container(
         color: accentColor,
         padding: pw.EdgeInsets.only(
-            left: PdfLayout.defaultHMargin,
-            right: PdfLayout.defaultHMargin,
+            left: hPad,
+            right: hPad,
             top: PdfLayout.defaultVMargin,
             bottom: PdfLayout.defaultVMargin-5),
         child: pw.Column(
@@ -184,8 +189,8 @@ pw.MultiPage buildModernTemplate(
       pw.Container(
         color: accentColor,
         padding: pw.EdgeInsets.only(
-            left: PdfLayout.defaultHMargin,
-            right: PdfLayout.defaultHMargin,
+            left: hPad,
+            right: hPad,
             top: 0,
             bottom: PdfLayout.defaultVMargin-5),
         child: pw.Center(
@@ -207,7 +212,7 @@ pw.MultiPage buildModernTemplate(
         style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: modernPdfStyle.typeFont * docTitleScale),),),
       pw.Padding(
         padding: pw.EdgeInsets.fromLTRB(
-            PdfLayout.defaultHMargin, 8, PdfLayout.defaultHMargin, 8),
+            hPad, 8, hPad, 8),
         child: pw.Row(
           crossAxisAlignment: pw.CrossAxisAlignment.start,
           mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
@@ -304,7 +309,7 @@ pw.MultiPage buildModernTemplate(
       if (invoice.customFields.any((f) => f.value.trim().isNotEmpty))
         pw.Padding(
           padding: pw.EdgeInsets.fromLTRB(
-              PdfLayout.defaultHMargin, 0, PdfLayout.defaultHMargin, 8),
+              hPad, 0, hPad, 8),
           child: () {
             final filled = invoice.customFields
                 .where((f) => f.value.trim().isNotEmpty)
@@ -354,7 +359,7 @@ pw.MultiPage buildModernTemplate(
       pw.SizedBox(height: 3),
 
       pw.Padding(
-        padding: pw.EdgeInsets.symmetric(horizontal: PdfLayout.defaultHMargin),
+        padding: pw.EdgeInsets.symmetric(horizontal: hPad),
         child: buildInvoiceTable(invoice,
             InvoiceTemplate.modern,
             pageFormat,
@@ -385,7 +390,7 @@ pw.MultiPage buildModernTemplate(
       pw.SizedBox(height: 5),
 
       pw.Padding(
-        padding: pw.EdgeInsets.symmetric(horizontal: PdfLayout.defaultHMargin),
+        padding: pw.EdgeInsets.symmetric(horizontal: hPad),
         child: pw.Row(
           crossAxisAlignment: pw.CrossAxisAlignment.start,
           mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
@@ -410,7 +415,7 @@ pw.MultiPage buildModernTemplate(
       if (signatureImage != null || (showUpiQr && (upiId != null || qrImageBytes != null)) || bankAccount != null) ...[
         pw.SizedBox(height: 16),
         pw.Padding(
-          padding: pw.EdgeInsets.symmetric(horizontal: PdfLayout.defaultHMargin),
+          padding: pw.EdgeInsets.symmetric(horizontal: hPad),
           child: pw.Row(
             crossAxisAlignment: pw.CrossAxisAlignment.start,
             mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,

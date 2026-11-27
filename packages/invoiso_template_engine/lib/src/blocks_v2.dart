@@ -501,6 +501,8 @@ extension _BlocksV2 on _BlockLayoutRenderer {
     // when "description on new line" is on), when its `if` holds.
     final detail = _BlockLayoutRenderer._asMap(block['detailRow']);
     final detailOn = detail.isNotEmpty && _truthy(detail['if']);
+    // Items table: rows carry the table watermark slice (built-in behaviour).
+    final itemsTable = sourcePath == 'items';
     final bodyRows = <({pw.TableRow row, String detail, PdfColor? color})>[];
     final saved = _row;
     try {
@@ -509,7 +511,9 @@ extension _BlocksV2 on _BlockLayoutRenderer {
         final color = zebra != null && i.isOdd ? zebra : null;
         bodyRows.add((
           row: pw.TableRow(
-            decoration: color != null ? pw.BoxDecoration(color: color) : null,
+            decoration: itemsTable
+                ? _itemRowDecoration(color)
+                : color != null ? pw.BoxDecoration(color: color) : null,
             children: [for (final c in columns) bodyCell(c, i)],
           ),
           detail: detailOn ? _resolveLine((detail['value'] ?? '').toString()) : '',
@@ -628,16 +632,18 @@ extension _BlocksV2 on _BlockLayoutRenderer {
           pw.Container(
             width: double.infinity,
             padding: padding,
-            decoration: pw.BoxDecoration(
-              color: r.color,
-              border: none
+            decoration: () {
+              final border = none
                   ? null
                   : pw.Border(
                       bottom: side,
                       left: grid ? side : pw.BorderSide.none,
                       right: grid ? side : pw.BorderSide.none,
-                    ),
-            ),
+                    );
+              return itemsTable
+                  ? _itemRowDecoration(r.color, border: border)
+                  : pw.BoxDecoration(color: r.color, border: border);
+            }(),
             child: cellText(r.detail, detail, 'left', role: 'tableItems'),
           ),
                 ],

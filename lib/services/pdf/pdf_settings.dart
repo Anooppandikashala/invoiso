@@ -81,6 +81,8 @@ class PdfGenerationSettings {
   final bool repeatTableHeader;
   // Multiplier for every font in non-thermal templates (PdfFontSize.scale).
   final double fontSizeScale;
+  /// Page margins setting (presets + letterhead space); thermal ignores it.
+  final PdfPageMargins pageMargins;
   // Resolved per-section scales (section preset, else fontSizeScale).
   final double companyNameScale;
   final double docTitleScale;
@@ -163,6 +165,7 @@ class PdfGenerationSettings {
     this.paymentQrFromImage = false,
     this.paymentQrEntries = const [],
     this.fontSizeScale = 1.0,
+    this.pageMargins = const PdfPageMargins(),
     this.companyNameScale = 1.0,
     this.docTitleScale = 1.0,
     this.tableHeaderScale = 1.0,
@@ -188,4 +191,48 @@ class PdfGenerationSettings {
         return invoicePrefix;
     }
   }
+}
+
+/// Page-margin setting for invoice PDFs (not thermal): a preset for all four
+/// sides — or each template's own margins — plus extra space at the top of
+/// every page for pre-printed letterhead paper.
+class PdfPageMargins {
+  /// 'template' | 'narrow' | 'normal' | 'wide'.
+  final String preset;
+  final int letterheadTopMm;
+
+  const PdfPageMargins({this.preset = 'template', this.letterheadTopMm = 0});
+
+  static const presets = ['template', 'narrow', 'normal', 'wide'];
+  static const maxLetterheadTopMm = 80;
+
+  factory PdfPageMargins.fromSettings(String? preset, String? letterheadTopMm) =>
+      PdfPageMargins(
+        preset: presets.contains(preset) ? preset! : 'template',
+        letterheadTopMm: (int.tryParse(letterheadTopMm ?? '') ?? 0).clamp(0, maxLetterheadTopMm),
+      );
+
+  /// All-sides margin in points for the preset, or null for the template's own.
+  double? get presetPoints => switch (preset) {
+        'narrow' => 5 * PdfPageFormat.mm,
+        'normal' => 8 * PdfPageFormat.mm,
+        'wide' => 15 * PdfPageFormat.mm,
+        _ => null,
+      };
+
+  double get letterheadTopPoints => letterheadTopMm * PdfPageFormat.mm;
+
+  /// [templateDefault] with this setting applied.
+  pw.EdgeInsets apply(pw.EdgeInsets templateDefault) {
+    final all = presetPoints;
+    final base = all == null ? templateDefault : pw.EdgeInsets.all(all);
+    return letterheadTopMm == 0 ? base : base.copyWith(top: base.top + letterheadTopPoints);
+  }
+
+  @override
+  bool operator ==(Object other) =>
+      other is PdfPageMargins && other.preset == preset && other.letterheadTopMm == letterheadTopMm;
+
+  @override
+  int get hashCode => Object.hash(preset, letterheadTopMm);
 }

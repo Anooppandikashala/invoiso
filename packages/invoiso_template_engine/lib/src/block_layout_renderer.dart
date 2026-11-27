@@ -62,15 +62,20 @@ pw.MultiPage buildBlockLayoutPage({
     build: (context) {
       final widgets = <pw.Widget>[];
       var renderedBlocks = 0;
+      pw.Widget? trailingGap;
       for (final block in renderer.blocks) {
         final parts = renderer.pageWidgets(block);
         if (parts.isEmpty) continue;
         widgets.addAll(parts);
         renderedBlocks++;
+        trailingGap = null;
         if (gap > 0 && block['type'] != 'divider' && block['type'] != 'footer') {
-          widgets.add(pw.SizedBox(height: gap));
+          widgets.add(trailingGap = pw.SizedBox(height: gap));
         }
       }
+      // No gap after the last block: when the content just fits, that spacer
+      // alone would start an empty last page.
+      if (trailingGap != null) widgets.remove(trailingGap);
       // A layout can be imported with block names this renderer does not know.
       // Never emit an empty page in that case: render the standard invoice
       // structure using the imported document's own page + theme. This is not
@@ -130,6 +135,29 @@ class _BlockLayoutRenderer {
       assets.logo == null ? null : pw.MemoryImage(assets.logo!);
   late final pw.MemoryImage? _signatureImage =
       assets.signature == null ? null : pw.MemoryImage(assets.signature!);
+
+  // Watermark in "items table" mode (not full page): like the built-in
+  // templates, each item row paints its slice of the image, continuing where
+  // the previous row stopped (also across pages). The page draws none.
+  late final pw.MemoryImage? _tableWatermark =
+      assets.watermark == null || options.watermarkFullPage
+          ? null
+          : pw.MemoryImage(assets.watermark!);
+  final _watermarkCursor = _WatermarkCursor();
+
+  /// Item-row decoration: optional fill colour + the table watermark slice.
+  pw.BoxDecoration? _itemRowDecoration(PdfColor? color, {pw.Border? border}) {
+    final image = _tableWatermark;
+    if (color == null && image == null && border == null) return null;
+    return pw.BoxDecoration(
+      color: color,
+      border: border,
+      image: image == null
+          ? null
+          : _WatermarkStripeImage(
+              image: image, opacity: options.watermarkOpacity, cursor: _watermarkCursor),
+    );
+  }
 
   // Data sections (see README "Data contract").
   late final Map<String, dynamic> _invoice = _asMap(data['invoice']);
@@ -946,8 +974,7 @@ class _BlockLayoutRenderer {
       final item = _items[i];
       rows.add(
         pw.TableRow(
-          decoration:
-              i.isOdd ? pw.BoxDecoration(color: PdfColors.grey50) : null,
+          decoration: _itemRowDecoration(i.isOdd ? PdfColors.grey50 : null),
           children: [
             for (final column in effectiveColumns)
               pw.Padding(
@@ -1491,7 +1518,14 @@ class _BlockLayoutRenderer {
     final page = _asMap(document['page'] ?? document['paper']);
     final unit = _pageUnit(page);
     final format = _pageFormat(page, fallback, unit);
-    final margin = _pageMargin(page, unit);
+    // Margins setting: preset for all sides (else the layout's own) +
+    // letterhead space on top.
+    final layoutMargin = options.pageMarginOverride == null
+        ? _pageMargin(page, unit)
+        : pw.EdgeInsets.all(options.pageMarginOverride!);
+    final margin = options.extraTopMargin <= 0
+        ? layoutMargin
+        : layoutMargin.copyWith(top: layoutMargin.top + options.extraTopMargin);
     dynamic backgroundValue = page['background'];
     backgroundValue ??=
         _asMap(document['theme'] ?? document['colors'])['background'];
@@ -1546,7 +1580,8 @@ class _BlockLayoutRenderer {
               ),
       buildBackground: (context) => pw.FullPage(
         ignoreMargins: true,
-        child: watermark == null
+        // Items-table mode paints the watermark inside the item rows instead.
+        child: watermark == null || !options.watermarkFullPage
             ? pw.Container(color: background)
             : pw.Container(
                 color: background,
@@ -1886,3 +1921,47 @@ pw.Widget _declinedStamp() => pw.Center(
         ),
       ),
     );
+
+class _WatermarkCursor {
+  double value = 0;
+}
+
+/// Paints a vertical slice of [image] into each item row's box, using
+/// [cursor] to pick up where the previous row left off (same drawing as the
+/// built-in templates' items-table watermark). Two copies scaledH apart so a
+/// row straddling the image's repeat seam is still covered.
+class _WatermarkStripeImage extends pw.DecorationGraphic {
+  const _WatermarkStripeImage({
+    required this.image,
+    required this.opacity,
+    required this.cursor,
+  });
+
+  final pw.ImageProvider image;
+  final double opacity;
+  final _WatermarkCursor cursor;
+
+  @override
+  void paint(pw.Context context, PdfRect box) {
+    if (box.width <= 0 || box.height <= 0) return;
+    final resolved = image.resolve(context, box.size);
+    final imgW = resolved.width.toDouble();
+    final imgH = resolved.height.toDouble();
+    if (imgW <= 0 || imgH <= 0) return;
+    final scaledH = imgH * box.width / imgW;
+    if (scaledH <= 0) return;
+
+    final topDepth = cursor.value % scaledH;
+    cursor.value += box.height;
+    final originY = box.y + box.height + topDepth - scaledH;
+
+    context.canvas
+      ..saveContext()
+      ..drawBox(box)
+      ..clipPath()
+      ..setGraphicState(PdfGraphicState(opacity: opacity))
+      ..drawImage(resolved, box.x, originY, box.width, scaledH)
+      ..drawImage(resolved, box.x, originY - scaledH, box.width, scaledH)
+      ..restoreContext();
+  }
+}

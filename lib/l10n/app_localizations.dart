@@ -6768,6 +6768,48 @@ abstract class AppLocalizations {
   /// **'PDF text size'**
   String get pdfSettingsFontSizeLabel;
 
+  /// No description provided for @pdfMarginLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Page margins'**
+  String get pdfMarginLabel;
+
+  /// No description provided for @pdfMarginTemplate.
+  ///
+  /// In en, this message translates to:
+  /// **'Template\'s own'**
+  String get pdfMarginTemplate;
+
+  /// No description provided for @pdfMarginNarrow.
+  ///
+  /// In en, this message translates to:
+  /// **'Narrow (5 mm)'**
+  String get pdfMarginNarrow;
+
+  /// No description provided for @pdfMarginNormal.
+  ///
+  /// In en, this message translates to:
+  /// **'Normal (8 mm)'**
+  String get pdfMarginNormal;
+
+  /// No description provided for @pdfMarginWide.
+  ///
+  /// In en, this message translates to:
+  /// **'Wide (15 mm)'**
+  String get pdfMarginWide;
+
+  /// No description provided for @pdfLetterheadTopLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Letterhead space at top'**
+  String get pdfLetterheadTopLabel;
+
+  /// No description provided for @pdfLetterheadTopHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'Extra space on every page for pre-printed letterhead paper (0–{max} mm). Not used for thermal receipts.'**
+  String pdfLetterheadTopHelp(int max);
+
   /// No description provided for @pdfSettingsSectionSizesLabel.
   ///
   /// In en, this message translates to:

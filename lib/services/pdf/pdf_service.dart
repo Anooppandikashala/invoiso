@@ -157,6 +157,8 @@ class PDFService {
       BackendServices.settings.getSetting(SettingKey.activeCustomLayout), // 68
       BackendServices.settings.getSetting(SettingKey.pdfRepeatTableHeader), // 69
       BackendServices.settings.getSetting(SettingKey.activeTemplatePack), // 70
+      BackendServices.settings.getSetting(SettingKey.pdfMarginPreset), // 71
+      BackendServices.settings.getSetting(SettingKey.pdfLetterheadTopMm), // 72
     ]);
     // Installed .invoiso template, decoded in memory only; replaces a custom layout.
     final pack = await loadActiveTemplatePack(results[70] as String?);
@@ -259,6 +261,7 @@ class PDFService {
       blockLayout: pack?.layout ?? _activeCustomLayoutFromJson(results[68] as String?)?.blockLayout,
       overlayText: pack?.overlayText,
       repeatTableHeader: results[69] == 'true',
+      pageMargins: PdfPageMargins.fromSettings(results[71] as String?, results[72] as String?),
     );
   }
 
@@ -380,6 +383,9 @@ class PDFService {
             logoSize: s.logoSizePx,
             watermarkOpacity: s.watermarkOpacity,
             watermarkFullPage: s.watermarkFullPage,
+            // Margins setting: preset (all sides) or the layout's own, + letterhead space.
+            pageMarginOverride: s.pageMargins.presetPoints,
+            extraTopMargin: s.pageMargins.letterheadTopPoints,
             repeatTableHeader: s.repeatTableHeader,
             overlayText: s.overlayText,
           ),
@@ -467,6 +473,7 @@ class PDFService {
           watermarkBytes: s.watermarkBytes,
           watermarkOpacity: s.watermarkOpacity,
           watermarkFullPage: s.watermarkFullPage,
+          pageMargins: s.pageMargins,
           showCgstSgst: effectiveShowCgstSgst,
           showIgst: showIgst,
           showTaxColumn: s.showTaxColumn,
@@ -533,6 +540,7 @@ class PDFService {
           watermarkBytes: s.watermarkBytes,
           watermarkOpacity: s.watermarkOpacity,
           watermarkFullPage: s.watermarkFullPage,
+          pageMargins: s.pageMargins,
           showCgstSgst: effectiveShowCgstSgst,
           showIgst: showIgst,
           showTaxColumn: s.showTaxColumn,
@@ -599,6 +607,7 @@ class PDFService {
           watermarkBytes: s.watermarkBytes,
           watermarkOpacity: s.watermarkOpacity,
           watermarkFullPage: s.watermarkFullPage,
+          pageMargins: s.pageMargins,
           showCgstSgst: effectiveShowCgstSgst,
           showIgst: showIgst,
           showTaxColumn: s.showTaxColumn,
@@ -665,6 +674,7 @@ class PDFService {
           watermarkBytes: s.watermarkBytes,
           watermarkOpacity: s.watermarkOpacity,
           watermarkFullPage: s.watermarkFullPage,
+          pageMargins: s.pageMargins,
           showCgstSgst: effectiveShowCgstSgst,
           showIgst: showIgst,
           showTaxColumn: s.showTaxColumn,
@@ -730,6 +740,7 @@ class PDFService {
           watermarkBytes: s.watermarkBytes,
           watermarkOpacity: s.watermarkOpacity,
           watermarkFullPage: s.watermarkFullPage,
+          pageMargins: s.pageMargins,
           showCgstSgst: effectiveShowCgstSgst,
           showIgst: showIgst,
           showTaxColumn: s.showTaxColumn,
@@ -840,6 +851,7 @@ class PDFService {
           watermarkBytes: s.watermarkBytes,
           watermarkOpacity: s.watermarkOpacity,
           watermarkFullPage: s.watermarkFullPage,
+          pageMargins: s.pageMargins,
           showCgstSgst: effectiveShowCgstSgst,
           showIgst: showIgst,
           showTaxColumn: s.showTaxColumn,

@@ -4025,6 +4025,29 @@ class AppLocalizationsEn extends AppLocalizations {
   String get pdfSettingsFontSizeLabel => 'PDF text size';
 
   @override
+  String get pdfMarginLabel => 'Page margins';
+
+  @override
+  String get pdfMarginTemplate => 'Template\'s own';
+
+  @override
+  String get pdfMarginNarrow => 'Narrow (5 mm)';
+
+  @override
+  String get pdfMarginNormal => 'Normal (8 mm)';
+
+  @override
+  String get pdfMarginWide => 'Wide (15 mm)';
+
+  @override
+  String get pdfLetterheadTopLabel => 'Letterhead space at top';
+
+  @override
+  String pdfLetterheadTopHelp(int max) {
+    return 'Extra space on every page for pre-printed letterhead paper (0–$max mm). Not used for thermal receipts.';
+  }
+
+  @override
   String get pdfSettingsSectionSizesLabel => 'Section sizes';
 
   @override

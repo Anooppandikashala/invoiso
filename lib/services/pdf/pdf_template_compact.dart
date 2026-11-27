@@ -8,6 +8,7 @@ import 'package:invoiso/models/company_info.dart';
 import 'package:invoiso/models/custom_field_value.dart';
 import 'package:invoiso/models/invoice.dart';
 import 'package:invoiso/models/customer_field_settings.dart';
+import 'package:invoiso/services/pdf/pdf_settings.dart';
 import 'pdf_widgets.dart';
 
 pw.MultiPage buildCompactTemplate(
@@ -55,6 +56,7 @@ pw.MultiPage buildCompactTemplate(
   Uint8List? watermarkBytes,
   double watermarkOpacity = 0.12,
   bool watermarkFullPage = false,
+  PdfPageMargins pageMargins = const PdfPageMargins(),
   bool showCgstSgst = false,
   bool showIgst = false,
   bool showTaxColumn = true,
@@ -135,7 +137,7 @@ pw.MultiPage buildCompactTemplate(
     pageTheme: pw.PageTheme(
       pageFormat: pageFormat,
       theme: pdfTheme,
-      margin: pw.EdgeInsets.all(pageMargin),
+      margin: pageMargins.apply(pw.EdgeInsets.all(pageMargin)),
       buildBackground: fullPageWatermark
           ? (context) =>
               buildFullPageWatermark(watermarkBytes, watermarkOpacity)

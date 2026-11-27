@@ -4107,6 +4107,29 @@ class AppLocalizationsEs extends AppLocalizations {
   String get pdfSettingsFontSizeLabel => 'Tamaño del texto del PDF';
 
   @override
+  String get pdfMarginLabel => 'Márgenes de página';
+
+  @override
+  String get pdfMarginTemplate => 'Los de la plantilla';
+
+  @override
+  String get pdfMarginNarrow => 'Estrechos (5 mm)';
+
+  @override
+  String get pdfMarginNormal => 'Normales (8 mm)';
+
+  @override
+  String get pdfMarginWide => 'Anchos (15 mm)';
+
+  @override
+  String get pdfLetterheadTopLabel => 'Espacio superior para membrete';
+
+  @override
+  String pdfLetterheadTopHelp(int max) {
+    return 'Espacio extra en cada página para papel con membrete preimpreso (0–$max mm). No se usa en recibos térmicos.';
+  }
+
+  @override
   String get pdfSettingsSectionSizesLabel => 'Tamaños por sección';
 
   @override

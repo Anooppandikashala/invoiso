@@ -4118,6 +4118,29 @@ class AppLocalizationsFr extends AppLocalizations {
   String get pdfSettingsFontSizeLabel => 'Taille du texte du PDF';
 
   @override
+  String get pdfMarginLabel => 'Marges de page';
+
+  @override
+  String get pdfMarginTemplate => 'Celles du modèle';
+
+  @override
+  String get pdfMarginNarrow => 'Étroites (5 mm)';
+
+  @override
+  String get pdfMarginNormal => 'Normales (8 mm)';
+
+  @override
+  String get pdfMarginWide => 'Larges (15 mm)';
+
+  @override
+  String get pdfLetterheadTopLabel => 'Espace en haut pour en-tête';
+
+  @override
+  String pdfLetterheadTopHelp(int max) {
+    return 'Espace en plus sur chaque page pour papier à en-tête préimprimé (0–$max mm). Non utilisé pour les tickets thermiques.';
+  }
+
+  @override
   String get pdfSettingsSectionSizesLabel => 'Tailles par section';
 
   @override

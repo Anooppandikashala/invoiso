@@ -93,6 +93,10 @@ class _PdfSettingsScreenV2State extends ConsumerState<PdfSettingsScreenV2> {
   String _previewedThermalCompanyNameSize = 'medium';
   String _savedPdfFontSize = 'medium';
   String _previewedPdfFontSize = 'medium';
+  // Page margins setting (preset + letterhead space at top).
+  PdfPageMargins _savedPdfMargins = const PdfPageMargins();
+  PdfPageMargins _previewedPdfMargins = const PdfPageMargins();
+  final _letterheadTopController = TextEditingController(text: '0');
   // Per-section PDF text sizes; '' = same as overall (_previewedPdfFontSize).
   static const _pdfSectionSizeKeys = [
     SettingKey.pdfCompanyNameFontSize,
@@ -204,6 +208,8 @@ class _PdfSettingsScreenV2State extends ConsumerState<PdfSettingsScreenV2> {
       ref
           .read(settingsRepositoryProvider)
           .getSetting(SettingKey.pdfRepeatTableHeader),
+      ref.read(settingsRepositoryProvider).getSetting(SettingKey.pdfMarginPreset),
+      ref.read(settingsRepositoryProvider).getSetting(SettingKey.pdfLetterheadTopMm),
     ]);
     final saved = results[0] as InvoiceTemplate;
     final savedThemeColor = results[1] as String?;
@@ -222,6 +228,9 @@ class _PdfSettingsScreenV2State extends ConsumerState<PdfSettingsScreenV2> {
         results[9 + _pdfSectionSizeKeys.length] == 'list' ? 'list' : 'grid';
     final savedRepeatTableHeader =
         results[10 + _pdfSectionSizeKeys.length] == 'true';
+    final savedPdfMargins = PdfPageMargins.fromSettings(
+        results[11 + _pdfSectionSizeKeys.length] as String?,
+        results[12 + _pdfSectionSizeKeys.length] as String?);
     final customLayouts =
         await ref.read(settingsRepositoryProvider).getCustomInvoiceLayouts();
     final activeLayoutRaw =
@@ -266,6 +275,9 @@ class _PdfSettingsScreenV2State extends ConsumerState<PdfSettingsScreenV2> {
       _previewedThermalCompanyNameSize = _savedThermalCompanyNameSize;
       _savedPdfFontSize = savedPdfFontSize ?? 'medium';
       _previewedPdfFontSize = _savedPdfFontSize;
+      _savedPdfMargins = savedPdfMargins;
+      _previewedPdfMargins = savedPdfMargins;
+      _letterheadTopController.text = '${savedPdfMargins.letterheadTopMm}';
       _savedPdfSectionSizes = savedPdfSectionSizes;
       _previewedPdfSectionSizes = Map.of(savedPdfSectionSizes);
     });
@@ -408,6 +420,10 @@ class _PdfSettingsScreenV2State extends ConsumerState<PdfSettingsScreenV2> {
         ref
             .read(settingsRepositoryProvider)
             .setSetting(SettingKey.pdfFontSize, _previewedPdfFontSize),
+        ref.read(settingsRepositoryProvider).setSetting(
+            SettingKey.pdfMarginPreset, _previewedPdfMargins.preset),
+        ref.read(settingsRepositoryProvider).setSetting(
+            SettingKey.pdfLetterheadTopMm, '${_previewedPdfMargins.letterheadTopMm}'),
         for (final key in _pdfSectionSizeKeys)
           ref.read(settingsRepositoryProvider).setSetting(
               key, _previewedPdfSectionSizes[key] ?? ''),
@@ -446,6 +462,7 @@ class _PdfSettingsScreenV2State extends ConsumerState<PdfSettingsScreenV2> {
         _savedThermalItemLayout = _previewedThermalItemLayout;
         _savedThermalCompanyNameSize = _previewedThermalCompanyNameSize;
         _savedPdfFontSize = _previewedPdfFontSize;
+        _savedPdfMargins = _previewedPdfMargins;
         _savedPdfSectionSizes = Map.of(_previewedPdfSectionSizes);
 
         _savedBlockLayout = _previewedBlockLayout;
@@ -471,6 +488,7 @@ class _PdfSettingsScreenV2State extends ConsumerState<PdfSettingsScreenV2> {
     _previewDebounceTimer?.cancel();
     _themeColorController.dispose();
     _thermalWidthMarginController.dispose();
+    _letterheadTopController.dispose();
     super.dispose();
   }
 
@@ -568,6 +586,7 @@ class _PdfSettingsScreenV2State extends ConsumerState<PdfSettingsScreenV2> {
         watermarkFullPage: base.watermarkFullPage,
         metadataColumns: base.metadataColumns,
         fontSizeScale: fontSizeScale,
+        pageMargins: _previewedPdfMargins,
         companyNameScale: pdfSectionScale(
             _previewedPdfSectionSizes[SettingKey.pdfCompanyNameFontSize],
             fontSizeScale),
@@ -748,6 +767,7 @@ class _PdfSettingsScreenV2State extends ConsumerState<PdfSettingsScreenV2> {
           _previewedThermalItemLayout != _savedThermalItemLayout ||
           _previewedThermalCompanyNameSize != _savedThermalCompanyNameSize ||
           _previewedPdfFontSize != _savedPdfFontSize ||
+          _previewedPdfMargins != _savedPdfMargins ||
           _pdfSectionSizeKeys.any((k) =>
               _previewedPdfSectionSizes[k] != _savedPdfSectionSizes[k]) ||
           jsonEncode(_previewedBlockLayout) != jsonEncode(_savedBlockLayout) ||
@@ -1372,6 +1392,8 @@ class _PdfSettingsScreenV2State extends ConsumerState<PdfSettingsScreenV2> {
       _previewedThermalCompanyNameSize = 'medium';
       _previewedPdfFontSize = 'medium';
       _previewedPdfSectionSizes = {for (final k in _pdfSectionSizeKeys) k: ''};
+      _previewedPdfMargins = const PdfPageMargins();
+      _letterheadTopController.text = '0';
 
     });
     _schedulePdfPreviewUpdate(immediate: true);
@@ -1911,6 +1933,8 @@ class _PdfSettingsScreenV2State extends ConsumerState<PdfSettingsScreenV2> {
                   _previewedTemplate == InvoiceTemplate.gridClassic)
                 const SizedBox(height: 8),
               _buildPdfFontSizeField(),
+              const SizedBox(height: 8),
+              _buildPdfMarginsField(),
               if (ref.watch(attachmentsEnabledProvider)) ...[
                 const SizedBox(height: 8),
                 _buildAttachmentLayoutField(),
@@ -2335,6 +2359,72 @@ class _PdfSettingsScreenV2State extends ConsumerState<PdfSettingsScreenV2> {
             ],
             onChanged: (value) {
               setState(() => _previewedThermalCompanyNameSize = value!);
+              _schedulePdfPreviewUpdate();
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Page margins: preset for all sides (or each template's own) + extra
+  /// space at the top for pre-printed letterhead paper. Not for thermal.
+  Widget _buildPdfMarginsField() {
+    final l10n = AppLocalizations.of(context)!;
+    final scheme = Theme.of(context).colorScheme;
+    final dense = InputDecoration(
+      isDense: true,
+      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      border: OutlineInputBorder(borderRadius: BorderRadius.circular(AppBorderRadius.xsmall)),
+    );
+    final labels = {
+      'template': l10n.pdfMarginTemplate,
+      'narrow': l10n.pdfMarginNarrow,
+      'normal': l10n.pdfMarginNormal,
+      'wide': l10n.pdfMarginWide,
+    };
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: scheme.surfaceContainer,
+        borderRadius: BorderRadius.circular(AppBorderRadius.small),
+        border: Border.all(color: scheme.outlineVariant),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(l10n.pdfMarginLabel,
+              style: TextStyle(fontSize: AppFontSize.small, fontWeight: FontWeight.w600, color: scheme.onSurface)),
+          const SizedBox(height: 8),
+          DropdownButtonFormField<String>(
+            value: _previewedPdfMargins.preset,
+            isExpanded: true,
+            decoration: dense,
+            items: [
+              for (final p in PdfPageMargins.presets)
+                DropdownMenuItem(value: p, child: Text(labels[p]!)),
+            ],
+            onChanged: (value) {
+              setState(() => _previewedPdfMargins = PdfPageMargins(
+                  preset: value!, letterheadTopMm: _previewedPdfMargins.letterheadTopMm));
+              _schedulePdfPreviewUpdate();
+            },
+          ),
+          const SizedBox(height: 10),
+          TextField(
+            controller: _letterheadTopController,
+            keyboardType: TextInputType.number,
+            inputFormatters: [FilteringTextInputFormatter.digitsOnly, LengthLimitingTextInputFormatter(2)],
+            decoration: dense.copyWith(
+              labelText: l10n.pdfLetterheadTopLabel,
+              helperText: l10n.pdfLetterheadTopHelp(PdfPageMargins.maxLetterheadTopMm),
+              helperMaxLines: 3,
+              suffixText: 'mm',
+            ),
+            onChanged: (value) {
+              final mm = (int.tryParse(value) ?? 0).clamp(0, PdfPageMargins.maxLetterheadTopMm);
+              setState(() => _previewedPdfMargins =
+                  PdfPageMargins(preset: _previewedPdfMargins.preset, letterheadTopMm: mm));
               _schedulePdfPreviewUpdate();
             },
           ),

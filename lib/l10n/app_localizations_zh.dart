@@ -3873,6 +3873,29 @@ class AppLocalizationsZh extends AppLocalizations {
   String get pdfSettingsFontSizeLabel => 'PDF 文字大小';
 
   @override
+  String get pdfMarginLabel => '页边距';
+
+  @override
+  String get pdfMarginTemplate => '模板默认';
+
+  @override
+  String get pdfMarginNarrow => '窄（5 毫米）';
+
+  @override
+  String get pdfMarginNormal => '标准（8 毫米）';
+
+  @override
+  String get pdfMarginWide => '宽（15 毫米）';
+
+  @override
+  String get pdfLetterheadTopLabel => '信头顶部留白';
+
+  @override
+  String pdfLetterheadTopHelp(int max) {
+    return '每页顶部额外留白，用于预印信头纸（0–$max 毫米）。不适用于热敏小票。';
+  }
+
+  @override
   String get pdfSettingsSectionSizesLabel => '分区大小';
 
   @override

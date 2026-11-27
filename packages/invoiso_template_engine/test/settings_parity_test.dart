@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:invoiso_template_engine/invoiso_template_engine.dart';
+import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:test/test.dart';
 
@@ -138,6 +139,21 @@ void main() {
     }, data, const TemplateOptions(),
         assets: TemplateAssets(signature: _png1x1));
     expect(raw, isNot(matches(RegExp(r'/Subtype\s*/Image'))));
+  });
+
+  test('margins setting: preset replaces the layout margin, letterhead space adds to the top', () {
+    const doc = {'engine': 2, 'page': {'size': 'a4', 'margin': 24}, 'layout': []};
+    pw.EdgeInsets marginOf(TemplateOptions o) => buildBlockLayoutPage(
+            document: doc, data: const {}, options: o, assets: const TemplateAssets())
+        .margin! as pw.EdgeInsets;
+    final own = marginOf(const TemplateOptions());
+    expect(own.left, closeTo(24 * PdfPageFormat.mm, 0.01)); // layout margin, in mm
+    final preset = marginOf(const TemplateOptions(pageMarginOverride: 20));
+    expect([preset.left, preset.top, preset.right, preset.bottom], [20, 20, 20, 20]);
+    final letterhead = marginOf(const TemplateOptions(pageMarginOverride: 20, extraTopMargin: 100));
+    expect([letterhead.top, letterhead.bottom], [120, 20]);
+    final ownPlusTop = marginOf(const TemplateOptions(extraTopMargin: 50));
+    expect(ownPlusTop.top, closeTo(24 * PdfPageFormat.mm + 50, 0.01));
   });
 }
 

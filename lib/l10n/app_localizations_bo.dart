@@ -4028,6 +4028,29 @@ class AppLocalizationsBo extends AppLocalizations {
   String get pdfSettingsFontSizeLabel => 'PDF ཡི་གེའི་ཚད།';
 
   @override
+  String get pdfMarginLabel => 'ཤོག་ངོས་ཀྱི་མཐའ་སྟོང་།';
+
+  @override
+  String get pdfMarginTemplate => 'དཔེ་གཞི་རང་གི';
+
+  @override
+  String get pdfMarginNarrow => 'དོག་པོ། (5 mm)';
+
+  @override
+  String get pdfMarginNormal => 'རྒྱུན་ལྡན། (8 mm)';
+
+  @override
+  String get pdfMarginWide => 'ཡངས་པོ། (15 mm)';
+
+  @override
+  String get pdfLetterheadTopLabel => 'ཡིག་མགོའི་ཆེད་སྟེང་གི་བར་སྟོང་།';
+
+  @override
+  String pdfLetterheadTopHelp(int max) {
+    return 'སྔོན་ནས་པར་བསྐྲུན་བྱས་པའི་ཡིག་མགོའི་ཤོག་བུའི་ཆེད་ཤོག་ངོས་རེ་རེར་བར་སྟོང་ཁ་སྣོན། (0–$max mm)། ཚ་ཤུགས་རྩིས་ཤོག་ལ་མི་བེད།';
+  }
+
+  @override
   String get pdfSettingsSectionSizesLabel => 'སྡེ་ཚན་གྱི་ཚད།';
 
   @override

@@ -10,6 +10,7 @@ import 'package:invoiso/models/custom_field_value.dart';
 import 'package:invoiso/models/invoice.dart';
 import 'package:invoiso/utils/amount_in_words.dart';
 import 'package:invoiso/models/customer_field_settings.dart';
+import 'package:invoiso/services/pdf/pdf_settings.dart';
 import 'pdf_widgets.dart';
 import 'package:invoiso/utils/formatters.dart';
 
@@ -69,6 +70,7 @@ pw.MultiPage buildGridClassicTemplate(
   Uint8List? watermarkBytes,
   double watermarkOpacity = 0.12,
   bool watermarkFullPage = false,
+  PdfPageMargins pageMargins = const PdfPageMargins(),
   bool showCgstSgst = false,
   bool showIgst = false,
   bool showTaxColumn = true,
@@ -109,7 +111,11 @@ pw.MultiPage buildGridClassicTemplate(
   final double pageMarginV = landscape
       ? (isA6 ? 6.0 : (isA5 ? 8.0 : 10.0))
       : (isA6 ? 5.0 : (isA5 ? 8.0 : PdfLayout.defaultVMargin));
-  final double contentWidth = pageFmt.width - pageMarginH * 2;
+  // Margins setting: preset or the size-based defaults above, + letterhead space.
+  final pageMarginInsets = pageMargins.apply(
+      pw.EdgeInsets.symmetric(vertical: pageMarginV, horizontal: pageMarginH));
+  final double contentWidth =
+      pageFmt.width - pageMarginInsets.left - pageMarginInsets.right;
   // Fonts use fontScale (page size) × user's PDF text size (or a section's
   // own scale); the label column follows textScale, the totals box totalsScale.
   final double textScale = fontScale * fontSizeScale;
@@ -692,8 +698,7 @@ pw.MultiPage buildGridClassicTemplate(
     pageTheme: pw.PageTheme(
       pageFormat: pageFmt,
       theme: pdfTheme,
-      margin: pw.EdgeInsets.symmetric(
-          vertical: pageMarginV, horizontal: pageMarginH),
+      margin: pageMarginInsets,
       buildBackground: fullPageWatermark
           ? (context) =>
               buildFullPageWatermark(watermarkBytes, watermarkOpacity)
