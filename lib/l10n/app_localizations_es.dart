@@ -7102,6 +7102,11 @@ class AppLocalizationsEs extends AppLocalizations {
   String get storeFree => 'Gratis';
 
   @override
+  String storeOfferUntil(String date) {
+    return 'Oferta hasta el $date';
+  }
+
+  @override
   String get storeLicensed => 'Con licencia';
 
   @override

@@ -3816,6 +3816,8 @@
   "storeOffline": "Couldn't load the template list. Check the internet connection.",
   "storeOpenWebsite": "Open website",
   "storeFree": "Free",
+  "storeOfferUntil": "Offer until {date}",
+  "@storeOfferUntil": {"placeholders": {"date": {"type": "String"}}},
   "storeLicensed": "Licensed",
   "storeComingSoon": "Coming soon",
   "storeBuy": "Buy",

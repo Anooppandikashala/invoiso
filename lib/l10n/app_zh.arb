@@ -1661,6 +1661,7 @@
   "storeOffline": "无法加载模板列表。请检查网络连接。",
   "storeOpenWebsite": "打开网站",
   "storeFree": "免费",
+  "storeOfferUntil": "优惠截至 {date}",
   "storeLicensed": "已授权",
   "storeComingSoon": "即将推出",
   "storeBuy": "购买",

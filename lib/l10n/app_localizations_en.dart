@@ -6978,6 +6978,11 @@ class AppLocalizationsEn extends AppLocalizations {
   String get storeFree => 'Free';
 
   @override
+  String storeOfferUntil(String date) {
+    return 'Offer until $date';
+  }
+
+  @override
   String get storeLicensed => 'Licensed';
 
   @override

@@ -1611,6 +1611,7 @@
   "storeOffline": "དཔེ་གཞིའི་ཐོ་གཞུང་འཇུག་ཐུབ་མ་སོང་། དྲ་བའི་མཐུད་ལམ་ཞིབ་བཤེར་བྱོས།",
   "storeOpenWebsite": "དྲ་ཚིགས་ཁ་ཕྱེ།",
   "storeFree": "རིན་མེད།",
+  "storeOfferUntil": "རིན་གཅོག {date} བར།",
   "storeLicensed": "ཆོག་མཆན་ཡོད།",
   "storeComingSoon": "མྱུར་དུ་འབྱོར་ངེས།",
   "storeBuy": "ཉོ་བ།",

@@ -6987,6 +6987,11 @@ class AppLocalizationsBo extends AppLocalizations {
   String get storeFree => 'རིན་མེད།';
 
   @override
+  String storeOfferUntil(String date) {
+    return 'རིན་གཅོག $date བར།';
+  }
+
+  @override
   String get storeLicensed => 'ཆོག་མཆན་ཡོད།';
 
   @override

@@ -6730,6 +6730,11 @@ class AppLocalizationsZh extends AppLocalizations {
   String get storeFree => '免费';
 
   @override
+  String storeOfferUntil(String date) {
+    return '优惠截至 $date';
+  }
+
+  @override
   String get storeLicensed => '已授权';
 
   @override

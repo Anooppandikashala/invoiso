@@ -11912,6 +11912,12 @@ abstract class AppLocalizations {
   /// **'Free'**
   String get storeFree;
 
+  /// No description provided for @storeOfferUntil.
+  ///
+  /// In en, this message translates to:
+  /// **'Offer until {date}'**
+  String storeOfferUntil(String date);
+
   /// No description provided for @storeLicensed.
   ///
   /// In en, this message translates to:

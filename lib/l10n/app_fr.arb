@@ -1661,6 +1661,7 @@
   "storeOffline": "Impossible de charger la liste des modèles. Vérifiez la connexion internet.",
   "storeOpenWebsite": "Ouvrir le site",
   "storeFree": "Gratuit",
+  "storeOfferUntil": "Offre jusqu'au {date}",
   "storeLicensed": "Sous licence",
   "storeComingSoon": "Bientôt disponible",
   "storeBuy": "Acheter",

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/intl.dart';
 import 'package:invoiso/l10n/app_localizations.dart';
 import 'package:invoiso/providers/repositories.dart';
 import 'package:invoiso/services/licensing/licence_service.dart';
@@ -78,7 +79,7 @@ class _TemplateStoreDialogState extends ConsumerState<_TemplateStoreDialog> {
       'Hello, I would like to buy this Invoiso template.',
       '',
       'Template: ${t.name} (${t.id})',
-      if (t.priceLabel.isNotEmpty) 'Price: ${t.priceLabel}',
+      if (t.priceLabel().isNotEmpty) 'Price: ${t.priceLabel()}',
       'Activation code: $code',
       'Business name: ${company?.name ?? ''}',
       'GSTIN: ${company?.gstin ?? ''}',
@@ -154,7 +155,8 @@ class _TemplateStoreDialogState extends ConsumerState<_TemplateStoreDialog> {
   Widget _tile(StoreTemplate t, AppLocalizations l10n, ColorScheme scheme) {
     final licensed = _allLicensed || _licensedIds.contains(t.id);
     final available = t.status == 'available';
-    final price = t.free ? l10n.storeFree : t.priceLabel;
+    final price = t.free ? l10n.storeFree : t.priceLabel();
+    final crossed = t.crossedPriceLabel();
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 10),
       child: Row(
@@ -192,8 +194,27 @@ class _TemplateStoreDialogState extends ConsumerState<_TemplateStoreDialog> {
                   Text(t.tagline, style: TextStyle(fontSize: 12.5, color: scheme.onSurfaceVariant)),
                 ],
                 const SizedBox(height: 4),
-                Text([price, t.pageSizes.join(' / ')].where((s) => s.isNotEmpty).join('  ·  '),
-                    style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w500)),
+                Text.rich(
+                  TextSpan(children: [
+                    // MRP (or the regular price during an offer) crossed out before the price.
+                    if (crossed.isNotEmpty)
+                      TextSpan(
+                          text: '$crossed  ',
+                          style: TextStyle(
+                              decoration: TextDecoration.lineThrough,
+                              fontWeight: FontWeight.normal,
+                              color: scheme.onSurfaceVariant)),
+                    TextSpan(text: [price, t.pageSizes.join(' / ')].where((s) => s.isNotEmpty).join('  ·  ')),
+                  ]),
+                  style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w500),
+                ),
+                if (t.offerRunning()) ...[
+                  const SizedBox(height: 4),
+                  _chip(
+                      l10n.storeOfferUntil(DateFormat.yMMMd(Localizations.localeOf(context).toString())
+                          .format(DateTime.parse(t.offerUntil!))),
+                      Colors.green),
+                ],
               ],
             ),
           ),

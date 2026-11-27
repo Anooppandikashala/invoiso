@@ -7033,6 +7033,11 @@ class AppLocalizationsNe extends AppLocalizations {
   String get storeFree => 'निःशुल्क';
 
   @override
+  String storeOfferUntil(String date) {
+    return 'अफर $date सम्म';
+  }
+
+  @override
   String get storeLicensed => 'लाइसेन्स प्राप्त';
 
   @override

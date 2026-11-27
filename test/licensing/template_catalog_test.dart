@@ -23,10 +23,36 @@ void main() {
     final c = await TemplateCatalogService(client: MockClient((_) async => http.Response(_body, 200))).refresh();
     expect(c!.contactEmail, 'shop@example.com');
     expect(c.templates.map((t) => t.id), ['gst', 'teal']);
-    expect(c.templates.first.priceLabel, '₹499 · \$9');
-    expect(c.templates.last.priceLabel, '');
+    expect(c.templates.first.priceLabel(), '₹499 · \$9');
+    expect(c.templates.last.priceLabel(), '');
     expect(c.nameOf('gst'), 'GST Tax Invoice');
     expect(c.nameOf('unknown'), 'unknown');
+  });
+
+  test('MRP and season offer: offer price through the last day, then the regular price', () {
+    final t = StoreTemplate.fromJson({
+      'id': 'gst', 'name': 'GST', 'free': false, 'price': {'INR': 799, 'USD': 12}, 'mrp': {'INR': 999, 'USD': 15},
+      'offer': {'price': {'INR': 499, 'USD': 7}, 'until': '2026-12-31'},
+    });
+    final lastDay = DateTime.utc(2026, 12, 31, 23, 59);
+    expect(t.offerRunning(lastDay), isTrue);
+    expect(t.priceLabel(lastDay), '₹499 · \$7');
+    expect(t.crossedPriceLabel(lastDay), 'MRP ₹999 · \$15');
+    final after = DateTime.utc(2027, 1, 1);
+    expect(t.offerRunning(after), isFalse);
+    expect(t.priceLabel(after), '₹799 · \$12');
+    expect(t.crossedPriceLabel(after), 'MRP ₹999 · \$15');
+    // No MRP: the regular price is crossed out only during the offer.
+    final noMrp = StoreTemplate.fromJson({
+      'id': 'x', 'free': false, 'price': {'INR': 799, 'USD': 12},
+      'offer': {'price': {'INR': 499, 'USD': 7}, 'until': '2026-12-31'},
+    });
+    expect(noMrp.crossedPriceLabel(lastDay), '₹799 · \$12');
+    expect(noMrp.crossedPriceLabel(after), '');
+    // Broken offer → plain price.
+    final plain = StoreTemplate.fromJson({'id': 'y', 'free': false, 'price': {'INR': 799, 'USD': 12}, 'offer': {'until': 'soon'}});
+    expect(plain.priceLabel(), '₹799 · \$12');
+    expect(plain.crossedPriceLabel(), '');
   });
 
   test('offline or bad reply falls back to the last good copy', () async {

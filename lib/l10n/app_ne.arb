@@ -1661,6 +1661,7 @@
   "storeOffline": "टेम्प्लेट सूची लोड हुन सकेन। इन्टरनेट जडान जाँच्नुहोस्।",
   "storeOpenWebsite": "वेबसाइट खोल्नुहोस्",
   "storeFree": "निःशुल्क",
+  "storeOfferUntil": "अफर {date} सम्म",
   "storeLicensed": "लाइसेन्स प्राप्त",
   "storeComingSoon": "चाँडै आउँदैछ",
   "storeBuy": "किन्नुहोस्",

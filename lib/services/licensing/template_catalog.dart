@@ -14,6 +14,14 @@ class StoreTemplate {
   final String status; // available / coming-soon / unavailable
   final int? priceInr;
   final int? priceUsd;
+  /// MRP, shown crossed out (higher than the price).
+  final int? mrpInr;
+  final int? mrpUsd;
+  /// Season offer: [offerInr]/[offerUsd] through [offerUntil] (last day,
+  /// YYYY-MM-DD), then the regular price again.
+  final int? offerInr;
+  final int? offerUsd;
+  final String? offerUntil;
   final String? page;
   final String? thumbnail;
 
@@ -27,12 +35,21 @@ class StoreTemplate {
     this.status = 'available',
     this.priceInr,
     this.priceUsd,
+    this.mrpInr,
+    this.mrpUsd,
+    this.offerInr,
+    this.offerUsd,
+    this.offerUntil,
     this.page,
     this.thumbnail,
   });
 
   factory StoreTemplate.fromJson(Map<String, dynamic> j) {
     final price = j['price'] is Map ? j['price'] as Map : const {};
+    final offer = j['offer'] is Map ? j['offer'] as Map : const {};
+    final offerPrice = offer['price'] is Map ? offer['price'] as Map : const {};
+    final mrp = j['mrp'] is Map ? j['mrp'] as Map : const {};
+    final until = offer['until'];
     return StoreTemplate(
       id: '${j['id']}',
       name: '${j['name'] ?? j['id']}',
@@ -43,15 +60,36 @@ class StoreTemplate {
       status: '${j['status'] ?? 'available'}',
       priceInr: (price['INR'] as num?)?.toInt(),
       priceUsd: (price['USD'] as num?)?.toInt(),
+      mrpInr: (mrp['INR'] as num?)?.toInt(),
+      mrpUsd: (mrp['USD'] as num?)?.toInt(),
+      offerInr: (offerPrice['INR'] as num?)?.toInt(),
+      offerUsd: (offerPrice['USD'] as num?)?.toInt(),
+      offerUntil: until is String && RegExp(r'^\d{4}-\d{2}-\d{2}$').hasMatch(until) ? until : null,
       page: j['page'] as String?,
       thumbnail: j['thumbnail'] as String?,
     );
   }
 
-  /// "₹499 · $9", or "" when free / no price yet.
-  String get priceLabel {
-    if (free || priceInr == null || priceUsd == null) return '';
-    return '₹$priceInr · \$$priceUsd';
+  bool get _hasPrice => !free && priceInr != null && priceUsd != null;
+
+  /// Season offer still running ([now] defaults to today, compared in UTC like the website).
+  bool offerRunning([DateTime? now]) =>
+      _hasPrice && offerUntil != null && offerInr != null && offerUsd != null &&
+      (now ?? DateTime.now()).toUtc().toIso8601String().substring(0, 10).compareTo(offerUntil!) <= 0;
+
+  /// Price to pay now: "₹499 · $9" (the offer price while an offer runs), or
+  /// "" when free / no price yet.
+  String priceLabel([DateTime? now]) {
+    if (!_hasPrice) return '';
+    return offerRunning(now) ? '₹$offerInr · \$$offerUsd' : '₹$priceInr · \$$priceUsd';
+  }
+
+  /// Shown crossed out before the price: "MRP ₹999 · $15" when an MRP is set,
+  /// else the regular price while an offer runs, else "".
+  String crossedPriceLabel([DateTime? now]) {
+    if (!_hasPrice) return '';
+    if (mrpInr != null && mrpUsd != null) return 'MRP ₹$mrpInr · \$$mrpUsd';
+    return offerRunning(now) ? '₹$priceInr · \$$priceUsd' : '';
   }
 }
 

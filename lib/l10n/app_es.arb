@@ -1661,6 +1661,7 @@
   "storeOffline": "No se pudo cargar la lista de plantillas. Revise la conexión a internet.",
   "storeOpenWebsite": "Abrir sitio web",
   "storeFree": "Gratis",
+  "storeOfferUntil": "Oferta hasta el {date}",
   "storeLicensed": "Con licencia",
   "storeComingSoon": "Próximamente",
   "storeBuy": "Comprar",
