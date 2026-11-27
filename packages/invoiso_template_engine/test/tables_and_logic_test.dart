@@ -246,6 +246,56 @@ void main() {
     expect(v1On.headers, v1On.pages); // old-style tables follow it too
   });
 
+  test('headerGroups: one label over its columns; hidden columns drop out; minRows pads', () async {
+    Map<String, dynamic> table({int minRows = 0}) => {
+          'type': 'table',
+          'border': 'grid',
+          'minRows': minRows,
+          'headerGroups': [
+            {'label': 'CGST', 'columns': ['cr', 'ca']},
+            {'label': 'IGST', 'columns': ['ir', 'ia']},
+          ],
+          'columns': [
+            {'id': 'n', 'label': 'Item', 'value': '{{row.name}}', 'width': '40%'},
+            {'id': 'cr', 'if': '!invoice.isInterState', 'label': 'Rate', 'value': '9%', 'width': '15%'},
+            {'id': 'ca', 'if': '!invoice.isInterState', 'label': 'Amt', 'value': '{{row.amount|number}}', 'width': '15%'},
+            {'id': 'ir', 'if': 'invoice.isInterState', 'label': 'Rate', 'value': '18%', 'width': '15%'},
+            {'id': 'ia', 'if': 'invoice.isInterState', 'label': 'Amt', 'value': '{{row.amount|number}}', 'width': '15%'},
+          ],
+        };
+    final intra = await _render([table()], _data());
+    expect(intra.text, contains('Item CGST Rate Amt Bolt 9% 1,200.00 Nut 9% 300.00'));
+    expect(intra.text, isNot(contains('IGST')));
+    final inter = await _render([table()], _data(interState: true));
+    expect(inter.text, contains('Item IGST Rate Amt Bolt 18%'));
+    expect(inter.text, isNot(contains('CGST')));
+
+    // Blank rows have height: 60 of them run onto a second page.
+    int pages(String raw) => RegExp(r'/Type\s*/Page\b').allMatches(raw).length;
+    expect(pages(intra.raw), 1);
+    expect(pages((await _render([table(minRows: 60)], _data())).raw), 2);
+    expect(pages((await _render([table(minRows: 2)], _data())).raw), 1, reason: 'enough rows → no filler');
+  });
+
+  test('label placeholders alone do not keep a value line visible', () async {
+    final layout = [
+      {'type': 'text', 'value': 'A {{company.taxLabel}}: {{customer.gstin}}'},
+      {'type': 'text', 'value': 'B {{company.taxLabel}}'},
+      {'type': 'repeat', 'source': 'charges', 'child': {'type': 'text', 'value': 'C {{row.label}}'}},
+    ];
+    final data = {
+      ..._data(),
+      'company': {'taxLabel': 'GSTIN'},
+      'customer': {'gstin': ''},
+    };
+    final none = await _render(layout, data);
+    expect(none.text, isNot(contains('A GSTIN')));
+    expect(none.text, contains('B GSTIN'), reason: 'labels only → shown');
+    expect(none.text, contains('C Freight'));
+    final set = await _render(layout, {...data, 'customer': {'gstin': '32ABC'}});
+    expect(set.text, contains('A GSTIN: 32ABC'));
+  });
+
   test('detailRow: full-width line under each row only when its if holds',
       () async {
     Map<String, dynamic> table(String border) => {

@@ -374,7 +374,11 @@ extension _BlocksV2 on _BlockLayoutRenderer {
   /// (e.g. charges)}],
   /// `repeatHeader` (true / false; omitted → the user's "repeat table header"
   /// setting), `detailRow` {value, if, style…}: a full-width line under each
-  /// row (e.g. description on its own line) when its `if` holds.
+  /// row (e.g. description on its own line) when its `if` holds,
+  /// `headerGroups` [{label, columns: [column ids]}]: a label over adjacent
+  /// columns (e.g. CGST over Rate | Amount; hidden columns drop out; a group
+  /// whose columns aren't adjacent or mix fixed and % widths is ignored),
+  /// `minRows`: blank rows after the data up to N rows (printed-stationery look).
   /// Returned as separate widgets so a top-level table splits across pages.
   List<pw.Widget> tableV2Parts(Map<String, dynamic> block) {
     final columns = <Map<String, dynamic>>[];
@@ -478,23 +482,26 @@ extension _BlocksV2 on _BlockLayoutRenderer {
         ? block['repeatHeader'] as bool
         : options.repeatTableHeader;
     pw.TableRow? headerRow;
+    pw.BoxDecoration? headerDecoration;
+    pw.Widget headerText(String text, dynamic align) => cellText(text, header!, align,
+        role: 'tableHeader',
+        bold: header['bold'] != false,
+        color: _BlockLayoutRenderer._color(header['color'], fallback: PdfColors.white));
+    final headerCells = [
+      if (header != null)
+        for (final column in columns)
+          pw.Padding(
+            padding: padding,
+            child: headerText(_resolve((column['label'] ?? '').toString()), column['align']),
+          ),
+    ];
     if (header != null) {
+      headerDecoration = pw.BoxDecoration(
+          color: _BlockLayoutRenderer._color(header['background'], fallback: primary));
       headerRow = pw.TableRow(
         repeat: repeatHeader,
-        decoration: pw.BoxDecoration(
-            color: _BlockLayoutRenderer._color(header['background'], fallback: primary)),
-        children: [
-          for (final column in columns)
-            pw.Padding(
-              padding: padding,
-              child: cellText(_resolve((column['label'] ?? '').toString()), header,
-                  column['align'],
-                  role: 'tableHeader',
-                  bold: header['bold'] != false,
-                  color: _BlockLayoutRenderer._color(header['color'],
-                      fallback: PdfColors.white)),
-            ),
-        ],
+        decoration: headerDecoration,
+        children: headerCells,
       );
     }
     // `detailRow`: a full-width line under each item (e.g. the description
@@ -522,6 +529,27 @@ extension _BlocksV2 on _BlockLayoutRenderer {
       }
     } finally {
       _row = saved;
+    }
+    final minRows = _BlockLayoutRenderer._double(block['minRows'], fallback: 0).toInt();
+    for (var i = rows.length; i < minRows; i++) {
+      final color = zebra != null && i.isOdd ? zebra : null;
+      bodyRows.add((
+        row: pw.TableRow(
+          decoration: itemsTable
+              ? _itemRowDecoration(color)
+              : color != null ? pw.BoxDecoration(color: color) : null,
+          children: [
+            for (final c in columns)
+              // One text line high (blank text has no height).
+              pw.Padding(
+                  padding: padding,
+                  child: pw.SizedBox(
+                      height: _fs(_BlockLayoutRenderer._double(c['size'], fallback: size), 'tableItems') * 1.2)),
+          ],
+        ),
+        detail: '',
+        color: color,
+      ));
     }
     final footerRows = <pw.TableRow>[];
     final savedFooterRow = _row;
@@ -574,7 +602,94 @@ extension _BlocksV2 on _BlockLayoutRenderer {
         pw.SizedBox(height: 6),
       ],
     ];
-    if (!bodyRows.any((r) => r.detail.isNotEmpty)) {
+    // With full-width detail lines a single table can't be used (no
+    // column spanning), so — like the built-in templates — each item is its
+    // own one-row table followed by its detail line. These sit as rows of an
+    // outer one-column table so the header can still repeat on every page.
+    final style = (block['border'] ?? 'horizontal').toString();
+    final grid = style == 'grid' || style == 'outer';
+    final none = style == 'none';
+    pw.Widget segment(List<pw.TableRow> segRows,
+            {bool top = false, bool bottom = true, Map<int, pw.TableColumnWidth>? widths, bool middle = false}) =>
+        pw.Table(
+          columnWidths: widths ?? columnWidths,
+          defaultVerticalAlignment:
+              middle ? pw.TableCellVerticalAlignment.middle : pw.TableCellVerticalAlignment.top,
+          border: none
+              ? null
+              : pw.TableBorder(
+                  top: top ? side : pw.BorderSide.none,
+                  bottom: bottom ? side : pw.BorderSide.none,
+                  left: grid ? side : pw.BorderSide.none,
+                  right: grid ? side : pw.BorderSide.none,
+                  verticalInside: style == 'grid' ? side : pw.BorderSide.none,
+                  horizontalInside: style == 'outer' ? pw.BorderSide.none : side,
+                ),
+          children: segRows,
+        );
+
+    // Grouped header: one row; a group's cell = its label over a small table
+    // of its columns' labels, other labels centred over the full height.
+    pw.Widget? groupedHeader;
+    final groupSpecs = block['headerGroups'] is List ? block['headerGroups'] as List : const [];
+    if (headerRow != null && groupSpecs.isNotEmpty) {
+      final groupOf = <int, ({String label, List<int> cols})>{};
+      for (final raw in groupSpecs) {
+        final g = _BlockLayoutRenderer._asMap(raw);
+        final ids = [for (final id in (g['columns'] is List ? g['columns'] as List : const [])) id.toString()];
+        final cols = [for (var i = 0; i < columns.length; i++) if (ids.contains(columnId(i))) i];
+        if (cols.isEmpty || cols.last - cols.first != cols.length - 1 || cols.any(groupOf.containsKey)) continue;
+        final group = (label: _resolve((g['label'] ?? '').toString()), cols: cols);
+        for (final i in cols) {
+          groupOf[i] = group;
+        }
+      }
+      pw.TableColumnWidth? merged(List<int> cols) {
+        final ws = [for (final i in cols) columnWidths[i]!];
+        if (ws.every((w) => w is pw.FlexColumnWidth)) {
+          return pw.FlexColumnWidth(ws.fold(0.0, (t, w) => t + (w as pw.FlexColumnWidth).flex));
+        }
+        if (ws.every((w) => w is pw.FixedColumnWidth)) {
+          return pw.FixedColumnWidth(ws.fold(0.0, (t, w) => t + (w as pw.FixedColumnWidth).width));
+        }
+        return null;
+      }
+      final cells = <pw.Widget>[];
+      final widths = <int, pw.TableColumnWidth>{};
+      for (var i = 0; i < columns.length; i++) {
+        final g = groupOf[i];
+        if (g != null && g.cols.first != i) continue;
+        final w = merged(g?.cols ?? [i]) ?? (g == null ? columnWidths[i]! : null);
+        if (w == null) {
+          // Mixed widths in a group: print its columns ungrouped.
+          for (final c in g!.cols) {
+            widths[widths.length] = columnWidths[c]!;
+            cells.add(headerCells[c]);
+          }
+          continue;
+        }
+        widths[widths.length] = w;
+        cells.add(g == null
+            ? headerCells[i]
+            : pw.Column(crossAxisAlignment: pw.CrossAxisAlignment.stretch, children: [
+                pw.Padding(padding: padding, child: headerText(g.label, 'center')),
+                pw.Table(
+                  columnWidths: {for (var k = 0; k < g.cols.length; k++) k: columnWidths[g.cols[k]]!},
+                  border: none
+                      ? null
+                      : pw.TableBorder(
+                          top: side,
+                          verticalInside: style == 'grid' ? side : pw.BorderSide.none),
+                  children: [pw.TableRow(children: [for (final c in g.cols) headerCells[c]])],
+                ),
+              ]));
+      }
+      groupedHeader = segment(
+          [pw.TableRow(decoration: headerDecoration, children: cells)],
+          top: true, widths: widths, middle: true);
+    }
+
+    if (groupedHeader == null && !bodyRows.any((r) => r.detail.isNotEmpty)) {
       return [
         ...titleWidgets,
         pw.Table(
@@ -589,28 +704,6 @@ extension _BlocksV2 on _BlockLayoutRenderer {
       ];
     }
 
-    // With full-width detail lines a single table can't be used (no
-    // column spanning), so — like the built-in templates — each item is its
-    // own one-row table followed by its detail line. These sit as rows of an
-    // outer one-column table so the header can still repeat on every page.
-    final style = (block['border'] ?? 'horizontal').toString();
-    final grid = style == 'grid' || style == 'outer';
-    final none = style == 'none';
-    pw.Widget segment(List<pw.TableRow> segRows, {bool top = false, bool bottom = true}) =>
-        pw.Table(
-          columnWidths: columnWidths,
-          border: none
-              ? null
-              : pw.TableBorder(
-                  top: top ? side : pw.BorderSide.none,
-                  bottom: bottom ? side : pw.BorderSide.none,
-                  left: grid ? side : pw.BorderSide.none,
-                  right: grid ? side : pw.BorderSide.none,
-                  verticalInside: style == 'grid' ? side : pw.BorderSide.none,
-                  horizontalInside: style == 'outer' ? pw.BorderSide.none : side,
-                ),
-          children: segRows,
-        );
     return [
       ...titleWidgets,
       pw.Table(
@@ -619,7 +712,7 @@ extension _BlocksV2 on _BlockLayoutRenderer {
           if (headerRow != null)
             pw.TableRow(
                 repeat: repeatHeader,
-                children: [segment([headerRow], top: true)]),
+                children: [groupedHeader ?? segment([headerRow], top: true)]),
           for (final r in bodyRows)
             pw.TableRow(children: [
               pw.Column(

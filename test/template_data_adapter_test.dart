@@ -186,8 +186,14 @@ void main() {
       invoiceDiscountValue: 10,
     );
     final d = _data(inv);
+    final half = inv.isInterState ? 0.0 : 31.5;
     expect(d['chargesTaxed'], [
-      {'label': 'Freight', 'amount': inv.chargeTaxableValue(inv.additionalCosts.first), 'hsn': '9965', 'taxRate': 18.0},
+      {
+        'label': 'Freight', 'amount': inv.chargeTaxableValue(inv.additionalCosts.first), 'hsn': '9965', 'taxRate': 18.0,
+        'cgstRate': inv.isInterState ? 0.0 : 9.0, 'sgstRate': inv.isInterState ? 0.0 : 9.0,
+        'igstRate': inv.isInterState ? 18.0 : 0.0,
+        'cgst': half, 'sgst': half, 'igst': inv.isInterState ? 63.0 : 0.0, 'tax': 63.0, 'total': 413.0,
+      },
     ]);
     expect(d['chargesUntaxed'], [
       {'label': 'Packing', 'amount': 120.0},
@@ -196,6 +202,26 @@ void main() {
     expect(t['extraDiscount'], inv.invoiceDiscountAmount);
     expect(t['extraDiscount'], greaterThan(0));
     expect(t['extraDiscountLabel'], 'Extra Discount (10.0%)');
+  });
+
+  test('(Incl) rate, Disc %, reverse charge for the GST grid layouts', () {
+    final s = _invoice();
+    final item = s.items.first;
+    final rate = (_data(s)['items'] as List).first['taxRate'] as double;
+    final plain = (_data(s)['items'] as List).first as Map<String, dynamic>;
+    expect(plain['rateInclTax'], closeTo(item.effectivePrice * (1 + rate / 100), 1e-9));
+    expect(plain['discountPercent'], isNull);
+    expect(plain['rateExclTax'], item.effectivePrice, reason: 'price excludes tax');
+    expect(plain['totalWithTax'], closeTo((plain['taxable'] as double) + item.taxAmount, 1e-9));
+    item.discount = 5;
+    item.discountIsPercent = true;
+    s.reverseCharge = true;
+    final d = _data(s);
+    expect((d['items'] as List).first['discountPercent'], 5);
+    expect(d['invoice']['reverseCharge'], true);
+    expect(d['totals']['reverseChargeTax'], s.tax);
+    s.reverseCharge = false;
+    expect(_data(s)['totals']['reverseChargeTax'], 0.0);
   });
 
   test('round off off → no rounding, total stays exact', () {

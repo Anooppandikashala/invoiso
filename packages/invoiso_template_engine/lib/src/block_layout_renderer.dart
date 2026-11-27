@@ -1243,14 +1243,20 @@ class _BlockLayoutRenderer {
   /// not printed on its own.
   String _resolveLine(String input) {
     if (!input.contains('{{')) return input;
-    var hasValue = false;
+    // Label placeholders (`company.taxLabel`, `row.label`…) don't keep a line
+    // with values alive: "{{company.taxLabel}}: {{customer.gstin}}" hides
+    // when there is no GSTIN. A line of labels only shows when one is set.
+    var hasValue = false, hasLabel = false, valueSlots = false;
     final out =
         input.replaceAllMapped(RegExp(r'\{\{\s*([^}]+?)\s*\}\}'), (match) {
-      final value = _placeholder(match.group(1)!.trim());
-      if (value.trim().isNotEmpty) hasValue = true;
+      final key = match.group(1)!.trim();
+      final value = _placeholder(key);
+      final isLabel = key.split('|').first.trim().toLowerCase().endsWith('label');
+      if (!isLabel) valueSlots = true;
+      if (value.trim().isNotEmpty) isLabel ? hasLabel = true : hasValue = true;
       return value;
     });
-    return hasValue ? out : '';
+    return (valueSlots ? hasValue : hasLabel) ? out : '';
   }
 
   String _placeholder(String rawKey) {

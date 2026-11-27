@@ -139,6 +139,7 @@ Map<String, dynamic> buildTemplateData(
       'isInterState': interState,
       'placeOfSupplyCode': pos,
       'placeOfSupply': pos.isEmpty ? '' : GstUtils.stateLabel(pos),
+      'reverseCharge': invoice.reverseCharge,
       'custom': {for (final f in invoice.customFields) f.label: f.value},
       'customFields': [
         for (final f in invoice.customFields)
@@ -210,7 +211,18 @@ Map<String, dynamic> buildTemplateData(
             'qty': item.quantity,
             'unit': item.effectiveUnit,
             'rate': item.effectivePrice,
+            // Unit price with tax ("(Incl) Rate"); the price itself when it
+            // already includes tax.
+            'rateInclTax': item.product.priceIncludesTax
+                ? item.effectivePrice
+                : item.effectivePrice * (1 + line.rate / 100),
+            // Unit price before tax (tax backed out of an inclusive price).
+            'rateExclTax': item.product.priceIncludesTax
+                ? item.effectivePrice / (1 + line.rate / 100)
+                : item.effectivePrice,
             'discount': item.totalDiscount,
+            // The % typed on the line ("Disc %"); null for amount discounts.
+            'discountPercent': item.discountIsPercent ? item.discount : null,
             'tax': item.taxAmount,
             'amount': item.total,
             'taxRate': line.rate,
@@ -218,6 +230,7 @@ Map<String, dynamic> buildTemplateData(
             'sgstRate': interState ? 0.0 : line.rate / 2,
             'igstRate': interState ? line.rate : 0.0,
             'taxable': line.taxable,
+            'totalWithTax': line.taxable + line.tax,
             'cgst': t.cgst,
             'sgst': t.sgst,
             'igst': t.igst,
@@ -235,10 +248,24 @@ Map<String, dynamic> buildTemplateData(
     ],
     // Split like the built-in templates: taxed charges are part of the taxable
     // value (listed before the tax rows), untaxed ones are added after tax.
+    // Tax split per charge from the same GST lines as the items (taxed
+    // charges follow the items there, in the same order).
     'chargesTaxed': [
-      for (final c in invoice.additionalCosts)
-        if (invoice.chargeTaxableValue(c) case final v?)
-          {'label': c.label, 'amount': v, 'hsn': c.hsn, 'taxRate': c.taxRate},
+      for (final (k, c) in invoice.additionalCosts
+          .where((c) => invoice.chargeTaxableValue(c) != null)
+          .indexed)
+        () {
+          final line = hsnLines[invoice.items.length + k];
+          final t = split(line.tax);
+          return {
+            'label': c.label, 'amount': invoice.chargeTaxableValue(c), 'hsn': c.hsn, 'taxRate': c.taxRate,
+            'cgstRate': interState ? 0.0 : line.rate / 2,
+            'sgstRate': interState ? 0.0 : line.rate / 2,
+            'igstRate': interState ? line.rate : 0.0,
+            'cgst': t.cgst, 'sgst': t.sgst, 'igst': t.igst,
+            'tax': line.tax, 'total': line.taxable + line.tax,
+          };
+        }(),
     ],
     'chargesUntaxed': [
       for (final c in invoice.additionalCosts)
@@ -275,6 +302,8 @@ Map<String, dynamic> buildTemplateData(
       // rounded total (#116).
       'totalInWords': s.showRoundOff ? AmountInWords.amount(net.rounded, indian: indianWords) : '',
       'taxInWords': AmountInWords.amount(invoice.tax, indian: indianWords),
+      // "GST on Reverse Charge": the tax the buyer pays (0 when not RCM).
+      'reverseChargeTax': invoice.reverseCharge ? invoice.tax : 0.0,
     },
     'payment': {
       // Same UPI link as the built-in templates' QR (amount = balance due).
