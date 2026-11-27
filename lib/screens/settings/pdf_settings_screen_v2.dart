@@ -27,6 +27,7 @@ import 'package:invoiso/screens/settings/template_store_dialog.dart';
 import 'package:invoiso/services/templates/active_template_pack.dart';
 import 'package:intl/intl.dart';
 import 'package:invoiso/services/licensing/licence_service.dart';
+import 'package:invoiso/services/licensing/template_catalog.dart';
 import 'package:invoiso/services/templates/template_pack_store.dart';
 
 class PdfSettingsScreenV2 extends ConsumerStatefulWidget {
@@ -66,6 +67,8 @@ class _PdfSettingsScreenV2State extends ConsumerState<PdfSettingsScreenV2> {
   Map<String, ({TemplateLicenceView view, DateTime? until})> _packViews = {};
   String? _savedPackId;
   String? _selectedPackId;
+  // Marketplace list, for the "Get more templates" card (count of designs not installed).
+  StoreCatalog? _storeCatalog;
   String? _savedThemeColorHex;
   String? _previewedThemeColorHex;
   final _themeColorController = TextEditingController();
@@ -115,6 +118,65 @@ class _PdfSettingsScreenV2State extends ConsumerState<PdfSettingsScreenV2> {
   void initState() {
     super.initState();
     _loadTemplate();
+    _loadStoreCatalog();
+  }
+
+  /// Saved copy first, then one refresh (public catalog.json; offline → saved copy).
+  Future<void> _loadStoreCatalog() async {
+    final service = TemplateCatalogService();
+    for (final load in [service.cached, service.refresh]) {
+      final catalog = await load();
+      if (!mounted) return;
+      if (catalog != null) setState(() => _storeCatalog = catalog);
+    }
+  }
+
+  /// Available marketplace templates not installed on this computer.
+  int get _templatesToAdd => (_storeCatalog?.templates ?? const <StoreTemplate>[])
+      .where((t) => t.status == 'available' && !_packs.any((p) => p.templateId == t.id))
+      .length;
+
+  Widget _getMoreTemplatesCard(AppLocalizations l10n) {
+    final scheme = Theme.of(context).colorScheme;
+    final count = _templatesToAdd;
+    return Material(
+      color: scheme.primaryContainer.withValues(alpha: 0.35),
+      borderRadius: BorderRadius.circular(8),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(8),
+        onTap: () async {
+          await showTemplateStoreDialog(context);
+          await _loadPacks();
+        },
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 9),
+          child: Row(
+            children: [
+              Icon(Icons.storefront_outlined, size: 20, color: scheme.primary),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(l10n.pdfStoreCardTitle,
+                        style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w600)),
+                    Text(l10n.pdfStoreCardSubtitle(count),
+                        style: TextStyle(fontSize: 11, color: scheme.onSurfaceVariant)),
+                  ],
+                ),
+              ),
+              if (count > 0)
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                  decoration: BoxDecoration(color: scheme.primary, borderRadius: BorderRadius.circular(10)),
+                  child: Text('$count',
+                      style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: scheme.onPrimary)),
+                ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 
   Future<void> _loadTemplate() async {
@@ -1581,6 +1643,8 @@ class _PdfSettingsScreenV2State extends ConsumerState<PdfSettingsScreenV2> {
               );
             }),
           ),
+          const SizedBox(height: 10),
+          _getMoreTemplatesCard(l10n),
         ],
       ),
     );

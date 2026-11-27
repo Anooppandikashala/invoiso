@@ -224,6 +224,9 @@ class _TemplateStoreDialogState extends ConsumerState<_TemplateStoreDialog> {
             children: [
               if (!t.free && !licensed && available)
                 FilledButton(onPressed: () => _buy(t), child: Text(l10n.storeBuy)),
+              // Free: the template's page has the download and install steps.
+              if (t.free && available && t.page != null)
+                FilledButton.tonal(onPressed: () => _open(t.page!), child: Text(l10n.storeGetFree)),
               // Owners can download even if the listing is no longer available.
               if (!t.free && licensed)
                 FilledButton.tonal(

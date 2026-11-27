@@ -6718,7 +6718,8 @@ class AppLocalizationsZh extends AppLocalizations {
   String get storeTitle => 'Invoiso Templates';
 
   @override
-  String get storeSubtitle => '现成的发票设计。购买：在模板页面提交申请，我们会回复付款信息，随后发送您的许可证密钥。';
+  String get storeSubtitle =>
+      '现成的发票设计。免费：在模板页面下载，然后在这里选择 添加模板 → 安装模板…。付费：在模板页面提交申请，我们会回复付款信息和您的许可证密钥。';
 
   @override
   String get storeOffline => '无法加载模板列表。请检查网络连接。';
@@ -6744,6 +6745,9 @@ class AppLocalizationsZh extends AppLocalizations {
   String get storeBuy => '购买';
 
   @override
+  String get storeGetFree => '免费下载';
+
+  @override
   String get storeViewOnWebsite => '在网站上查看';
 
   @override
@@ -6756,6 +6760,20 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get pdfLayoutGetMoreSubtitle => '浏览 Invoiso Templates 并购买设计';
+
+  @override
+  String get pdfStoreCardTitle => '获取更多模板';
+
+  @override
+  String pdfStoreCardSubtitle(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '可添加 $count 个设计',
+      zero: '免费和付费发票设计',
+    );
+    return '$_temp0';
+  }
 
   @override
   String get pdfLayoutEnterKeyTitle => '输入许可证密钥…';

@@ -11891,7 +11891,7 @@ abstract class AppLocalizations {
   /// No description provided for @storeSubtitle.
   ///
   /// In en, this message translates to:
-  /// **'Ready-made invoice designs. Buy: send a request on the template\'s page and we reply with payment details; your licence key follows.'**
+  /// **'Ready-made invoice designs. Free: download it on the template\'s page, then choose Add Template → Install template… here. Paid: send a request on the template\'s page; we reply with payment details and your licence key.'**
   String get storeSubtitle;
 
   /// No description provided for @storeOffline.
@@ -11936,6 +11936,12 @@ abstract class AppLocalizations {
   /// **'Buy'**
   String get storeBuy;
 
+  /// No description provided for @storeGetFree.
+  ///
+  /// In en, this message translates to:
+  /// **'Download free'**
+  String get storeGetFree;
+
   /// No description provided for @storeViewOnWebsite.
   ///
   /// In en, this message translates to:
@@ -11959,6 +11965,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Browse Invoiso Templates and buy a design'**
   String get pdfLayoutGetMoreSubtitle;
+
+  /// No description provided for @pdfStoreCardTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Get more templates'**
+  String get pdfStoreCardTitle;
+
+  /// No description provided for @pdfStoreCardSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =0{Free and paid invoice designs} =1{1 design you can add} other{{count} designs you can add}}'**
+  String pdfStoreCardSubtitle(int count);
 
   /// No description provided for @pdfLayoutEnterKeyTitle.
   ///

@@ -7020,7 +7020,7 @@ class AppLocalizationsNe extends AppLocalizations {
 
   @override
   String get storeSubtitle =>
-      'तयारी इनभ्वाइस डिजाइनहरू। किन्नुहोस्: टेम्प्लेटको पेजमा अनुरोध पठाउनुहोस्, हामी भुक्तानी विवरणसहित जवाफ दिन्छौं; त्यसपछि तपाईंको लाइसेन्स कुञ्जी आउँछ।';
+      'तयारी इनभ्वाइस डिजाइनहरू। निःशुल्क: टेम्प्लेटको पेजबाट डाउनलोड गर्नुहोस्, त्यसपछि यहाँ टेम्प्लेट थप्नुहोस् → टेम्प्लेट इन्स्टल गर्नुहोस्… छान्नुहोस्। सशुल्क: टेम्प्लेटको पेजमा अनुरोध पठाउनुहोस्; हामी भुक्तानी विवरण र तपाईंको लाइसेन्स कुञ्जीसहित जवाफ दिन्छौं।';
 
   @override
   String get storeOffline =>
@@ -7047,6 +7047,9 @@ class AppLocalizationsNe extends AppLocalizations {
   String get storeBuy => 'किन्नुहोस्';
 
   @override
+  String get storeGetFree => 'निःशुल्क डाउनलोड गर्नुहोस्';
+
+  @override
   String get storeViewOnWebsite => 'वेबसाइटमा हेर्नुहोस्';
 
   @override
@@ -7060,6 +7063,21 @@ class AppLocalizationsNe extends AppLocalizations {
   @override
   String get pdfLayoutGetMoreSubtitle =>
       'Invoiso Templates हेर्नुहोस् र डिजाइन किन्नुहोस्';
+
+  @override
+  String get pdfStoreCardTitle => 'थप टेम्प्लेटहरू';
+
+  @override
+  String pdfStoreCardSubtitle(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'थप्न मिल्ने $count डिजाइन',
+      one: 'थप्न मिल्ने १ डिजाइन',
+      zero: 'निःशुल्क र सशुल्क इनभ्वाइस डिजाइनहरू',
+    );
+    return '$_temp0';
+  }
 
   @override
   String get pdfLayoutEnterKeyTitle => 'लाइसेन्स कुञ्जी हाल्नुहोस्…';

@@ -7089,7 +7089,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get storeSubtitle =>
-      'Diseños de factura listos. Comprar: envíe una solicitud en la página de la plantilla y le respondemos con los datos de pago; después recibe su clave de licencia.';
+      'Diseños de factura listos. Gratis: descárguela en la página de la plantilla y luego elija Añadir plantilla → Instalar plantilla… aquí. De pago: envíe una solicitud en la página de la plantilla; le respondemos con los datos de pago y su clave de licencia.';
 
   @override
   String get storeOffline =>
@@ -7116,6 +7116,9 @@ class AppLocalizationsEs extends AppLocalizations {
   String get storeBuy => 'Comprar';
 
   @override
+  String get storeGetFree => 'Descargar gratis';
+
+  @override
   String get storeViewOnWebsite => 'Ver en el sitio web';
 
   @override
@@ -7129,6 +7132,21 @@ class AppLocalizationsEs extends AppLocalizations {
   @override
   String get pdfLayoutGetMoreSubtitle =>
       'Explore Invoiso Templates y compre un diseño';
+
+  @override
+  String get pdfStoreCardTitle => 'Más plantillas';
+
+  @override
+  String pdfStoreCardSubtitle(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count diseños que puede añadir',
+      one: '1 diseño que puede añadir',
+      zero: 'Diseños de factura gratis y de pago',
+    );
+    return '$_temp0';
+  }
 
   @override
   String get pdfLayoutEnterKeyTitle => 'Introducir clave de licencia…';

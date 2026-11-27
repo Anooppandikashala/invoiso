@@ -7104,7 +7104,7 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get storeSubtitle =>
-      'Des modèles de facture prêts à l\'emploi. Acheter : envoyez une demande sur la page du modèle, nous répondons avec les infos de paiement ; votre clé de licence suit.';
+      'Des modèles de facture prêts à l\'emploi. Gratuit : téléchargez-le sur la page du modèle, puis choisissez Ajouter un modèle → Installer un modèle… ici. Payant : envoyez une demande sur la page du modèle ; nous répondons avec les infos de paiement et votre clé de licence.';
 
   @override
   String get storeOffline =>
@@ -7131,6 +7131,9 @@ class AppLocalizationsFr extends AppLocalizations {
   String get storeBuy => 'Acheter';
 
   @override
+  String get storeGetFree => 'Télécharger gratuitement';
+
+  @override
   String get storeViewOnWebsite => 'Voir sur le site';
 
   @override
@@ -7144,6 +7147,21 @@ class AppLocalizationsFr extends AppLocalizations {
   @override
   String get pdfLayoutGetMoreSubtitle =>
       'Parcourez Invoiso Templates et achetez un modèle';
+
+  @override
+  String get pdfStoreCardTitle => 'Plus de modèles';
+
+  @override
+  String pdfStoreCardSubtitle(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count modèles à ajouter',
+      one: '1 modèle à ajouter',
+      zero: 'Modèles de facture gratuits et payants',
+    );
+    return '$_temp0';
+  }
 
   @override
   String get pdfLayoutEnterKeyTitle => 'Saisir une clé de licence…';

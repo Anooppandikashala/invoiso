@@ -6974,7 +6974,7 @@ class AppLocalizationsBo extends AppLocalizations {
 
   @override
   String get storeSubtitle =>
-      'གྲ་སྒྲིག་ཟིན་པའི་ཚོང་ཐོ་བཀོད་པ། ཉོ་བ། དཔེ་གཞིའི་ཤོག་ངོས་སུ་རེ་ཞུ་གཏོང་རོགས། ང་ཚོས་དངུལ་སྤྲོད་ཆ་འཕྲིན་ལན་དུ་གཏོང་། དེ་རྗེས་ཆོག་མཆན་ལྡེ་མིག་འབྱོར་ངེས།';
+      'གྲ་སྒྲིག་ཟིན་པའི་ཚོང་ཐོ་བཀོད་པ། རིན་མེད། དཔེ་གཞིའི་ཤོག་ངོས་ནས་ཕབ་ལེན་བྱས་རྗེས། འདི་ནས་ དཔེ་གཞི་སྣོན་པ། → དཔེ་གཞི་འཇུག་པ… འདེམས། རིན་ཡོད། དཔེ་གཞིའི་ཤོག་ངོས་སུ་རེ་ཞུ་གཏོང་། ང་ཚོས་དངུལ་སྤྲོད་ཆ་འཕྲིན་དང་ཆོག་མཆན་ལྡེ་མིག་ལན་དུ་གཏོང་།';
 
   @override
   String get storeOffline =>
@@ -7001,6 +7001,9 @@ class AppLocalizationsBo extends AppLocalizations {
   String get storeBuy => 'ཉོ་བ།';
 
   @override
+  String get storeGetFree => 'རིན་མེད་ཕབ་ལེན།';
+
+  @override
   String get storeViewOnWebsite => 'དྲ་ཚིགས་སུ་ལྟ་བ།';
 
   @override
@@ -7014,6 +7017,20 @@ class AppLocalizationsBo extends AppLocalizations {
   @override
   String get pdfLayoutGetMoreSubtitle =>
       'Invoiso Templates ལ་ལྟ་ཞིང་བཀོད་པ་ཞིག་ཉོ་བ།';
+
+  @override
+  String get pdfStoreCardTitle => 'དཔེ་གཞི་མང་བ་ལེན།';
+
+  @override
+  String pdfStoreCardSubtitle(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'སྣོན་རུང་བའི་བཀོད་པ་ $count',
+      zero: 'རིན་མེད་དང་རིན་ཡོད་ཀྱི་ཚོང་ཐོ་བཀོད་པ།',
+    );
+    return '$_temp0';
+  }
 
   @override
   String get pdfLayoutEnterKeyTitle => 'ཆོག་མཆན་ལྡེ་མིག་འཇུག་པ…';

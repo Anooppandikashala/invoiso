@@ -6965,7 +6965,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get storeSubtitle =>
-      'Ready-made invoice designs. Buy: send a request on the template\'s page and we reply with payment details; your licence key follows.';
+      'Ready-made invoice designs. Free: download it on the template\'s page, then choose Add Template → Install template… here. Paid: send a request on the template\'s page; we reply with payment details and your licence key.';
 
   @override
   String get storeOffline =>
@@ -6992,6 +6992,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get storeBuy => 'Buy';
 
   @override
+  String get storeGetFree => 'Download free';
+
+  @override
   String get storeViewOnWebsite => 'View on website';
 
   @override
@@ -7005,6 +7008,21 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get pdfLayoutGetMoreSubtitle =>
       'Browse Invoiso Templates and buy a design';
+
+  @override
+  String get pdfStoreCardTitle => 'Get more templates';
+
+  @override
+  String pdfStoreCardSubtitle(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count designs you can add',
+      one: '1 design you can add',
+      zero: 'Free and paid invoice designs',
+    );
+    return '$_temp0';
+  }
 
   @override
   String get pdfLayoutEnterKeyTitle => 'Enter licence key…';
